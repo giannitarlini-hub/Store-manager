@@ -126,10 +126,68 @@ function saveShift(id){
  x.person=document.getElementById("sp").value;x.date=document.getElementById("sd").value;x.start=document.getElementById("ss").value;x.end=document.getElementById("se").value;x.breakStart=document.getElementById("bs").value;x.breakEnd=document.getElementById("be").value;save();closeModal();render();
 }
 function tasks(){
- return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div><section class="card">${S.tasks.length?S.tasks.map((t,i)=>`<div class="task"><div><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div><span class="pill">${t.done?"Fatto":"Assegnata"}</span></div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section><section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive presenti nel planning.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`;
+ return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div>
+ <section class="card">${S.tasks.length?S.tasks.map((t,i)=>`<div class="task" style="padding:14px 0;border-bottom:1px solid #e7eaf0">
+   <div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div>
+   <div style="display:flex;gap:6px;align-items:center">
+     <button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button>
+     <button class="btn gray" onclick="editTask(${t.id})">Modifica</button>
+     <button class="btn gray" onclick="deleteTask(${t.id})">Elimina</button>
+   </div>
+   <span class="pill">${t.done?"Fatto":"Assegnata"}</span>
+ </div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section>
+ <section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive. Puoi comunque modificare manualmente ogni attività.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`;
 }
-function addTask(){if(!S.people.filter(p=>p.active).length){alert("Prima inserisci almeno una risorsa.");return}let name=prompt("Nome attività");if(!name)return;let active=S.people.filter(p=>p.active);S.tasks.push({id:Date.now(),name,person:active[S.tasks.length%active.length].name,date:new Date().toLocaleDateString("it-IT"),done:false});save();render()}
-function autoTasks(){let a=S.people.filter(p=>p.active).map(p=>p.name);S.tasks.forEach((t,i)=>t.person=a[i%a.length]);save();render()}
+function addTask(){
+ const active=S.people.filter(p=>p.active);
+ if(!active.length){alert("Prima inserisci almeno una risorsa.");return}
+ openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input" placeholder="Es. Riordino denim">
+ <label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${active.map(p=>`<option>${esc(p.name)}</option>`).join("")}</select>
+ <label>Data</label><input id="taskDate" class="input" type="date" value="${new Date().toISOString().slice(0,10)}">
+ <button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`);
+}
+function saveNewTask(){
+ const name=(document.getElementById("taskName").value||"").trim();
+ if(!name){alert("Inserisci il nome dell'attività.");return}
+ const person=document.getElementById("taskPerson").value;
+ const date=document.getElementById("taskDate").value;
+ S.tasks.push({id:Date.now(),name,person,date:date?new Date(date+"T12:00:00").toLocaleDateString("it-IT"):"oggi",done:false});
+ save();closeModal();render();
+}
+function editTask(id){
+ const t=S.tasks.find(x=>x.id===id); if(!t)return;
+ const active=S.people.filter(p=>p.active);
+ const isoDate=(t.date||"").split("/").reverse().join("-");
+ openModal("Modifica attività",`<label>Attività</label><input id="taskName" class="input" value="${esc(t.name)}">
+ <label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${active.map(p=>`<option ${p.name===t.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select>
+ <label>Data</label><input id="taskDate" class="input" type="date" value="${/^\d{4}-\d{2}-\d{2}$/.test(isoDate)?isoDate:""}">
+ <button class="btn" style="width:100%" onclick="saveTaskEdit(${id})">Salva modifiche</button>`);
+}
+function saveTaskEdit(id){
+ const t=S.tasks.find(x=>x.id===id); if(!t)return;
+ const name=(document.getElementById("taskName").value||"").trim();
+ if(!name){alert("Inserisci il nome dell'attività.");return}
+ t.name=name;
+ t.person=document.getElementById("taskPerson").value;
+ const d=document.getElementById("taskDate").value;
+ t.date=d?new Date(d+"T12:00:00").toLocaleDateString("it-IT"):"oggi";
+ save();closeModal();render();
+}
+function toggleTask(id){
+ const t=S.tasks.find(x=>x.id===id); if(!t)return;
+ t.done=!t.done; save(); render();
+}
+function deleteTask(id){
+ const t=S.tasks.find(x=>x.id===id); if(!t)return;
+ if(!confirm(`Eliminare l'attività "${t.name}"?`))return;
+ S.tasks=S.tasks.filter(x=>x.id!==id); save(); render();
+}
+function autoTasks(){
+ const a=S.people.filter(p=>p.active).map(p=>p.name);
+ if(!a.length){alert("Prima inserisci almeno una risorsa.");return}
+ S.tasks.forEach((t,i)=>t.person=a[i%a.length]);
+ save();render();
+}
 function kpi(){
   migrateKpi();
   const period=S.kpi.selected||"2026-09";
