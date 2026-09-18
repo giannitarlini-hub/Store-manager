@@ -1,9 +1,9 @@
 {
-  "name": "Store Manager",
-  "short_name": "Store Manager",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#f4f6fa",
-  "theme_color": "#101827",
-  "lang": "it"
+  "name":"Store Manager",
+  "short_name":"Store Manager",
+  "start_url":".",
+  "display":"standalone",
+  "background_color":"#f4f6fa",
+  "theme_color":"#101827",
+  "lang":"it"
 }

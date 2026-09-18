@@ -7,8 +7,8 @@
 <title>Store Manager</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
-.app{max-width:520px;margin:auto;min-height:100vh;padding-bottom:92px}.head{background:#101827;color:white;padding:22px 18px 18px;border-radius:0 0 26px 26px}.eyebrow{font-size:12px;opacity:.65;font-weight:700;letter-spacing:.08em}.title{font-size:29px;font-weight:850;margin-top:3px}.sub{opacity:.72;font-size:14px;margin-top:4px}
-main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:13px;box-shadow:0 4px 18px #1720330c}.section{font-size:19px;font-weight:800;margin:20px 2px 10px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f7f8fb;border-radius:16px;padding:14px}.metric span{color:#747f91;font-size:13px}.metric b{display:block;font-size:23px;margin-top:4px}.btn{background:#2458e8;color:#fff;border:0;border-radius:13px;padding:11px 14px;font-weight:750}.btn.gray{background:#edf0f5;color:#283246}.btn.red{background:#df3c4c}.btn.green{background:#14924c}.input,.select{width:100%;border:1px solid #dce1e9;border-radius:13px;padding:12px;background:#fff;margin:5px 0 9px}label{display:block;font-size:12px;font-weight:700;color:#687386;margin-top:4px}.person{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid #edf0f3}.person:last-child{border:0}.avatar{width:43px;height:43px;border-radius:14px;background:#e9edff;color:#3152bf;display:grid;place-items:center;font-weight:800}.pill{font-size:12px;font-weight:750;padding:6px 9px;border-radius:10px;background:#eaf8ef;color:#197447}.pill.gray{background:#eef1f5;color:#687386}.small{font-size:12px;color:#788294}.kpirow{display:grid;grid-template-columns:1.3fr 1fr 1fr .8fr;gap:6px;align-items:center;padding:11px 0;border-bottom:1px solid #edf0f3;font-size:13px}.kpirow b{font-size:14px}.up{color:#15904a;font-weight:750}.down{color:#d73c4b;font-weight:750}.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;height:78px;background:#fff;border-top:1px solid #e4e8ef;display:flex;justify-content:space-around;padding-top:8px;z-index:10}.nav button{border:0;background:none;color:#7b8492;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px}.nav button.active{color:#2458e8;font-weight:800}.ico{font-size:21px}.empty{text-align:center;padding:22px;color:#778194}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:20}.sheet{background:#fff;width:100%;max-width:520px;margin:auto;border-radius:24px 24px 0 0;padding:20px;max-height:88vh;overflow:auto}.modal.open{display:flex}.actions{display:flex;gap:8px}.actions>*{flex:1}
+.app{max-width:520px;margin:auto;min-height:100vh;padding-bottom:92px}.head{background:#101827;color:white;padding:20px 18px 18px;border-radius:0 0 26px 26px}.eyebrow{font-size:12px;opacity:.65;font-weight:700;letter-spacing:.08em}.title{font-size:28px;font-weight:850;margin-top:3px}.sub{opacity:.72;font-size:14px;margin-top:4px}
+main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:13px;box-shadow:0 4px 18px #1720330c}.section{font-size:19px;font-weight:800;margin:20px 2px 10px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f7f8fb;border-radius:16px;padding:14px}.metric span{color:#747f91;font-size:13px}.metric b{display:block;font-size:23px;margin-top:4px}.btn{background:#2458e8;color:#fff;border:0;border-radius:13px;padding:11px 14px;font-weight:750}.btn.gray{background:#edf0f5;color:#283246}.btn.red{background:#df3c4c}.btn.green{background:#14924c}.input,.select{width:100%;border:1px solid #dce1e9;border-radius:13px;padding:12px;background:#fff;margin:5px 0 9px}label{display:block;font-size:12px;font-weight:700;color:#687386;margin-top:4px}.person,.task{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid #edf0f3}.person:last-child,.task:last-child{border:0}.avatar{width:43px;height:43px;border-radius:14px;background:#e9edff;color:#3152bf;display:grid;place-items:center;font-weight:800}.pill{font-size:12px;font-weight:750;padding:6px 9px;border-radius:10px;background:#eaf8ef;color:#197447;white-space:nowrap}.pill.gray{background:#eef1f5;color:#687386}.pill.red{background:#fff0f1;color:#c42e3f}.pill.yellow{background:#fff7dc;color:#8c6500}.small{font-size:12px;color:#788294}.kpirow{display:grid;grid-template-columns:1.3fr 1fr 1fr .8fr;gap:6px;align-items:center;padding:11px 0;border-bottom:1px solid #edf0f3;font-size:13px}.kpirow b{font-size:14px}.up{color:#15904a;font-weight:750}.down{color:#d73c4b;font-weight:750}.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;height:78px;background:#fff;border-top:1px solid #e4e8ef;display:flex;justify-content:space-around;padding-top:8px;z-index:10}.nav button{border:0;background:none;color:#7b8492;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px}.nav button.active{color:#2458e8;font-weight:800}.ico{font-size:21px}.empty{text-align:center;padding:22px;color:#778194}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:20}.sheet{background:#fff;width:100%;max-width:520px;margin:auto;border-radius:24px 24px 0 0;padding:20px;max-height:88vh;overflow:auto}.modal.open{display:flex}.actions{display:flex;gap:8px}.actions>*{flex:1}.notice{background:#eef5ff;border:1px solid #d6e5ff;border-radius:15px;padding:12px;color:#254a9d}.danger{background:#fff1f2;border:1px solid #ffd8dc}.ok{background:#edf9f2;border:1px solid #d1f0dd}
 </style>
 </head>
 <body>
@@ -18,273 +18,50 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 </div>
 <div id="modal" class="modal"><div class="sheet" id="sheet"></div></div>
 <script>
-const KEY="store_manager_v2";
-let S=JSON.parse(localStorage.getItem(KEY)||"null")||{
- tab:"home", people:[], requests:[], tasks:[], shifts:[],
- kpi:{selected:"2026-09",storeByPeriod:{},peopleByPeriod:{}}
-};
-
-function migrateKpi(){
-  // Migrazione automatica dei vecchi dati v2: settembre 2026 e settembre 2025.
-  if(!S.kpi || !S.kpi.storeByPeriod){
-    const old=S.kpi||{};
-    const store=old.store||{sales:0,receipts:0,avg:0,upt:0,conv:0};
-    const last=old.last||{sales:0,receipts:0,avg:0,upt:0,conv:0};
-    S.kpi={selected:"2026-09",storeByPeriod:{"2026-09":store,"2025-09":last},peopleByPeriod:{}};
-    const oldPeople=old.people||{};
-    Object.keys(oldPeople).forEach(id=>{
-      const q=oldPeople[id]||{now:0,last:0};
-      S.kpi.peopleByPeriod[id]={"2026-09":q.now||0,"2025-09":q.last||0};
-    });
-    save();
-  }
-  if(!S.kpi.selected) S.kpi.selected="2026-09";
-  if(!S.kpi.storeByPeriod) S.kpi.storeByPeriod={};
-  if(!S.kpi.peopleByPeriod) S.kpi.peopleByPeriod={};
-}
-migrateKpi();
-
-function periodLabel(period){
-  const [y,m]=period.split("-").map(Number);
-  return new Intl.DateTimeFormat("it-IT",{month:"long",year:"numeric"}).format(new Date(y,m-1,1))
-    .replace(/^./,c=>c.toUpperCase());
-}
-function previousPeriod(period){
-  const [y,m]=period.split("-").map(Number);
-  return `${y-1}-${String(m).padStart(2,"0")}`;
-}
-function monthOptions(){
-  const months=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
-  return months.map((name,i)=>`<option value="${String(i+1).padStart(2,"0")}">${name}</option>`).join("");
-}
-function yearOptions(selected){
-  const y=Number(selected.slice(0,4));
-  let s="";
-  for(let year=2020;year<=2035;year++) s+=`<option value="${year}" ${year===y?"selected":""}>${year}</option>`;
-  return s;
-}
-function ensurePeriod(period){
-  if(!S.kpi.storeByPeriod[period]) S.kpi.storeByPeriod[period]={sales:0,receipts:0,avg:0,upt:0,conv:0};
-  S.people.forEach(p=>{
-    if(!S.kpi.peopleByPeriod[p.id]) S.kpi.peopleByPeriod[p.id]={};
-    if(S.kpi.peopleByPeriod[p.id][period]===undefined) S.kpi.peopleByPeriod[p.id][period]=0;
-  });
-}
-
+const SUPABASE_URL="https://mgklvroxfowgqljehquz.supabase.co";
+const SUPABASE_KEY="sb_publishable_Jro2VCtNW_GFYE6w0hfUYw_SBNsvb8M";
+const KEY="store_manager_v5";
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||{tab:"home",people:[],requests:[],tasks:[],shifts:[],kpi:{selected:"2026-09",storeByPeriod:{},peopleByPeriod:{}},online:true};
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
 const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const fmt=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(n)||0);
+const today=()=>new Date().toISOString().slice(0,10);
+function periodLabel(p){const[y,m]=p.split("-").map(Number);return new Intl.DateTimeFormat("it-IT",{month:"long",year:"numeric"}).format(new Date(y,m-1,1)).replace(/^./,c=>c.toUpperCase())}
+function previousPeriod(p){const[y,m]=p.split("-").map(Number);return `${y-1}-${String(m).padStart(2,"0")}`}
+function monthOptions(){return ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"].map((n,i)=>`<option value="${String(i+1).padStart(2,"0")}">${n}</option>`).join("")}
+function yearOptions(selected){let y=+selected.slice(0,4),s="";for(let i=2020;i<=2035;i++)s+=`<option value="${i}" ${i===y?"selected":""}>${i}</option>`;return s}
+function ensureKpi(p){if(!S.kpi.storeByPeriod[p])S.kpi.storeByPeriod[p]={sales:0,receipts:0,avg:0,upt:0,conv:0};S.people.forEach(x=>{if(!S.kpi.peopleByPeriod[x.id])S.kpi.peopleByPeriod[x.id]={}})}
 function openModal(title,body){document.getElementById("sheet").innerHTML=`<div class="row"><h2 style="margin:0 0 15px">${title}</h2><button class="btn gray" onclick="closeModal()">Chiudi</button></div>${body}`;document.getElementById("modal").classList.add("open")}
 function closeModal(){document.getElementById("modal").classList.remove("open")}
-function nav(){
- let a=[["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["kpi","▥","KPI"]];
- document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("");
-}
-function home(){
- return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 16px">Panoramica negozio</h2><div class="grid">
-<div class="metric"><span>Risorse attive</span><b>${S.people.filter(p=>p.active).length}</b></div>
-<div class="metric"><span>Turni inseriti</span><b>${S.shifts.length}</b></div>
-<div class="metric"><span>Attività</span><b>${S.tasks.length}</b></div>
-<div class="metric"><span>Richieste</span><b>${S.requests.filter(r=>r.status=="In attesa").length}</b></div>
-</div></section>
-<div class="section">Accessi rapidi</div><section class="card"><div class="actions"><button class="btn" onclick="S.tab='people';render()">+ Risorsa</button><button class="btn gray" onclick="S.tab='planning';render()">+ Turno</button><button class="btn gray" onclick="S.tab='kpi';render()">KPI</button></div></section>
-<section class="card"><b>Come funziona</b><p class="small">I nomi delle risorse, i ruoli, le date e tutti i dati sono modificabili da te. Le risorse archiviate restano nello storico.</p></section>`;
-}
-function people(){
- return `<div class="row"><div class="section">Personale</div><button class="btn" onclick="editPerson()">+ Aggiungi</button></div>
-<section class="card">${S.people.length?S.people.map(p=>`<div class="person"><div class="avatar">${esc(p.name[0]||"?")}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="small">${esc(p.role||"Risorsa")} · ingresso ${esc(p.in||"—")}${p.out?" · uscita "+esc(p.out):""}</div></div><span class="pill ${p.active?"":"gray"}">${p.active?"Attiva":"Archiviata"}</span><button class="btn gray" onclick="editPerson(${p.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessuna risorsa inserita.<br><b>Sei tu a creare la tua squadra.</b></div>`}</section>`;
-}
-function editPerson(id){
- let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true};
- openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}" placeholder="Es. Mario Rossi">
-<label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}" placeholder="Es. Sales Assistant">
-<label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa">
-<label>Data uscita (se archiviata)</label><input id="po" class="input" value="${esc(p.out)}" placeholder="gg/mm/aaaa">
-<div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div>
-<button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>`);
-}
-function savePerson(id){
- let p=S.people.find(x=>x.id===id); if(!p){p={id,name:"",role:"",in:"",out:"",active:true};S.people.push(p)}
- p.name=document.getElementById("pn").value.trim();p.role=document.getElementById("pr").value.trim();p.in=document.getElementById("pi").value.trim();p.out=document.getElementById("po").value.trim();p.active=document.getElementById("pa").checked;
- if(!p.name){alert("Inserisci il nome.");return}save();closeModal();render();
-}
-function planning(){
- return `<div class="row"><div class="section">Planning</div><button class="btn" onclick="editShift()">+ Turno</button></div>
-<section class="card">${S.shifts.length?S.shifts.map(x=>`<div class="task"><div><b>${esc(x.person)}</b><div class="small">${esc(x.date)} · ${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessun turno inserito.</div>`}</section>
-<section class="card"><b>🤖 Organizza pause</b><p class="small">In base ai turni inseriti, potremo proporre pause sfalsate mantenendo la copertura minima che imposti.</p><button class="btn" onclick="alert('Nella versione successiva questa funzione calcolerà automaticamente le pause.')">Proponi pause</button></section>`;
-}
-function editShift(id){
- let x=S.shifts.find(a=>a.id===id)||{id:Date.now(),person:"",date:"",start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};
- openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option ${p.name==x.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select>
-<label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}">
-<div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div>
-<div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div></div>
-<button class="btn" style="width:100%" onclick="saveShift(${x.id})">Salva turno</button>`);
-}
-function saveShift(id){
- let x=S.shifts.find(a=>a.id===id);if(!x){x={id};S.shifts.push(x)}
- x.person=document.getElementById("sp").value;x.date=document.getElementById("sd").value;x.start=document.getElementById("ss").value;x.end=document.getElementById("se").value;x.breakStart=document.getElementById("bs").value;x.breakEnd=document.getElementById("be").value;save();closeModal();render();
-}
-function tasks(){
- return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div>
- <section class="card">${S.tasks.length?S.tasks.map((t,i)=>`<div class="task" style="padding:14px 0;border-bottom:1px solid #e7eaf0">
-   <div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div>
-   <div style="display:flex;gap:6px;align-items:center">
-     <button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button>
-     <button class="btn gray" onclick="editTask(${t.id})">Modifica</button>
-     <button class="btn gray" onclick="deleteTask(${t.id})">Elimina</button>
-   </div>
-   <span class="pill">${t.done?"Fatto":"Assegnata"}</span>
- </div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section>
- <section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive. Puoi comunque modificare manualmente ogni attività.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`;
-}
-function addTask(){
- const active=S.people.filter(p=>p.active);
- if(!active.length){alert("Prima inserisci almeno una risorsa.");return}
- openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input" placeholder="Es. Riordino denim">
- <label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${active.map(p=>`<option>${esc(p.name)}</option>`).join("")}</select>
- <label>Data</label><input id="taskDate" class="input" type="date" value="${new Date().toISOString().slice(0,10)}">
- <button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`);
-}
-function saveNewTask(){
- const name=(document.getElementById("taskName").value||"").trim();
- if(!name){alert("Inserisci il nome dell'attività.");return}
- const person=document.getElementById("taskPerson").value;
- const date=document.getElementById("taskDate").value;
- S.tasks.push({id:Date.now(),name,person,date:date?new Date(date+"T12:00:00").toLocaleDateString("it-IT"):"oggi",done:false});
- save();closeModal();render();
-}
-function editTask(id){
- const t=S.tasks.find(x=>x.id===id); if(!t)return;
- const active=S.people.filter(p=>p.active);
- const isoDate=(t.date||"").split("/").reverse().join("-");
- openModal("Modifica attività",`<label>Attività</label><input id="taskName" class="input" value="${esc(t.name)}">
- <label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${active.map(p=>`<option ${p.name===t.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select>
- <label>Data</label><input id="taskDate" class="input" type="date" value="${/^\d{4}-\d{2}-\d{2}$/.test(isoDate)?isoDate:""}">
- <button class="btn" style="width:100%" onclick="saveTaskEdit(${id})">Salva modifiche</button>`);
-}
-function saveTaskEdit(id){
- const t=S.tasks.find(x=>x.id===id); if(!t)return;
- const name=(document.getElementById("taskName").value||"").trim();
- if(!name){alert("Inserisci il nome dell'attività.");return}
- t.name=name;
- t.person=document.getElementById("taskPerson").value;
- const d=document.getElementById("taskDate").value;
- t.date=d?new Date(d+"T12:00:00").toLocaleDateString("it-IT"):"oggi";
- save();closeModal();render();
-}
-function toggleTask(id){
- const t=S.tasks.find(x=>x.id===id); if(!t)return;
- t.done=!t.done; save(); render();
-}
-function deleteTask(id){
- const t=S.tasks.find(x=>x.id===id); if(!t)return;
- if(!confirm(`Eliminare l'attività "${t.name}"?`))return;
- S.tasks=S.tasks.filter(x=>x.id!==id); save(); render();
-}
-function autoTasks(){
- const a=S.people.filter(p=>p.active).map(p=>p.name);
- if(!a.length){alert("Prima inserisci almeno una risorsa.");return}
- S.tasks.forEach((t,i)=>t.person=a[i%a.length]);
- save();render();
-}
-function kpi(){
-  migrateKpi();
-  const period=S.kpi.selected||"2026-09";
-  const prev=previousPeriod(period);
-  ensurePeriod(period); ensurePeriod(prev);
-  const k=S.kpi.storeByPeriod[period], l=S.kpi.storeByPeriod[prev];
-  const people=S.people; // anche le archiviate restano nello storico KPI
-  const delta=(a,b)=>b?((a-b)/b*100):null;
-  const rows=[
-    ["Fatturato",fmt(k.sales),fmt(l.sales),delta(k.sales,l.sales)],
-    ["Scontrini",k.receipts,l.receipts,delta(k.receipts,l.receipts)],
-    ["Scontrino medio",fmt(k.avg),fmt(l.avg),delta(k.avg,l.avg)],
-    ["UPT",k.upt,l.upt,delta(k.upt,l.upt)],
-    ["Conversione",k.conv+"%",l.conv+"%",delta(k.conv,l.conv)]
-  ];
-  return `<div class="section">KPI</div>
-  <section class="card">
-    <div class="small">Seleziona il mese e l'anno da analizzare.</div>
-    <div class="grid">
-      <div><label>Mese</label><select id="kpiMonth" class="select" onchange="changeKpiPeriod()">${monthOptions()}</select></div>
-      <div><label>Anno</label><select id="kpiYear" class="select" onchange="changeKpiPeriod()">${yearOptions(period)}</select></div>
-    </div>
-    <div class="small">Confronto automatico con ${periodLabel(prev)}.</div>
-  </section>
-  <div class="card"><b>Negozio · ${periodLabel(period)} vs stesso mese anno precedente</b>
-  <div class="kpirow"><b>KPI</b><b>${period.slice(0,4)}</b><b>${prev.slice(0,4)}</b><b>Var.</b></div>
-  ${rows.map(r=>`<div class="kpirow"><span>${r[0]}</span><b>${r[1]}</b><span>${r[2]}</span><span class="${r[3]>=0?'up':'down'}">${r[3]==null?"—":(r[3]>=0?"+":"")+r[3].toFixed(1)+"%"}</span></div>`).join("")}
-  <button class="btn gray" style="margin-top:12px" onclick="editStoreKpi()">Modifica KPI negozio</button></div>
-  <div class="card"><b>Personale · ${periodLabel(period)} vs stesso mese anno precedente</b>
-  <div class="kpirow"><b>Risorsa</b><b>${period.slice(0,4)}</b><b>${prev.slice(0,4)}</b><b>Var.</b></div>
-  ${people.length?people.map(p=>{
-    const by=S.kpi.peopleByPeriod[p.id]||{};
-    const now=Number(by[period]||0), last=Number(by[prev]||0), d=delta(now,last);
-    return `<div class="kpirow"><span>${esc(p.name)}${p.active?"":" · storico"}</span><b>${fmt(now)}</b><span>${fmt(last)}</span><span class="${d>=0?'up':'down'}">${d==null?"—":(d>=0?"+":"")+d.toFixed(1)+"%"}</span></div>`;
-  }).join(""):`<div class="empty">Inserisci le risorse per vedere i KPI individuali.</div>`}
-  <button class="btn gray" style="margin-top:12px" onclick="editPeopleKpi()">Modifica KPI risorse</button></div>`;
-}
-function changeKpiPeriod(){
-  const m=document.getElementById("kpiMonth").value;
-  const y=document.getElementById("kpiYear").value;
-  S.kpi.selected=`${y}-${m}`;
-  ensurePeriod(S.kpi.selected); ensurePeriod(previousPeriod(S.kpi.selected));
-  save(); render();
-}
-function editStoreKpi(){
-  migrateKpi();
-  const period=S.kpi.selected||"2026-09", prev=previousPeriod(period);
-  ensurePeriod(period); ensurePeriod(prev);
-  const k=S.kpi.storeByPeriod[period], l=S.kpi.storeByPeriod[prev];
-  openModal("KPI negozio",`<p class="small">Stai modificando ${periodLabel(period)}. Il confronto viene salvato automaticamente sullo stesso mese dell'anno precedente.</p>
-  ${[["Fatturato","sales"],["N. scontrini","receipts"],["Scontrino medio","avg"],["UPT","upt"],["Conversione %","conv"]].map(a=>`<label>${a[0]} ${period.slice(0,4)}</label><input id="n_${a[1]}" class="input" type="number" step="0.01" value="${k[a[1]]||0}">
-  <label>${a[0]} ${prev.slice(0,4)}</label><input id="l_${a[1]}" class="input" type="number" step="0.01" value="${l[a[1]]||0}">`).join("")}
-  <button class="btn" style="width:100%" onclick="saveStoreKpi()">Salva KPI</button>`);
-}
-function saveStoreKpi(){
-  const period=S.kpi.selected||"2026-09", prev=previousPeriod(period);
-  ensurePeriod(period); ensurePeriod(prev);
-  for(const a of ["sales","receipts","avg","upt","conv"]){
-    S.kpi.storeByPeriod[period][a]=+document.getElementById("n_"+a).value||0;
-    S.kpi.storeByPeriod[prev][a]=+document.getElementById("l_"+a).value||0;
-  }
-  save(); closeModal(); render();
-}
-function editPeopleKpi(){
-  const period=S.kpi.selected||"2026-09", prev=previousPeriod(period);
-  ensurePeriod(period); ensurePeriod(prev);
-  const rows=S.people.map(p=>{
-    const by=S.kpi.peopleByPeriod[p.id]||{};
-    return `<div style="padding:10px 0;border-bottom:1px solid #eee"><b>${esc(p.name)}</b>
-      <div class="grid">
-        <div><label>${period.slice(0,4)}</label><input id="pn_${p.id}" class="input" type="number" step="0.01" value="${by[period]||0}"></div>
-        <div><label>${prev.slice(0,4)}</label><input id="pl_${p.id}" class="input" type="number" step="0.01" value="${by[prev]||0}"></div>
-      </div>
-    </div>`;
-  }).join("");
-  openModal("KPI risorse",`<div class="small">Fatturato individuale per ${periodLabel(period)}, con confronto allo stesso mese dell'anno precedente.</div>${rows||'<div class="empty">Nessuna risorsa.</div>'}<button class="btn" style="width:100%" onclick="savePeopleKpi()">Salva KPI risorse</button>`);
-}
-function savePeopleKpi(){
-  const period=S.kpi.selected||"2026-09", prev=previousPeriod(period);
-  S.people.forEach(p=>{
-    if(!S.kpi.peopleByPeriod[p.id]) S.kpi.peopleByPeriod[p.id]={};
-    const n=document.getElementById("pn_"+p.id), l=document.getElementById("pl_"+p.id);
-    if(n) S.kpi.peopleByPeriod[p.id][period]=+n.value||0;
-    if(l) S.kpi.peopleByPeriod[p.id][prev]=+l.value||0;
-  });
-  save(); closeModal(); render();
-}
-function render(){
-  migrateKpi();
-  document.getElementById("main").innerHTML=S.tab=="home"?home():S.tab=="planning"?planning():S.tab=="people"?people():S.tab=="tasks"?tasks():kpi();
-  nav();
-  if(S.tab=="kpi"){
-    const [y,m]=(S.kpi.selected||"2026-09").split("-");
-    const ms=document.getElementById("kpiMonth"), ys=document.getElementById("kpiYear");
-    if(ms) ms.value=m;
-    if(ys) ys.value=y;
-  }
-}
-render();
-</script></body></html>
+function nav(){let a=[["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"]];document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("")}
+async function sb(path,opt={}){const r=await fetch(SUPABASE_URL+"/rest/v1/"+path,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:opt.prefer||"return=representation"},...opt});if(!r.ok){let t=await r.text();throw new Error(t||r.status)}return r.status===204?null:r.json()}
+async function loadRequests(){try{let rows=await sb("Richieste?select=*&order=created_at.desc");S.requests=rows.map(r=>({id:r.id,personId:r.dipendente_id,type:r.tipo,start:r.data_richiesta,end:r.data_richiesta_fine,note:r.note,status:r.stato,created:r.created_at}));S.online=true;save();render()}catch(e){S.online=false;save();render()}}
+async function createRequest(id){let p=S.people.find(x=>x.id===id);if(!p){alert("Seleziona una risorsa.");return}let start=document.getElementById("rqStart").value,end=document.getElementById("rqEnd").value,note=document.getElementById("rqNote").value.trim();if(!start){alert("Inserisci la data.");return}if(!end)end=start;try{await sb("Richieste",{method:"POST",body:JSON.stringify({dipendente_id:p.id,tipo:"Giorno libero",data_richiesta:start,data_richiesta_fine:end,note,stato:"In attesa"})});closeModal();await loadRequests();alert("Richiesta inviata.")}catch(e){alert("Supabase non ha accettato la richiesta. Controlla RLS sulla tabella Richieste.")}}
+async function updateRequest(id,status){try{await sb("Richieste?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({stato:status})});await loadRequests()}catch(e){alert("Impossibile aggiornare la richiesta. Controlla RLS sulla tabella Richieste.")}}
+function requestForm(){let a=S.people.filter(p=>p.active);openModal("Nuova richiesta giorno libero",`<label>Risorsa</label><select id="rqPerson" class="select">${a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><label>Dal</label><input id="rqStart" class="input" type="date" value="${today()}"><label>Al</label><input id="rqEnd" class="input" type="date" value="${today()}"><label>Nota / motivazione</label><textarea id="rqNote" class="input" rows="3" placeholder="Facoltativa"></textarea><button class="btn" style="width:100%" onclick="createRequest(+document.getElementById('rqPerson').value)">Invia richiesta</button>`)}
+function home(){let pending=S.requests.filter(r=>r.status==="In attesa").length;return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 16px">Panoramica negozio</h2><div class="grid"><div class="metric"><span>Risorse attive</span><b>${S.people.filter(p=>p.active).length}</b></div><div class="metric"><span>Turni inseriti</span><b>${S.shifts.length}</b></div><div class="metric"><span>Attività</span><b>${S.tasks.length}</b></div><div class="metric"><span>Richieste</span><b>${pending}</b></div></div></section><div class="section">Accessi rapidi</div><section class="card"><div class="actions"><button class="btn" onclick="S.tab='people';render()">+ Risorsa</button><button class="btn gray" onclick="S.tab='planning';render()">+ Turno</button><button class="btn gray" onclick="S.tab='requests';loadRequests()">Richieste ${pending?`(${pending})`:""}</button></div></section><section class="card"><div class="${S.online?"ok":"danger"}"><b>${S.online?"☁️ Collegamento online attivo":"⚠️ Collegamento online non disponibile"}</b><div class="small" style="margin-top:5px">${S.online?"Le richieste vengono salvate in Supabase.":"Le richieste online non sono raggiungibili in questo momento."}</div></div></section>`}
+function people(){return `<div class="row"><div class="section">Personale</div><button class="btn" onclick="editPerson()">+ Aggiungi</button></div><section class="card">${S.people.length?S.people.map(p=>`<div class="person"><div class="avatar">${esc((p.name||"?")[0])}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="small">${esc(p.role||"Risorsa")} · ingresso ${esc(p.in||"—")}${p.out?" · uscita "+esc(p.out):""}</div></div><span class="pill ${p.active?"":"gray"}">${p.active?"Attiva":"Archiviata"}</span><button class="btn gray" onclick="editPerson(${p.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessuna risorsa inserita.</div>`}</section>`}
+function editPerson(id){let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true};openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}"><label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}"><label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa"><label>Data uscita</label><input id="po" class="input" value="${esc(p.out)}"><div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div><button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>`)}
+function savePerson(id){let p=S.people.find(x=>x.id===id);if(!p){p={id,name:"",role:"",in:"",out:"",active:true};S.people.push(p)}p.name=document.getElementById("pn").value.trim();p.role=document.getElementById("pr").value.trim();p.in=document.getElementById("pi").value.trim();p.out=document.getElementById("po").value.trim();p.active=document.getElementById("pa").checked;if(!p.name)return alert("Inserisci il nome.");save();closeModal();render()}
+function planning(){return `<div class="row"><div class="section">Planning</div><button class="btn" onclick="editShift()">+ Turno</button></div><section class="card">${S.shifts.length?S.shifts.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.person)}</b><div class="small">${esc(x.date)} · ${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessun turno inserito.</div>`}</section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni inseriti.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`}
+function editShift(id){let x=S.shifts.find(a=>a.id===id)||{id:Date.now(),person:"",date:today(),start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option ${p.name==x.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div></div><button class="btn" style="width:100%" onclick="saveShift(${x.id})">Salva turno</button>`)}
+function saveShift(id){let x=S.shifts.find(a=>a.id===id);if(!x){x={id};S.shifts.push(x)}x.person=document.getElementById("sp").value;x.date=document.getElementById("sd").value;x.start=document.getElementById("ss").value;x.end=document.getElementById("se").value;x.breakStart=document.getElementById("bs").value;x.breakEnd=document.getElementById("be").value;save();closeModal();render()}
+function tasks(){return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div><section class="card">${S.tasks.length?S.tasks.map(t=>`<div class="task"><div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div><button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button><button class="btn gray" onclick="editTask(${t.id})">Modifica</button><button class="btn gray" onclick="deleteTask(${t.id})">Elimina</button><span class="pill">${t.done?"Fatto":"Assegnata"}</span></div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section><section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`}
+function addTask(){let a=S.people.filter(p=>p.active);if(!a.length)return alert("Prima inserisci una risorsa.");openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${today()}"><button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`)}
+function saveNewTask(){let n=document.getElementById("taskName").value.trim();if(!n)return alert("Inserisci il nome.");S.tasks.push({id:Date.now(),name:n,person:document.getElementById("taskPerson").value,date:document.getElementById("taskDate").value,done:false});save();closeModal();render()}
+function editTask(id){let t=S.tasks.find(x=>x.id===id),a=S.people.filter(p=>p.active);if(!t)return;openModal("Modifica attività",`<label>Attività</label><input id="taskName" class="input" value="${esc(t.name)}"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option ${p.name===t.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${t.date||today()}"><button class="btn" style="width:100%" onclick="saveTaskEdit(${id})">Salva modifiche</button>`)}
+function saveTaskEdit(id){let t=S.tasks.find(x=>x.id===id);if(!t)return;t.name=document.getElementById("taskName").value.trim();t.person=document.getElementById("taskPerson").value;t.date=document.getElementById("taskDate").value;save();closeModal();render()}
+function toggleTask(id){let t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;save();render()}}
+function deleteTask(id){let t=S.tasks.find(x=>x.id===id);if(t&&confirm(`Eliminare "${t.name}"?`)){S.tasks=S.tasks.filter(x=>x.id!==id);save();render()}}
+function autoTasks(){let a=S.people.filter(p=>p.active).map(p=>p.name);if(!a.length)return;S.tasks.forEach((t,i)=>t.person=a[i%a.length]);save();render()}
+function requests(){let p=S.requests.filter(r=>r.status==="In attesa").length;return `<div class="row"><div class="section">Richieste giorni liberi</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div><section class="card"><div class="notice"><b>${p} ${p===1?"richiesta":"richieste"} in sospeso</b><div class="small">Le richieste vengono salvate online in Supabase.</div></div></section><section class="card">${S.requests.length?S.requests.map(r=>{let person=S.people.find(p=>p.id==r.personId);return `<div style="padding:13px 0;border-bottom:1px solid #edf0f3"><div class="row"><div><b>${esc(person?.name||"Risorsa")}</b><div class="small">${r.start}${r.end&&r.end!==r.start?" → "+r.end:""} · ${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":"red"}">${esc(r.status)}</span></div>${r.note?`<div class="small" style="margin:8px 0">Motivazione: ${esc(r.note)}</div>`:""}${r.status==="In attesa"?`<div class="actions" style="margin-top:8px"><button class="btn green" onclick="updateRequest(${r.id},'Approvata')">Approva</button><button class="btn red" onclick="updateRequest(${r.id},'Rifiutata')">Rifiuta</button></div>`:""}</div>`}).join(""):`<div class="empty">Nessuna richiesta.</div>`}</section>`}
+function kpi(){let period=S.kpi.selected||"2026-09",prev=previousPeriod(period);ensureKpi(period);ensureKpi(prev);let k=S.kpi.storeByPeriod[period],l=S.kpi.storeByPeriod[prev],d=(a,b)=>b?((a-b)/b*100):null;let rows=[["Fatturato",fmt(k.sales),fmt(l.sales),d(k.sales,l.sales)],["Scontrini",k.receipts,l.receipts,d(k.receipts,l.receipts)],["Scontrino medio",fmt(k.avg),fmt(l.avg),d(k.avg,l.avg)],["UPT",k.upt,l.upt,d(k.upt,l.upt)],["Conversione",k.conv+"%",l.conv+"%",d(k.conv,l.conv)]];return `<div class="section">KPI</div><section class="card"><div class="grid"><div><label>Mese</label><select id="kpiMonth" class="select" onchange="changeKpiPeriod()">${monthOptions()}</select></div><div><label>Anno</label><select id="kpiYear" class="select" onchange="changeKpiPeriod()">${yearOptions(period)}</select></div></div><div class="small">Confronto con ${periodLabel(prev)}.</div></section><div class="card"><b>Negozio · ${periodLabel(period)} vs stesso mese anno precedente</b><div class="kpirow"><b>KPI</b><b>${period.slice(0,4)}</b><b>${prev.slice(0,4)}</b><b>Var.</b></div>${rows.map(r=>`<div class="kpirow"><span>${r[0]}</span><b>${r[1]}</b><span>${r[2]}</span><span class="${r[3]>=0?'up':'down'}">${r[3]==null?"—":(r[3]>=0?"+":"")+r[3].toFixed(1)+"%"}</span></div>`).join("")}<button class="btn gray" onclick="editStoreKpi()">Modifica KPI negozio</button></div><div class="card"><b>Personale · confronto anno precedente</b>${S.people.map(p=>{let by=S.kpi.peopleByPeriod[p.id]||{},a=+by[period]||0,b=+by[prev]||0,z=d(a,b);return `<div class="kpirow"><span>${esc(p.name)}</span><b>${fmt(a)}</b><span>${fmt(b)}</span><span class="${z>=0?'up':'down'}">${z==null?"—":(z>=0?"+":"")+z.toFixed(1)+"%"}</span></div>`}).join("")}<button class="btn gray" onclick="editPeopleKpi()">Modifica KPI risorse</button></div>`}
+function changeKpiPeriod(){S.kpi.selected=document.getElementById("kpiYear").value+"-"+document.getElementById("kpiMonth").value;save();render()}
+function editStoreKpi(){let p=S.kpi.selected,prev=previousPeriod(p);ensureKpi(p);ensureKpi(prev);let k=S.kpi.storeByPeriod[p],l=S.kpi.storeByPeriod[prev];openModal("KPI negozio",["sales","receipts","avg","upt","conv"].map(x=>`<label>${x} ${p}</label><input id="n_${x}" class="input" type="number" value="${k[x]||0}"><label>${x} ${prev}</label><input id="l_${x}" class="input" type="number" value="${l[x]||0}">`).join("")+`<button class="btn" style="width:100%" onclick="saveStoreKpi()">Salva</button>`)}
+function saveStoreKpi(){let p=S.kpi.selected,prev=previousPeriod(p);ensureKpi(p);ensureKpi(prev);["sales","receipts","avg","upt","conv"].forEach(x=>{S.kpi.storeByPeriod[p][x]=+document.getElementById("n_"+x).value||0;S.kpi.storeByPeriod[prev][x]=+document.getElementById("l_"+x).value||0});save();closeModal();render()}
+function editPeopleKpi(){let p=S.kpi.selected,prev=previousPeriod(p);let b=S.people.map(x=>{let q=S.kpi.peopleByPeriod[x.id]||{};return `<div class="card"><b>${esc(x.name)}</b><div class="grid"><input id="pn_${x.id}" class="input" type="number" placeholder="${p}" value="${q[p]||0}"><input id="pl_${x.id}" class="input" type="number" placeholder="${prev}" value="${q[prev]||0}"></div></div>`}).join("");openModal("KPI risorse",b+`<button class="btn" style="width:100%" onclick="savePeopleKpi()">Salva</button>`)}
+function savePeopleKpi(){let p=S.kpi.selected,prev=previousPeriod(p);S.people.forEach(x=>{if(!S.kpi.peopleByPeriod[x.id])S.kpi.peopleByPeriod[x.id]={};let a=document.getElementById("pn_"+x.id),b=document.getElementById("pl_"+x.id);if(a)S.kpi.peopleByPeriod[x.id][p]=+a.value||0;if(b)S.kpi.peopleByPeriod[x.id][prev]=+b.value||0});save();closeModal();render()}
+function render(){let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():kpi();nav();if(t==="kpi"){let[y,m]=(S.kpi.selected||"2026-09").split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
+render();loadRequests();
+</script>
+</body></html>
