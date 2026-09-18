@@ -8,7 +8,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
 .app{max-width:520px;margin:auto;min-height:100vh;padding-bottom:92px}.head{background:#101827;color:white;padding:22px 18px 18px;border-radius:0 0 26px 26px}.eyebrow{font-size:12px;opacity:.65;font-weight:700;letter-spacing:.08em}.title{font-size:29px;font-weight:850;margin-top:3px}.sub{opacity:.72;font-size:14px;margin-top:4px}
-main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:13px;box-shadow:0 4px 18px #1720330c}.section{font-size:19px;font-weight:800;margin:20px 2px 10px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f7f8fb;border-radius:16px;padding:14px}.metric span{color:#747f91;font-size:13px}.metric b{display:block;font-size:23px;margin-top:4px}.btn{background:#2458e8;color:#fff;border:0;border-radius:13px;padding:11px 14px;font-weight:750}.btn.gray{background:#edf0f5;color:#283246}.btn.red{background:#df3c4c}.btn.green{background:#14924c}.input,.select{width:100%;border:1px solid #dce1e9;border-radius:13px;padding:12px;background:#fff;margin:5px 0 9px}.person{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid #edf0f3}.person:last-child{border:0}.avatar{width:43px;height:43px;border-radius:14px;background:#e9edff;color:#3152bf;display:grid;place-items:center;font-weight:800}.pill{font-size:12px;font-weight:750;padding:6px 9px;border-radius:10px;background:#eaf8ef;color:#197447}.pill.gray{background:#eef1f5;color:#687386}.small{font-size:12px;color:#788294}.kpirow{display:grid;grid-template-columns:1.3fr 1fr 1fr .8fr;gap:6px;align-items:center;padding:11px 0;border-bottom:1px solid #edf0f3;font-size:13px}.kpirow b{font-size:14px}.up{color:#15904a;font-weight:750}.down{color:#d73c4b;font-weight:750}.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;height:78px;background:#fff;border-top:1px solid #e4e8ef;display:flex;justify-content:space-around;padding-top:8px;z-index:10}.nav button{border:0;background:none;color:#7b8492;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px}.nav button.active{color:#2458e8;font-weight:800}.ico{font-size:21px}.empty{text-align:center;padding:22px;color:#778194}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:20}.sheet{background:#fff;width:100%;max-width:520px;margin:auto;border-radius:24px 24px 0 0;padding:20px;max-height:88vh;overflow:auto}.modal.open{display:flex}.actions{display:flex;gap:8px}.actions>*{flex:1}
+main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:13px;box-shadow:0 4px 18px #1720330c}.section{font-size:19px;font-weight:800;margin:20px 2px 10px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f7f8fb;border-radius:16px;padding:14px}.metric span{color:#747f91;font-size:13px}.metric b{display:block;font-size:23px;margin-top:4px}.btn{background:#2458e8;color:#fff;border:0;border-radius:13px;padding:11px 14px;font-weight:750}.btn.gray{background:#edf0f5;color:#283246}.btn.red{background:#df3c4c}.btn.green{background:#14924c}.input,.select{width:100%;border:1px solid #dce1e9;border-radius:13px;padding:12px;background:#fff;margin:5px 0 9px}label{display:block;font-size:12px;font-weight:700;color:#687386;margin-top:4px}.person{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid #edf0f3}.person:last-child{border:0}.avatar{width:43px;height:43px;border-radius:14px;background:#e9edff;color:#3152bf;display:grid;place-items:center;font-weight:800}.pill{font-size:12px;font-weight:750;padding:6px 9px;border-radius:10px;background:#eaf8ef;color:#197447}.pill.gray{background:#eef1f5;color:#687386}.small{font-size:12px;color:#788294}.kpirow{display:grid;grid-template-columns:1.3fr 1fr 1fr .8fr;gap:6px;align-items:center;padding:11px 0;border-bottom:1px solid #edf0f3;font-size:13px}.kpirow b{font-size:14px}.up{color:#15904a;font-weight:750}.down{color:#d73c4b;font-weight:750}.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;height:78px;background:#fff;border-top:1px solid #e4e8ef;display:flex;justify-content:space-around;padding-top:8px;z-index:10}.nav button{border:0;background:none;color:#7b8492;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px}.nav button.active{color:#2458e8;font-weight:800}.ico{font-size:21px}.empty{text-align:center;padding:22px;color:#778194}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:20}.sheet{background:#fff;width:100%;max-width:520px;margin:auto;border-radius:24px 24px 0 0;padding:20px;max-height:88vh;overflow:auto}.modal.open{display:flex}.actions{display:flex;gap:8px}.actions>*{flex:1}
 </style>
 </head>
 <body>
@@ -21,8 +21,56 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 const KEY="store_manager_v2";
 let S=JSON.parse(localStorage.getItem(KEY)||"null")||{
  tab:"home", people:[], requests:[], tasks:[], shifts:[],
- kpi:{store:{sales:0,target:0,receipts:0,avg:0,upt:0,conv:0},last:{sales:0,receipts:0,avg:0,upt:0,conv:0},people:{}}
+ kpi:{selected:"2026-09",storeByPeriod:{},peopleByPeriod:{}}
 };
+
+function migrateKpi(){
+  // Migrazione automatica dei vecchi dati v2: settembre 2026 e settembre 2025.
+  if(!S.kpi || !S.kpi.storeByPeriod){
+    const old=S.kpi||{};
+    const store=old.store||{sales:0,receipts:0,avg:0,upt:0,conv:0};
+    const last=old.last||{sales:0,receipts:0,avg:0,upt:0,conv:0};
+    S.kpi={selected:"2026-09",storeByPeriod:{"2026-09":store,"2025-09":last},peopleByPeriod:{}};
+    const oldPeople=old.people||{};
+    Object.keys(oldPeople).forEach(id=>{
+      const q=oldPeople[id]||{now:0,last:0};
+      S.kpi.peopleByPeriod[id]={"2026-09":q.now||0,"2025-09":q.last||0};
+    });
+    save();
+  }
+  if(!S.kpi.selected) S.kpi.selected="2026-09";
+  if(!S.kpi.storeByPeriod) S.kpi.storeByPeriod={};
+  if(!S.kpi.peopleByPeriod) S.kpi.peopleByPeriod={};
+}
+migrateKpi();
+
+function periodLabel(period){
+  const [y,m]=period.split("-").map(Number);
+  return new Intl.DateTimeFormat("it-IT",{month:"long",year:"numeric"}).format(new Date(y,m-1,1))
+    .replace(/^./,c=>c.toUpperCase());
+}
+function previousPeriod(period){
+  const [y,m]=period.split("-").map(Number);
+  return `${y-1}-${String(m).padStart(2,"0")}`;
+}
+function monthOptions(){
+  const months=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+  return months.map((name,i)=>`<option value="${String(i+1).padStart(2,"0")}">${name}</option>`).join("");
+}
+function yearOptions(selected){
+  const y=Number(selected.slice(0,4));
+  let s="";
+  for(let year=2020;year<=2035;year++) s+=`<option value="${year}" ${year===y?"selected":""}>${year}</option>`;
+  return s;
+}
+function ensurePeriod(period){
+  if(!S.kpi.storeByPeriod[period]) S.kpi.storeByPeriod[period]={sales:0,receipts:0,avg:0,upt:0,conv:0};
+  S.people.forEach(p=>{
+    if(!S.kpi.peopleByPeriod[p.id]) S.kpi.peopleByPeriod[p.id]={};
+    if(S.kpi.peopleByPeriod[p.id][period]===undefined) S.kpi.peopleByPeriod[p.id][period]=0;
+  });
+}
+
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
 const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const fmt=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(n)||0);
@@ -83,27 +131,102 @@ function tasks(){
 function addTask(){if(!S.people.filter(p=>p.active).length){alert("Prima inserisci almeno una risorsa.");return}let name=prompt("Nome attività");if(!name)return;let active=S.people.filter(p=>p.active);S.tasks.push({id:Date.now(),name,person:active[S.tasks.length%active.length].name,date:new Date().toLocaleDateString("it-IT"),done:false});save();render()}
 function autoTasks(){let a=S.people.filter(p=>p.active).map(p=>p.name);S.tasks.forEach((t,i)=>t.person=a[i%a.length]);save();render()}
 function kpi(){
- let k=S.kpi.store,l=S.kpi.last, people=S.people.filter(p=>p.active);
- const delta=(a,b)=>b?((a-b)/b*100):null;
- return `<div class="row"><div class="section">KPI</div><select class="select" style="width:160px;margin:0" onchange=""><option>Settembre 2026</option></select></div>
-<div class="card"><b>Negozio · confronto stesso mese anno scorso</b><div class="kpirow"><b>KPI</b><b>2026</b><b>2025</b><b>Var.</b></div>
-${[["Fatturato",fmt(k.sales),fmt(l.sales),delta(k.sales,l.sales)],["Scontrini",k.receipts,l.receipts,delta(k.receipts,l.receipts)],["Scontrino medio",fmt(k.avg),fmt(l.avg),delta(k.avg,l.avg)],["UPT",k.upt,l.upt,delta(k.upt,l.upt)],["Conversione",k.conv+"%",l.conv+"%",delta(k.conv,l.conv)]].map(r=>`<div class="kpirow"><span>${r[0]}</span><b>${r[1]}</b><span>${r[2]}</span><span class="${r[3]>=0?'up':'down'}">${r[3]==null?"—":(r[3]>=0?"+":"")+r[3].toFixed(1)+"%"}</span></div>`).join("")}
-<button class="btn gray" style="margin-top:12px" onclick="editStoreKpi()">Modifica KPI negozio</button></div>
-<div class="card"><b>Personale · confronto individuale</b><div class="kpirow"><b>Risorsa</b><b>2026</b><b>2025</b><b>Var.</b></div>
-${people.length?people.map(p=>{let q=S.kpi.people[p.id]||{now:0,last:0};let d=delta(q.now,q.last);return `<div class="kpirow"><span>${esc(p.name)}</span><b>${fmt(q.now)}</b><span>${fmt(q.last)}</span><span class="${d>=0?'up':'down'}">${d==null?"—":(d>=0?"+":"")+d.toFixed(1)+"%"}</span></div>`}).join(""):`<div class="empty">Inserisci le risorse per vedere i KPI individuali.</div>`}<button class="btn gray" style="margin-top:12px" onclick="editPeopleKpi()">Modifica KPI risorse</button></div>`;
+  migrateKpi();
+  const period=S.kpi.selected||"2026-09";
+  const prev=previousPeriod(period);
+  ensurePeriod(period); ensurePeriod(prev);
+  const k=S.kpi.storeByPeriod[period], l=S.kpi.storeByPeriod[prev];
+  const people=S.people; // anche le archiviate restano nello storico KPI
+  const delta=(a,b)=>b?((a-b)/b*100):null;
+  const rows=[
+    ["Fatturato",fmt(k.sales),fmt(l.sales),delta(k.sales,l.sales)],
+    ["Scontrini",k.receipts,l.receipts,delta(k.receipts,l.receipts)],
+    ["Scontrino medio",fmt(k.avg),fmt(l.avg),delta(k.avg,l.avg)],
+    ["UPT",k.upt,l.upt,delta(k.upt,l.upt)],
+    ["Conversione",k.conv+"%",l.conv+"%",delta(k.conv,l.conv)]
+  ];
+  return `<div class="section">KPI</div>
+  <section class="card">
+    <div class="small">Seleziona il mese e l'anno da analizzare.</div>
+    <div class="grid">
+      <div><label>Mese</label><select id="kpiMonth" class="select" onchange="changeKpiPeriod()">${monthOptions()}</select></div>
+      <div><label>Anno</label><select id="kpiYear" class="select" onchange="changeKpiPeriod()">${yearOptions(period)}</select></div>
+    </div>
+    <div class="small">Confronto automatico con ${periodLabel(prev)}.</div>
+  </section>
+  <div class="card"><b>Negozio · ${periodLabel(period)} vs stesso mese anno precedente</b>
+  <div class="kpirow"><b>KPI</b><b>${period.slice(0,4)}</b><b>${prev.slice(0,4)}</b><b>Var.</b></div>
+  ${rows.map(r=>`<div class="kpirow"><span>${r[0]}</span><b>${r[1]}</b><span>${r[2]}</span><span class="${r[3]>=0?'up':'down'}">${r[3]==null?"—":(r[3]>=0?"+":"")+r[3].toFixed(1)+"%"}</span></div>`).join("")}
+  <button class="btn gray" style="margin-top:12px" onclick="editStoreKpi()">Modifica KPI negozio</button></div>
+  <div class="card"><b>Personale · ${periodLabel(period)} vs stesso mese anno precedente</b>
+  <div class="kpirow"><b>Risorsa</b><b>${period.slice(0,4)}</b><b>${prev.slice(0,4)}</b><b>Var.</b></div>
+  ${people.length?people.map(p=>{
+    const by=S.kpi.peopleByPeriod[p.id]||{};
+    const now=Number(by[period]||0), last=Number(by[prev]||0), d=delta(now,last);
+    return `<div class="kpirow"><span>${esc(p.name)}${p.active?"":" · storico"}</span><b>${fmt(now)}</b><span>${fmt(last)}</span><span class="${d>=0?'up':'down'}">${d==null?"—":(d>=0?"+":"")+d.toFixed(1)+"%"}</span></div>`;
+  }).join(""):`<div class="empty">Inserisci le risorse per vedere i KPI individuali.</div>`}
+  <button class="btn gray" style="margin-top:12px" onclick="editPeopleKpi()">Modifica KPI risorse</button></div>`;
+}
+function changeKpiPeriod(){
+  const m=document.getElementById("kpiMonth").value;
+  const y=document.getElementById("kpiYear").value;
+  S.kpi.selected=`${y}-${m}`;
+  ensurePeriod(S.kpi.selected); ensurePeriod(previousPeriod(S.kpi.selected));
+  save(); render();
 }
 function editStoreKpi(){
- let k=S.kpi.store,l=S.kpi.last;
- openModal("KPI negozio",`<p class="small">Inserisci i dati del mese corrente e dello stesso mese dell'anno scorso.</p>
-${[["Fatturato","sales"],["N. scontrini","receipts"],["Scontrino medio","avg"],["UPT","upt"],["Conversione %","conv"]].map(a=>`<label>${a[0]} 2026</label><input id="n_${a[1]}" class="input" type="number" step="0.01" value="${k[a[1]]}">
-<label>${a[0]} 2025</label><input id="l_${a[1]}" class="input" type="number" step="0.01" value="${l[a[1]]}">`).join("")}<button class="btn" style="width:100%" onclick="saveStoreKpi()">Salva KPI</button>`);
+  migrateKpi();
+  const period=S.kpi.selected||"2026-09", prev=previousPeriod(period);
+  ensurePeriod(period); ensurePeriod(prev);
+  const k=S.kpi.storeByPeriod[period], l=S.kpi.storeByPeriod[prev];
+  openModal("KPI negozio",`<p class="small">Stai modificando ${periodLabel(period)}. Il confronto viene salvato automaticamente sullo stesso mese dell'anno precedente.</p>
+  ${[["Fatturato","sales"],["N. scontrini","receipts"],["Scontrino medio","avg"],["UPT","upt"],["Conversione %","conv"]].map(a=>`<label>${a[0]} ${period.slice(0,4)}</label><input id="n_${a[1]}" class="input" type="number" step="0.01" value="${k[a[1]]||0}">
+  <label>${a[0]} ${prev.slice(0,4)}</label><input id="l_${a[1]}" class="input" type="number" step="0.01" value="${l[a[1]]||0}">`).join("")}
+  <button class="btn" style="width:100%" onclick="saveStoreKpi()">Salva KPI</button>`);
 }
-function saveStoreKpi(){for(let a of ["sales","receipts","avg","upt","conv"]){S.kpi.store[a]=+document.getElementById("n_"+a).value||0;S.kpi.last[a]=+document.getElementById("l_"+a).value||0}save();closeModal();render()}
+function saveStoreKpi(){
+  const period=S.kpi.selected||"2026-09", prev=previousPeriod(period);
+  ensurePeriod(period); ensurePeriod(prev);
+  for(const a of ["sales","receipts","avg","upt","conv"]){
+    S.kpi.storeByPeriod[period][a]=+document.getElementById("n_"+a).value||0;
+    S.kpi.storeByPeriod[prev][a]=+document.getElementById("l_"+a).value||0;
+  }
+  save(); closeModal(); render();
+}
 function editPeopleKpi(){
- let rows=S.people.map(p=>{let q=S.kpi.people[p.id]||{now:0,last:0};return `<div style="padding:10px 0;border-bottom:1px solid #eee"><b>${esc(p.name)}</b><div class="grid"><input id="pn_${p.id}" class="input" type="number" step="0.01" value="${q.now}" placeholder="2026"><input id="pl_${p.id}" class="input" type="number" step="0.01" value="${q.last}" placeholder="2025"></div></div>`}).join("");
- openModal("KPI risorse",`<div class="small">Per ora confrontiamo il fatturato individuale. Gli altri KPI possono essere aggiunti allo stesso storico.</div>${rows||'<div class="empty">Nessuna risorsa.</div>'}<button class="btn" style="width:100%" onclick="savePeopleKpi()">Salva KPI risorse</button>`);
+  const period=S.kpi.selected||"2026-09", prev=previousPeriod(period);
+  ensurePeriod(period); ensurePeriod(prev);
+  const rows=S.people.map(p=>{
+    const by=S.kpi.peopleByPeriod[p.id]||{};
+    return `<div style="padding:10px 0;border-bottom:1px solid #eee"><b>${esc(p.name)}</b>
+      <div class="grid">
+        <div><label>${period.slice(0,4)}</label><input id="pn_${p.id}" class="input" type="number" step="0.01" value="${by[period]||0}"></div>
+        <div><label>${prev.slice(0,4)}</label><input id="pl_${p.id}" class="input" type="number" step="0.01" value="${by[prev]||0}"></div>
+      </div>
+    </div>`;
+  }).join("");
+  openModal("KPI risorse",`<div class="small">Fatturato individuale per ${periodLabel(period)}, con confronto allo stesso mese dell'anno precedente.</div>${rows||'<div class="empty">Nessuna risorsa.</div>'}<button class="btn" style="width:100%" onclick="savePeopleKpi()">Salva KPI risorse</button>`);
 }
-function savePeopleKpi(){S.people.forEach(p=>S.kpi.people[p.id]={now:+document.getElementById("pn_"+p.id).value||0,last:+document.getElementById("pl_"+p.id).value||0});save();closeModal();render()}
-function render(){document.getElementById("main").innerHTML=S.tab=="home"?home():S.tab=="planning"?planning():S.tab=="people"?people():S.tab=="tasks"?tasks():kpi();nav()}
+function savePeopleKpi(){
+  const period=S.kpi.selected||"2026-09", prev=previousPeriod(period);
+  S.people.forEach(p=>{
+    if(!S.kpi.peopleByPeriod[p.id]) S.kpi.peopleByPeriod[p.id]={};
+    const n=document.getElementById("pn_"+p.id), l=document.getElementById("pl_"+p.id);
+    if(n) S.kpi.peopleByPeriod[p.id][period]=+n.value||0;
+    if(l) S.kpi.peopleByPeriod[p.id][prev]=+l.value||0;
+  });
+  save(); closeModal(); render();
+}
+function render(){
+  migrateKpi();
+  document.getElementById("main").innerHTML=S.tab=="home"?home():S.tab=="planning"?planning():S.tab=="people"?people():S.tab=="tasks"?tasks():kpi();
+  nav();
+  if(S.tab=="kpi"){
+    const [y,m]=(S.kpi.selected||"2026-09").split("-");
+    const ms=document.getElementById("kpiMonth"), ys=document.getElementById("kpiYear");
+    if(ms) ms.value=m;
+    if(ys) ys.value=y;
+  }
+}
 render();
 </script></body></html>
