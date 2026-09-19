@@ -60,9 +60,25 @@ function closeModal(){document.getElementById("modal").classList.remove("open")}
 function nav(){let a=[["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"]];document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("")}
 let AUTH=null;
 let PROFILE=null;
-const authHeaders=()=>({apikey:SUPABASE_KEY,Authorization:"Bearer "+(AUTH?.access_token||SUPABASE_KEY),"Content-Type":"application/json"});
+const authHeaders=()=>({apikey:SUPABASE_KEY,Authorization:"Bearer "+(AUTH?.access_token||""),"Content-Type":"application/json"});
 async function sb(path,opt={}){const headers={...authHeaders(),Prefer:opt.prefer||"return=representation",...(opt.headers||{})};const r=await fetch(SUPABASE_URL+"/rest/v1/"+path,{...opt,headers});if(!r.ok){let t=await r.text();throw new Error(t||r.status)}return r.status===204?null:r.json()}
 async function authToken(email,password){const r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email,password})});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(data.error_description||data.msg||data.message||"Email o password non corretti.");return data}
+function jwtExp(token){try{return JSON.parse(atob(token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).exp||0}catch{return 0}}
+async function refreshAuthToken(force=false){
+  if(!AUTH?.refresh_token)return false;
+  const exp=jwtExp(AUTH.access_token);
+  if(!force && exp && exp*1000-Date.now()>120000)return true;
+  const r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:AUTH.refresh_token})});
+  let data={};try{data=await r.json()}catch{}
+  if(!r.ok||!data.access_token)return false;
+  AUTH={...AUTH,...data,user:AUTH.user};
+  localStorage.setItem("sm_auth",JSON.stringify(AUTH));
+  return true;
+}
+async function validAccessToken(){
+  if(!AUTH?.access_token)return null;
+  return await refreshAuthToken(false)?AUTH.access_token:null;
+}
 async function fetchProfile(){if(!AUTH?.user?.id)return null;const rows=await sb("profili?id=eq."+encodeURIComponent(AUTH.user.id)+"&select=ruolo,dipendente_id");return rows?.[0]||null}
 function showAuthError(msg){const e=document.getElementById("authError");e.textContent=msg;e.style.display="block"}
 function setAuthLoading(v){document.getElementById("authLoading").style.display=v?"block":"none";document.getElementById("authLogin").disabled=v}
@@ -80,7 +96,30 @@ async function createRequest(id){let p=S.people.find(x=>x.id===id);if(!p){alert(
 async function updateRequest(id,status){try{await sb("Richieste?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({stato:status})});await loadRequests()}catch(e){alert("Impossibile aggiornare la richiesta.\n\n"+(e.message||e))}}
 function requestForm(){let a=S.people.filter(p=>p.active);openModal("Nuova richiesta giorno libero",`<label>Risorsa</label><select id="rqPerson" class="select">${a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><label>Dal</label><input id="rqStart" class="input" type="date" value="${today()}"><label>Al</label><input id="rqEnd" class="input" type="date" value="${today()}"><label>Nota / motivazione</label><textarea id="rqNote" class="input" rows="3" placeholder="Facoltativa"></textarea><button class="btn" style="width:100%" onclick="createRequest(+document.getElementById('rqPerson').value)">Invia richiesta</button>`)}
 function home(){let pending=S.requests.filter(r=>r.status==="In attesa").length;return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 16px">Panoramica negozio</h2><div class="grid"><div class="metric"><span>Risorse attive</span><b>${S.people.filter(p=>p.active).length}</b></div><div class="metric"><span>Turni inseriti</span><b>${S.shifts.length}</b></div><div class="metric"><span>Attività</span><b>${S.tasks.length}</b></div><div class="metric"><span>Richieste</span><b>${pending}</b></div></div></section><div class="section">Accessi rapidi</div><section class="card"><div class="actions"><button class="btn" onclick="S.tab='people';render()">+ Risorsa</button><button class="btn gray" onclick="S.tab='planning';render()">+ Turno</button><button class="btn gray" onclick="S.tab='requests';loadRequests()">Richieste ${pending?`(${pending})`:""}</button></div></section><section class="card"><div class="${S.online?"ok":"danger"}"><b>${S.online?"☁️ Collegamento online attivo":"⚠️ Collegamento online non disponibile"}</b><div class="small" style="margin-top:5px">${S.online?"Le richieste vengono salvate in Supabase.":"Le richieste online non sono raggiungibili in questo momento."}</div></div></section>`}
-async function sendInvite(id){let p=S.people.find(x=>x.id===id);if(!p)return;if(!p.email){editPerson(id,true);return}if(!AUTH?.access_token)return alert("Sessione Manager non disponibile. Effettua di nuovo l'accesso.");try{p.inviteStatus="Invio in corso…";p.inviteError="";save();render();const r=await fetch(SUPABASE_URL+"/functions/v1/invita-utente",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+AUTH.access_token,"Content-Type":"application/json"},body:JSON.stringify({email:p.email,dipendente_id:p.id,nome:p.name})});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(data.error||data.message||"Invio invito non riuscito.");p.inviteStatus="Invito inviato";p.inviteError="";p.invitedAt=new Date().toISOString();save();render();alert("Invito inviato correttamente a "+p.email)}catch(e){p.inviteStatus="Invio non riuscito";p.inviteError=e.message||String(e);save();render();alert("Impossibile inviare l'invito.\n\n"+p.inviteError)}}
+async function sendInvite(id){
+  let p=S.people.find(x=>x.id===id);if(!p)return;
+  if(!p.email){editPerson(id,true);return}
+  let token=await validAccessToken();
+  if(!token){alert("Sessione Manager scaduta. Effettua di nuovo l'accesso.");await logout();return}
+  try{
+    p.inviteStatus="Invio in corso…";p.inviteError="";save();render();
+    let r=await fetch(SUPABASE_URL+"/functions/v1/invita-utente",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({email:p.email,dipendente_id:p.id,nome:p.name})});
+    let data={};try{data=await r.json()}catch{}
+    if(!r.ok && r.status===401){
+      if(await refreshAuthToken(true)){
+        token=AUTH.access_token;
+        r=await fetch(SUPABASE_URL+"/functions/v1/invita-utente",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({email:p.email,dipendente_id:p.id,nome:p.name})});
+        data={};try{data=await r.json()}catch{}
+      }
+    }
+    if(!r.ok)throw new Error(data.error||data.message||"Invio invito non riuscito.");
+    p.inviteStatus="Invito inviato";p.inviteError="";p.invitedAt=new Date().toISOString();save();render();
+    alert("Invito inviato correttamente a "+p.email)
+  }catch(e){
+    p.inviteStatus="Invio non riuscito";p.inviteError=e.message||String(e);save();render();
+    alert("Impossibile inviare l'invito.\n\n"+p.inviteError)
+  }
+}
 function people(){return `<div class="row"><div class="section">Personale</div><button class="btn" onclick="editPerson()">+ Aggiungi</button></div><section class="card">${S.people.length?S.people.map(p=>`<div class="person"><div class="avatar">${esc((p.name||"?")[0])}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="small">${esc(p.role||"Risorsa")} · ingresso ${esc(p.in||"—")}${p.out?" · uscita "+esc(p.out):""}</div>${p.email?`<div class="small">✉ ${esc(p.email)}</div>`:""}${p.inviteStatus?`<div class="invite ${p.inviteStatus==="Invito inviato"?"ok":p.inviteStatus==="Invio in corso…"?"pending":"err"}">${esc(p.inviteStatus)}</div>`:""}${p.inviteError?`<div class="small" style="color:#c42e3f">${esc(p.inviteError)}</div>`:""}</div><span class="pill ${p.active?"":"gray"}">${p.active?"Attiva":"Archiviata"}</span><button class="btn gray" onclick="editPerson(${p.id})">Modifica</button>${p.email?`<button class="btn green" onclick="sendInvite(${p.id})">${p.inviteStatus==="Invito inviato"?"Reinvia invito":"Invia invito"}</button>`:""}</div>`).join(""):`<div class="empty">Nessuna risorsa inserita.</div>`}</section>`}
 function editPerson(id,focusEmail=false){let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}"><label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}"><label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa"><label>Data uscita</label><input id="po" class="input" value="${esc(p.out)}"><label>Email</label><input id="pe" class="input" type="email" autocomplete="email" value="${esc(p.email||"")}" placeholder="email della risorsa"><div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div><button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>${p.email&&id?`<button class="btn green" style="width:100%;margin-top:8px" onclick="savePerson(${p.id},true)">Salva e invia invito</button>`:""}${p.inviteStatus?`<div class="small" style="margin-top:10px">Stato invito: ${esc(p.inviteStatus)}</div>`:""}`);if(focusEmail)setTimeout(()=>document.getElementById("pe")?.focus(),100)}
 async function savePerson(id,sendAfterSave=false){let p=S.people.find(x=>x.id===id);if(!p){p={id,name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};S.people.push(p)}p.name=document.getElementById("pn").value.trim();p.role=document.getElementById("pr").value.trim();p.in=document.getElementById("pi").value.trim();p.out=document.getElementById("po").value.trim();p.email=document.getElementById("pe").value.trim();p.active=document.getElementById("pa").checked;if(!p.name)return alert("Inserisci il nome.");if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return alert("Controlla l'indirizzo email.");save();closeModal();render();if(sendAfterSave)await sendInvite(p.id)}
