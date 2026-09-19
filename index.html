@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827">
-<title>Store Manager</title>
+<title>Gestionale Replay Barberino</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
 .app{max-width:520px;margin:auto;min-height:100vh;padding-bottom:92px}.head{background:#101827;color:white;padding:20px 18px 18px;border-radius:0 0 26px 26px}.eyebrow{font-size:12px;opacity:.65;font-weight:700;letter-spacing:.08em}.title{font-size:28px;font-weight:850;margin-top:3px}.sub{opacity:.72;font-size:14px;margin-top:4px}
@@ -16,9 +16,9 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 <body>
 <div id="inviteGate" class="auth-gate" style="display:none">
   <div class="auth-card">
-    <div class="auth-brand">STORE MANAGER</div>
+    <div class="auth-brand">GESTIONALE REPLAY BARBERINO</div>
     <div class="auth-title">Completa il tuo accesso</div>
-    <div class="auth-sub">Imposta la password scelta da te per accedere a Store Manager.</div>
+    <div class="auth-sub">Imposta la password scelta da te per accedere a Gestionale Replay Barberino.</div>
     <div id="inviteError" class="auth-error"></div>
     <label>Nuova password</label>
     <input id="invitePassword" class="input" type="password" autocomplete="new-password" placeholder="Scegli una password">
@@ -30,7 +30,7 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 </div>
 <div id="authGate" class="auth-gate">
   <div class="auth-card">
-    <div class="auth-brand">STORE MANAGER</div>
+    <div class="auth-brand">GESTIONALE REPLAY BARBERINO</div>
     <div class="auth-title">Accesso</div>
     <div class="auth-sub">Accedi con il tuo account per entrare nel gestionale.</div>
     <div id="authError" class="auth-error"></div>
@@ -43,7 +43,7 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
   </div>
 </div>
 <div class="app">
-<header class="head" style="position:relative"><button class="logout-btn" onclick="logout()">Esci</button><div class="eyebrow">STORE MANAGER</div><div class="title">Gestione Personale</div><div class="sub">Planning · Attività · KPI · Richieste · Accessi v3</div></header>
+<header class="head" style="position:relative"><button class="logout-btn" onclick="logout()">Esci</button><div class="eyebrow">GESTIONALE REPLAY BARBERINO</div><div class="title">Gestione Personale</div><div class="sub">Planning · Attività · KPI · Richieste · Accessi v3</div></header>
 <main id="main"></main><nav id="nav" class="nav"></nav>
 </div>
 <div id="modal" class="modal"><div class="sheet" id="sheet"></div></div>
@@ -164,7 +164,7 @@ function resourceTasks(){
 function home(){
   if(!isManager()){
     const me=myPerson(), sh=resourceShifts(), ta=resourceTasks(), rq=S.requests.filter(r=>String(r.personId)===myPersonId()), pending=rq.filter(r=>r.status==="In attesa").length;
-    return `<section class="card"><div class="small">IL MIO STORE MANAGER</div><h2 style="margin:6px 0 16px">${esc(me?.name||"Risorsa")}</h2>
+    return `<section class="card"><div class="small">RISORSA</div><h2 style="margin:6px 0 16px">${esc(me?.name||"Risorsa")}</h2>
       <div class="grid"><div class="metric"><span>I miei turni</span><b>${sh.length}</b></div><div class="metric"><span>Le mie attività</span><b>${ta.length}</b></div><div class="metric"><span>Richieste</span><b>${rq.length}</b></div><div class="metric"><span>In attesa</span><b>${pending}</b></div></div></section>
       <section class="card notice"><b>Accesso risorsa</b><div class="small" style="margin-top:6px">Puoi vedere e gestire esclusivamente i tuoi dati.</div></section>`;
   }
@@ -301,7 +301,7 @@ async function completeInvite(){
     let ud={};try{ud=await ur.json()}catch{} if(!ur.ok)throw new Error(ud.msg||ud.message||"Non è stato possibile impostare la password.");
     AUTH={access_token:tok.access_token,refresh_token:tok.refresh_token,user:ud};localStorage.setItem("sm_auth",JSON.stringify(AUTH));
     try{await fetch(SUPABASE_URL+"/rest/v1/profili",{method:"POST",headers:{...authHeaders(),Prefer:"return=minimal"},body:JSON.stringify({id:ud.id,ruolo:"ragazzo",dipendente_id:ud.user_metadata?.dipendente_id??null})})}catch(e){}
-    history.replaceState(null,"",location.pathname+location.search);document.getElementById("inviteGate").style.display="none";PROFILE=await fetchProfile();if(!PROFILE)PROFILE={ruolo:"ragazzo",dipendente_id:ud.user_metadata?.dipendente_id??null};bootApp();alert("Password impostata correttamente. Benvenuto in Store Manager.");
+    history.replaceState(null,"",location.pathname+location.search);document.getElementById("inviteGate").style.display="none";PROFILE=await fetchProfile();if(!PROFILE)PROFILE={ruolo:"ragazzo",dipendente_id:ud.user_metadata?.dipendente_id??null};bootApp();alert("Password impostata correttamente. Benvenuto in Gestionale Replay Barberino.");
   }catch(e){showInviteError(e.message||"Errore durante l'attivazione dell'account.");}finally{setInviteLoading(false)}
 }
 function bootApp(){if(!isManager())S.tab="home";render();loadRequests();loadKpis();loadHistory();}
