@@ -51,8 +51,9 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 const SUPABASE_URL="https://mgklvroxfowgqljehquz.supabase.co";
 const SUPABASE_KEY="sb_publishable_Jro2VCtNW_GFYE6w0hfUYw_SBNsvb8M";
 const KEY="store_manager_v5";
-let S=JSON.parse(localStorage.getItem(KEY)||"null")||{tab:"home",people:[],requests:[],tasks:[],shifts:[],kpi:{selected:"2026-09",storeByPeriod:{},peopleByPeriod:{},daily:{},history:{}},online:true};
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||{tab:"home",people:[],requests:[],tasks:[],shifts:[],planningWeek:null,kpi:{selected:"2026-09",storeByPeriod:{},peopleByPeriod:{},daily:{},history:{}},online:true};
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
+if(!S.planningWeek)S.planningWeek=dateLocal?dateLocal():new Date().toISOString().slice(0,10);
 const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const fmt=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(n)||0);
 const today=()=>new Date().toISOString().slice(0,10);
@@ -83,7 +84,7 @@ function setAuthLoading(v){document.getElementById("authLoading").style.display=
 async function login(){const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value;if(!email||!password){showAuthError("Inserisci email e password.");return}document.getElementById("authError").style.display="none";setAuthLoading(true);try{AUTH=await authToken(email,password);localStorage.setItem("sm_auth",JSON.stringify(AUTH));PROFILE=await fetchProfile();if(!PROFILE)throw new Error("Account creato, ma non è ancora associato a un ruolo Store Manager.");document.getElementById("authGate").style.display="none";bootApp()}catch(e){AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");showAuthError(e.message||"Accesso non riuscito.")}finally{setAuthLoading(false)}}
 async function logout(){try{if(AUTH?.access_token)await fetch(SUPABASE_URL+"/auth/v1/logout",{method:"POST",headers:authHeaders()})}catch{}AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");document.getElementById("authGate").style.display="grid";document.getElementById("authPassword").value=""}
 async function restoreAuth(){const raw=localStorage.getItem("sm_auth");if(!raw)return false;try{AUTH=JSON.parse(raw);const r=await fetch(SUPABASE_URL+"/auth/v1/user",{headers:authHeaders()});if(!r.ok)throw new Error("sessione scaduta");AUTH.user=await r.json();localStorage.setItem("sm_auth",JSON.stringify(AUTH));PROFILE=await fetchProfile();return !!PROFILE}catch{localStorage.removeItem("sm_auth");AUTH=null;PROFILE=null;return false}}
-function bootApp(){render();loadRequests();loadKpis();loadHistory()}
+function bootApp(){render();loadRequests();loadKpis();loadHistory();loadShifts()}
 async function bootAuth(){document.getElementById("authGate").style.display="grid";if(await restoreAuth()){document.getElementById("authGate").style.display="none";bootApp()}}
 async function loadRequests(){try{let rows=await sb("Richieste?select=*&order=created_at.desc");S.requests=rows.map(r=>({id:r.id,personId:r.dipendente_id,type:r.tipo,start:r.data_richiesta,end:r.data_richiesta_fine,note:r.note,status:r.stato,created:r.created_at}));S.online=true;save();render()}catch(e){S.online=false;save();render()}}
 async function loadKpis(){try{let rows=await sb('KpiGiornalieri?select=*&order=data.asc');S.kpi.daily={};rows.forEach(r=>{let key=String(r.dipendente_id)+'_'+r.data;S.kpi.daily[key]={id:r.id,personId:r.dipendente_id,date:r.data,sales:Number(r.fatturato)||0,receipts:Number(r.scontrini)||0,pieces:Number(r.pezzi_venduti)||0,updatedAt:r.created_at||null}});S.online=true;save();render()}catch(e){console.warn('KPI online non caricati',e);S.online=false;save();render()}}
@@ -213,39 +214,53 @@ function nav(){
   document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("");
 }
 
+function weekMonday(dateStr){
+  let d=new Date((dateStr||dateLocal())+"T12:00:00"),day=d.getDay()||7;
+  d.setDate(d.getDate()-day+1); return dateLocal(d);
+}
+function addDays(dateStr,n){let d=new Date(dateStr+"T12:00:00");d.setDate(d.getDate()+n);return dateLocal(d)}
+function shiftWeekDates(){let m=weekMonday(S.planningWeek||dateLocal());return Array.from({length:7},(_,i)=>addDays(m,i))}
+function shiftWeekLabel(){let ds=shiftWeekDates(),a=new Date(ds[0]+"T12:00:00"),b=new Date(ds[6]+"T12:00:00");return `${a.toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit"})}–${b.toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric"})}`}
 function resourceShifts(){
-  const me=myPerson();
-  return me ? S.shifts.filter(x=>String(x.person)===String(me.name)) : [];
+  const me=myPerson(); return me ? S.shifts.filter(x=>String(x.personId??"")===String(me.id)||(!x.personId&&String(x.person)===String(me.name))) : [];
 }
-function resourceTasks(){
-  const me=myPerson();
-  return me ? S.tasks.filter(x=>String(x.person)===String(me.name)) : [];
+function shiftsForDate(date){return S.shifts.filter(x=>x.date===date)}
+async function loadShifts(){
+  try{
+    const rows=await sb('Turni?select=*&order=data.asc,entrata.asc');
+    S.shifts=rows.map(r=>({id:r.id,personId:r.dipendente_id,person:(S.people.find(p=>String(p.id)===String(r.dipendente_id))||{}).name||r.nome_risorsa||"",date:r.data,start:r.entrata,end:r.uscita,breakStart:r.pausa_inizio||"",breakEnd:r.pausa_fine||""}));
+    S.online=true;save();render();
+  }catch(e){console.warn("Planning online non caricato",e);S.online=false;save();render();}
 }
-
-function home(){
-  if(!isManager()){
-    const me=myPerson(), sh=resourceShifts(), ta=resourceTasks(), rq=S.requests.filter(r=>String(r.personId)===myPersonId()), pending=rq.filter(r=>r.status==="In attesa").length;
-    return `<section class="card"><div class="small">RISORSA</div><h2 style="margin:6px 0 16px">${esc(me?.name||"Risorsa")}</h2>
-      <div class="grid"><div class="metric"><span>I miei turni</span><b>${sh.length}</b></div><div class="metric"><span>Le mie attività</span><b>${ta.length}</b></div><div class="metric"><span>Richieste</span><b>${rq.length}</b></div><div class="metric"><span>In attesa</span><b>${pending}</b></div></div></section>
-      <section class="card notice"><b>Accesso risorsa</b><div class="small" style="margin-top:6px">Puoi vedere e gestire esclusivamente i tuoi dati.</div></section>`;
-  }
-  const pending=S.requests.filter(r=>r.status==="In attesa").length;
-  return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 16px">Panoramica negozio</h2><div class="grid"><div class="metric"><span>Risorse attive</span><b>${S.people.filter(p=>p.active).length}</b></div><div class="metric"><span>Turni inseriti</span><b>${S.shifts.length}</b></div><div class="metric"><span>Attività</span><b>${S.tasks.length}</b></div><div class="metric"><span>Richieste</span><b>${pending}</b></div></div></section><div class="section">Accessi rapidi</div><section class="card"><div class="actions"><button class="btn" onclick="S.tab='people';render()">+ Risorsa</button><button class="btn gray" onclick="S.tab='planning';render()">+ Turno</button><button class="btn gray" onclick="S.tab='requests';loadRequests()">Richieste ${pending?`(${pending})`:""}</button></div></section><section class="card"><div class="${S.online?"ok":"danger"}"><b>${S.online?"☁️ Collegamento online attivo":"⚠️ Collegamento online non disponibile"}</b><div class="small" style="margin-top:5px">${S.online?"Le richieste vengono salvate in Supabase.":"Le richieste online non sono raggiungibili in questo momento."}</div></div></section>`;
-}
-
 function planning(){
+  const ds=shiftWeekDates(), names=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
   if(!isManager()){
-    const rows=resourceShifts();
-    return `<div class="section">I miei turni</div><section class="card">${rows.length?rows.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.date)}</b><div class="small">${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><span class="pill">Turno</span></div>`).join(""):`<div class="empty">Nessun turno assegnato.</div>`}</section>`;
+    const me=myPerson(),rows=resourceShifts();
+    return `<div class="row"><div><div class="section" style="margin-bottom:2px">I miei turni</div><div class="small">Settimana ${shiftWeekLabel()}</div></div><div class="actions"><button class="btn gray" onclick="changePlanningWeek(-7)">‹</button><button class="btn gray" onclick="changePlanningWeek(7)">›</button></div></div>
+    <section class="card">${ds.map((d,i)=>{let x=rows.find(r=>r.date===d);return `<div class="task"><div class="avatar" style="width:38px;height:38px;border-radius:12px">${names[i]}</div><div style="flex:1"><b>${new Date(d+"T12:00:00").toLocaleDateString("it-IT",{weekday:"long",day:"2-digit",month:"2-digit"})}</b><div class="small">${x?`${x.start}–${x.end} · pausa ${x.breakStart||"—"}${x.breakEnd?`–${x.breakEnd}`:""}`:"Riposo"}</div></div><span class="pill ${x?"":"gray"}">${x?"Turno":"Riposo"}</span></div>`}).join("")}</section>`;
   }
-  return `<div class="row"><div class="section">Planning</div><button class="btn" onclick="editShift()">+ Turno</button></div><section class="card">${S.shifts.length?S.shifts.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.person)}</b><div class="small">${esc(x.date)} · ${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessun turno inserito.</div>`}</section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni inseriti.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`;
+  return `<div class="row"><div><div class="section" style="margin-bottom:2px">Planning</div><div class="small">Settimana ${shiftWeekLabel()}</div></div><div class="actions"><button class="btn gray" onclick="changePlanningWeek(-7)">‹</button><button class="btn gray" onclick="changePlanningWeek(7)">›</button><button class="btn" onclick="editShift()">+ Turno</button></div></div>
+  <section class="card">${ds.map((d,i)=>{let day=shiftsForDate(d);return `<div style="padding:8px 0;border-bottom:1px solid #edf0f3"><div class="row"><b>${names[i]} ${new Date(d+"T12:00:00").toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit"})}</b><span class="pill gray">${day.length} turni</span></div>${day.length?day.map(x=>`<div class="task"><div class="avatar" style="width:38px;height:38px;border-radius:12px">${esc((x.person||"?").split(" ").map(v=>v[0]).slice(0,2).join(""))}</div><div style="flex:1"><b>${esc(x.person)}</b><div class="small">${x.start}–${x.end} · pausa ${x.breakStart||"—"}${x.breakEnd?`–${x.breakEnd}`:""}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty" style="padding:10px">Nessun turno</div>`}</div>`}).join("")}</section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni della settimana.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`;
 }
+function changePlanningWeek(delta){S.planningWeek=addDays(weekMonday(S.planningWeek||dateLocal()),delta);save();render()}
 function editShift(id){
-  if(!isManager()) return alert("Solo il Manager può modificare il planning.");
-  let x=S.shifts.find(a=>a.id===id)||{id:Date.now(),person:"",date:today(),start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};
-  openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option ${p.name==x.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div></div><button class="btn" style="width:100%" onclick="saveShift(${x.id})">Salva turno</button>`);
+  if(!isManager())return alert("Solo il Manager può modificare il planning.");
+  let x=S.shifts.find(a=>String(a.id)===String(id))||{id:null,personId:"",date:S.planningWeek||dateLocal(),start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};
+  openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option value="${p.id}" ${String(p.id)===String(x.personId) || (!x.personId&&p.name===x.person)?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart||""}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd||""}"></div></div><button class="btn" style="width:100%" onclick="saveShift(${id?JSON.stringify(id):'null'})">Salva turno</button>`);
 }
-function saveShift(id){ if(!isManager())return alert("Solo il Manager può modificare il planning."); let x=S.shifts.find(a=>a.id===id);if(!x){x={id};S.shifts.push(x)}x.person=document.getElementById("sp").value;x.date=document.getElementById("sd").value;x.start=document.getElementById("ss").value;x.end=document.getElementById("se").value;x.breakStart=document.getElementById("bs").value;x.breakEnd=document.getElementById("be").value;save();closeModal();render(); }
+async function saveShift(id){
+  if(!isManager())return alert("Solo il Manager può modificare il planning.");
+  const pid=+document.getElementById("sp").value,date=document.getElementById("sd").value,start=document.getElementById("ss").value,end=document.getElementById("se").value,bs=document.getElementById("bs").value,be=document.getElementById("be").value;
+  if(!pid||!date||!start||!end)return alert("Completa risorsa, giorno, entrata e uscita.");
+  const payload={dipendente_id:pid,data:date,entrata:start,uscita:end,pausa_inizio:bs||null,pausa_fine:be||null};
+  try{
+    if(id!=null){await sb('Turni?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(payload),prefer:'return=minimal'});}
+    else{await sb('Turni',{method:'POST',body:JSON.stringify(payload),prefer:'return=minimal'});}
+    closeModal();await loadShifts();
+  }catch(e){alert("Supabase non ha accettato il turno.
+
+"+(e.message||e));}
+}
 
 function tasks(){
   if(!isManager()){
