@@ -61,7 +61,7 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
   </div>
 </div>
 <div class="app">
-<header class="head" style="position:relative"><button class="logout-btn" onclick="logout()">Esci</button><div class="eyebrow">GESTIONALE REPLAY BARBERINO</div><div class="title">Gestionale Replay Barberino</div><div class="sub">Planning · Attività · KPI · Richieste · Accessi v3</div></header>
+<header class="head" style="position:relative"><button id="logoutBtn" type="button" class="logout-btn">Esci</button><div class="eyebrow">GESTIONALE REPLAY BARBERINO</div><div class="title">Gestionale Replay Barberino</div><div class="sub">Planning · Attività · KPI · Richieste · Accessi v3</div></header>
 <main id="main"></main><nav id="nav" class="nav"></nav>
 </div>
 <div id="modal" class="modal"><div class="sheet" id="sheet"></div></div>
@@ -100,12 +100,32 @@ function showAuthError(msg){const e=document.getElementById("authError");e.textC
 function setAuthLoading(v){document.getElementById("authLoading").style.display=v?"block":"none";document.getElementById("authLogin").disabled=v}
 async function login(){const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value;if(!email||!password){showAuthError("Inserisci email e password.");return}document.getElementById("authError").style.display="none";setAuthLoading(true);try{AUTH=await authToken(email,password);localStorage.setItem("sm_auth",JSON.stringify(AUTH));PROFILE=await fetchProfile();if(!PROFILE)throw new Error("Account creato, ma non è ancora associato a un ruolo Store Manager.");document.getElementById("authGate").style.display="none";bootApp()}catch(e){AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");showAuthError(e.message||"Accesso non riuscito.")}finally{setAuthLoading(false)}}
 function logout(){
-  const token=AUTH?.access_token;
-  AUTH=null; PROFILE=null;
-  localStorage.removeItem("sm_auth");
-  try{if(token)fetch(SUPABASE_URL+"/auth/v1/logout",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json"}}).catch(()=>{});}catch(e){}
-  location.reload();
+  try{
+    AUTH=null;
+    PROFILE=null;
+    localStorage.removeItem("sm_auth");
+    const gate=document.getElementById("authGate");
+    const main=document.getElementById("main");
+    const navEl=document.getElementById("nav");
+    if(main) main.innerHTML="";
+    if(navEl) navEl.innerHTML="";
+    if(gate) gate.style.display="grid";
+    const email=document.getElementById("authEmail");
+    const pass=document.getElementById("authPassword");
+    if(email) email.value="";
+    if(pass) pass.value="";
+    const err=document.getElementById("authError");
+    if(err) err.style.display="none";
+    // Chiude anche l'eventuale modal aperto.
+    const modal=document.getElementById("modal");
+    if(modal) modal.classList.remove("open");
+  }catch(e){
+    console.warn("Logout UI error",e);
+  }
+  // La sessione locale è già cancellata: ricarica la pagina senza attendere Supabase.
+  setTimeout(()=>location.replace(location.pathname+location.search+"?logout="+Date.now()),20);
 }
+
 
 async function restoreAuth(){const raw=localStorage.getItem("sm_auth");if(!raw)return false;try{AUTH=JSON.parse(raw);const r=await fetch(SUPABASE_URL+"/auth/v1/user",{headers:authHeaders()});if(!r.ok)throw new Error("sessione scaduta");AUTH.user=await r.json();localStorage.setItem("sm_auth",JSON.stringify(AUTH));PROFILE=await fetchProfile();return !!PROFILE}catch{localStorage.removeItem("sm_auth");AUTH=null;PROFILE=null;return false}}
 function purgeInactivePeople(){
@@ -707,7 +727,7 @@ function kpiEntry(pid,date){
   let a=isManager()?S.people.filter(p=>p.active):[myPerson()].filter(Boolean),d=date||dateLocal(),r=pid?S.kpi.daily?.[String(pid)+"_"+d]:null;
   openModal(r?"Modifica KPI giornalieri":"Inserimento KPI giornalieri",`<div class="notice">Inserisci o correggi i dati della giornata. ATV e UPT vengono calcolati automaticamente.</div><label>Risorsa</label><select id="kePerson" class="select" ${!isManager()?'disabled':''}>${a.map(p=>`<option value="${p.id}" ${String(p.id)===String(pid||a[0]?.id)?'selected':''}>${esc(p.name)}</option>`).join('')}</select><label>Data</label><input id="keDate" class="input" type="date" value="${d}"><label>Fatturato</label><input id="keSales" class="input" type="number" step="0.01" value="${r?.sales??''}" placeholder="0,00"><label>Scontrini</label><input id="keReceipts" class="input" type="number" min="0" step="1" value="${r?.receipts??''}" placeholder="0"><label>Pezzi venduti</label><input id="kePieces" class="input" type="number" min="0" step="1" value="${r?.pieces??''}" placeholder="0"><button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?'Salva modifiche':'Salva KPI'}</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:''}`);
 }
-function render(){if(!allowedTab(S.tab))S.tab="home";let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():kpi();nav();if(t==="kpi"&&isManager()){let[y,m]=(S.kpi.selected||"2026-09").split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
+function render(){purgeInactivePeople();if(!allowedTab(S.tab))S.tab="home";let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():kpi();nav();if(t==="kpi"&&isManager()){let[y,m]=(S.kpi.selected||"2026-09").split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
 function showInviteError(msg){const e=document.getElementById("inviteError");e.textContent=msg;e.style.display="block"}
 function setInviteLoading(v){document.getElementById("inviteLoading").style.display=v?"block":"none";document.getElementById("inviteSave").disabled=v}
 function inviteTokens(){let h=(location.hash||"").replace(/^#/,""),q=new URLSearchParams(h);return {access_token:q.get("access_token"),refresh_token:q.get("refresh_token"),type:q.get("type")}}
@@ -741,6 +761,10 @@ async function bootAuth(){
   document.getElementById("authGate").style.display="grid";
   if(await restoreAuth()){document.getElementById("authGate").style.display="none";bootApp();}
 }
+
+const logoutButton=document.getElementById("logoutBtn");
+if(logoutButton) logoutButton.addEventListener("click",logout);
+window.logout=logout;
 
 bootAuth();
 </script>
