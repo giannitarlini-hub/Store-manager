@@ -455,11 +455,7 @@ function planning(){
       ? `<div class="weekly-wrap"><div class="weekly-grid"><div class="week-head"><b>Risorsa</b></div>${heads}${rows}</div></div>`
       : `<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>
-  <section class="card">
-    <b>🤖 Organizza pause</b>
-    <p class="small">Propone automaticamente una pausa centrale nel turno per le risorse della settimana.</p>
-    <button class="btn" onclick="proposeBreaks()">Proponi pause</button>
-  </section>`;
+`;
 }
 
 function editShift(id,day,personId){
@@ -527,30 +523,6 @@ async function deleteShift(id){
   }catch(e){
     alert("Impossibile eliminare il turno.\n\n"+(e.message||e));
   }
-}
-
-function proposeBreaks(){
-  if(!isManager())return;
-  const ds=planningWeekDates(S.planningWeek||planningToday());
-  const active=S.people.filter(p=>p.active);
-  let changed=0;
-  (S.shifts||[]).forEach(x=>{
-    if(!ds.includes(x.date))return;
-    if(!x.breakStart||!x.breakEnd){
-      const [sh,sm]=String(x.start||"09:00").split(":").map(Number);
-      const [eh,em]=String(x.end||"17:00").split(":").map(Number);
-      const start=sh*60+sm,end=eh*60+em,mid=Math.round((start+end)/2);
-      const bs=Math.max(start+120,Math.min(mid,end-30));
-      const hh=String(Math.floor(bs/60)).padStart(2,"0"), mm=String(bs%60).padStart(2,"0");
-      x.breakStart=`${hh}:${mm}`;
-      x.breakEnd=`${String(Math.floor((bs+30)/60)).padStart(2,"0")}:${String((bs+30)%60).padStart(2,"0")}`;
-      changed++;
-    }
-  });
-  if(!changed)return alert("Tutti i turni della settimana hanno già una pausa.");
-  save();
-  render();
-  alert(`Proposta pause preparata per ${changed} turno/i. Apri il turno per verificarla e salvarla online.`);
 }
 
 function tasks(){
