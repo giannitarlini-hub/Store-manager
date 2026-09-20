@@ -99,7 +99,37 @@ async function fetchProfile(){if(!AUTH?.user?.id)return null;const rows=await sb
 function showAuthError(msg){const e=document.getElementById("authError");e.textContent=msg;e.style.display="block"}
 function setAuthLoading(v){document.getElementById("authLoading").style.display=v?"block":"none";document.getElementById("authLogin").disabled=v}
 async function login(){const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value;if(!email||!password){showAuthError("Inserisci email e password.");return}document.getElementById("authError").style.display="none";setAuthLoading(true);try{AUTH=await authToken(email,password);localStorage.setItem("sm_auth",JSON.stringify(AUTH));PROFILE=await fetchProfile();if(!PROFILE)throw new Error("Account creato, ma non è ancora associato a un ruolo Store Manager.");document.getElementById("authGate").style.display="none";bootApp()}catch(e){AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");showAuthError(e.message||"Accesso non riuscito.")}finally{setAuthLoading(false)}}
-async function logout(){try{if(AUTH?.access_token)await fetch(SUPABASE_URL+"/auth/v1/logout",{method:"POST",headers:authHeaders()})}catch{}AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");document.getElementById("authGate").style.display="grid";document.getElementById("authPassword").value=""}
+async function logout(){
+  // Chiude sempre la sessione locale anche se Supabase non risponde.
+  const oldAuth=AUTH;
+  AUTH=null;
+  PROFILE=null;
+  localStorage.removeItem("sm_auth");
+
+  try{
+    if(oldAuth?.access_token){
+      await fetch(SUPABASE_URL+"/auth/v1/logout",{
+        method:"POST",
+        headers:{
+          apikey:SUPABASE_KEY,
+          Authorization:"Bearer "+oldAuth.access_token,
+          "Content-Type":"application/json"
+        }
+      });
+    }
+  }catch(e){
+    console.warn("Logout Supabase non completato:",e);
+  }
+
+  // Torna immediatamente alla schermata di accesso.
+  document.getElementById("authGate").style.display="grid";
+  document.getElementById("authPassword").value="";
+  document.getElementById("authError").style.display="none";
+  setAuthLoading(false);
+  document.getElementById("main").innerHTML="";
+  document.getElementById("nav").innerHTML="";
+}
+
 async function restoreAuth(){const raw=localStorage.getItem("sm_auth");if(!raw)return false;try{AUTH=JSON.parse(raw);const r=await fetch(SUPABASE_URL+"/auth/v1/user",{headers:authHeaders()});if(!r.ok)throw new Error("sessione scaduta");AUTH.user=await r.json();localStorage.setItem("sm_auth",JSON.stringify(AUTH));PROFILE=await fetchProfile();return !!PROFILE}catch{localStorage.removeItem("sm_auth");AUTH=null;PROFILE=null;return false}}
 function bootApp(){render();loadRequests();loadKpis();loadHistory()}
 async function bootAuth(){document.getElementById("authGate").style.display="grid";if(await restoreAuth()){document.getElementById("authGate").style.display="none";bootApp()}}
