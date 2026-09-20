@@ -10,6 +10,24 @@
 .app{max-width:520px;margin:auto;min-height:100vh;padding-bottom:92px}.head{background:#101827;color:white;padding:20px 18px 18px;border-radius:0 0 26px 26px}.eyebrow{font-size:12px;opacity:.65;font-weight:700;letter-spacing:.08em}.title{font-size:28px;font-weight:850;margin-top:3px}.sub{opacity:.72;font-size:14px;margin-top:4px}
 main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-bottom:13px;box-shadow:0 4px 18px #1720330c}.section{font-size:19px;font-weight:800;margin:20px 2px 10px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#f7f8fb;border-radius:16px;padding:14px}.metric span{color:#747f91;font-size:13px}.metric b{display:block;font-size:23px;margin-top:4px}.btn{background:#2458e8;color:#fff;border:0;border-radius:13px;padding:11px 14px;font-weight:750}.btn.gray{background:#edf0f5;color:#283246}.btn.red{background:#df3c4c}.btn.green{background:#14924c}.input,.select{width:100%;border:1px solid #dce1e9;border-radius:13px;padding:12px;background:#fff;margin:5px 0 9px}label{display:block;font-size:12px;font-weight:700;color:#687386;margin-top:4px}.person,.task{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid #edf0f3}.person:last-child,.task:last-child{border:0}.avatar{width:43px;height:43px;border-radius:14px;background:#e9edff;color:#3152bf;display:grid;place-items:center;font-weight:800}.pill{font-size:12px;font-weight:750;padding:6px 9px;border-radius:10px;background:#eaf8ef;color:#197447;white-space:nowrap}.pill.gray{background:#eef1f5;color:#687386}.pill.red{background:#fff0f1;color:#c42e3f}.pill.yellow{background:#fff7dc;color:#8c6500}.small{font-size:12px;color:#788294}.kpirow{display:grid;grid-template-columns:1.3fr 1fr 1fr .8fr;gap:6px;align-items:center;padding:11px 0;border-bottom:1px solid #edf0f3;font-size:13px}.kpirow b{font-size:14px}.up{color:#15904a;font-weight:750}.down{color:#d73c4b;font-weight:750}.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:520px;width:100%;height:78px;background:#fff;border-top:1px solid #e4e8ef;display:flex;justify-content:space-around;padding-top:8px;z-index:10}.nav button{border:0;background:none;color:#7b8492;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:4px}.nav button.active{color:#2458e8;font-weight:800}.ico{font-size:21px}.empty{text-align:center;padding:22px;color:#778194}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:20}.sheet{background:#fff;width:100%;max-width:520px;margin:auto;border-radius:24px 24px 0 0;padding:20px;max-height:88vh;overflow:auto}.modal.open{display:flex}.actions{display:flex;gap:8px}.actions>*{flex:1}.notice{background:#eef5ff;border:1px solid #d6e5ff;border-radius:15px;padding:12px;color:#254a9d}.danger{background:#fff1f2;border:1px solid #ffd8dc}.ok{background:#edf9f2;border:1px solid #d1f0dd}.kpi-card{background:#f7f8fb;border-radius:16px;padding:14px;margin-top:10px}.kpi-big{font-size:26px;font-weight:850}.pending{color:#9a6a00;font-weight:800}.missing{color:#c42e3f;font-weight:800}.done{color:#197447;font-weight:800}.invite{font-size:12px;margin-top:5px}.invite.ok{color:#197447}.invite.pending{color:#9a6a00}.invite.err{color:#c42e3f}
 
+
+.weeknav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 12px}
+.weektitle{text-align:center;flex:1}.weektitle b{display:block;font-size:16px}.weektitle span{display:block;color:#788294;font-size:12px;margin-top:3px}
+.weekly-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:-2px}
+.weekly-grid{display:grid;grid-template-columns:150px repeat(7,118px);min-width:976px;border:1px solid #e7ebf1;border-radius:16px;overflow:hidden}
+.weekly-grid>*{min-height:92px;padding:10px;border-right:1px solid #e7ebf1;border-bottom:1px solid #e7ebf1}
+.weekly-grid>*:nth-child(8n){border-right:0}
+.week-head{background:#f7f8fb;display:flex;flex-direction:column;justify-content:center;gap:2px;font-size:12px}
+.week-head span{color:#788294;font-size:11px}.week-head.today{background:#eaf1ff;color:#2458e8}
+.person-cell{background:#fff;display:flex;flex-direction:column;justify-content:center;gap:3px;position:sticky;left:0;z-index:2}
+.person-cell small{color:#788294;font-size:11px}.shift-cell{background:#fff;padding:7px!important}
+.shift-box,.shift-empty{width:100%;height:100%;min-height:76px;border:0;border-radius:12px;text-align:left;padding:9px;background:#eef5ff;color:#193b91}
+.shift-box b{display:block;font-size:13px}.shift-box small{display:block;margin-top:7px;font-size:11px;color:#52698f;line-height:1.25}
+.shift-empty{background:#f7f8fb;color:#788294;text-align:center;font-weight:700}
+.resource-week{display:grid;gap:10px}.day-card{background:#fff;border:1px solid #e7ebf1;border-radius:16px;padding:14px}.day-card.today{border-color:#bcd0ff;background:#fbfcff}
+.dayrow{display:flex;align-items:center;justify-content:space-between;gap:10px}.dayname{font-weight:800}.date{font-size:12px;color:#788294;margin-top:2px}
+.shiftmain{font-size:20px;font-weight:850;margin-top:14px}.pause{font-size:13px;color:#52698f;margin-top:6px}.rest{font-size:15px;color:#788294;margin-top:14px}
+
 .auth-gate{position:fixed;inset:0;background:#f4f6fa;z-index:100;display:grid;place-items:center;padding:22px}.auth-card{width:min(100%,420px);background:#fff;border-radius:26px;padding:24px;box-shadow:0 10px 40px #17203318}.auth-brand{font-size:12px;font-weight:800;letter-spacing:.08em;color:#687386}.auth-title{font-size:28px;font-weight:850;margin:6px 0 5px}.auth-sub{color:#687386;font-size:14px;line-height:1.45;margin-bottom:20px}.auth-error{display:none;background:#fff0f1;border:1px solid #ffd8dc;color:#b52d3c;border-radius:13px;padding:11px;font-size:13px;margin-bottom:12px}.auth-loading{display:none;color:#687386;font-size:13px;margin-top:10px}.logout-btn{position:absolute;right:14px;top:14px;border:0;background:#263248;color:#fff;border-radius:10px;padding:8px 10px;font-weight:750;font-size:12px}
 </style>
 </head>
@@ -367,38 +385,173 @@ function nav(){
 }
 
 function resourceShifts(){
-  const me=myPerson();
-  return me ? S.shifts.filter(x=>String(x.person)===String(me.name)) : [];
+  const pid=myPersonId();
+  return pid ? (S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)===pid) : [];
 }
 function resourceTasks(){
   const me=myPerson();
   return me ? S.tasks.filter(x=>String(x.person)===String(me.name)) : [];
 }
 
-function home(){
-  if(!isManager()){
-    const me=myPerson(), sh=resourceShifts(), ta=resourceTasks(), rq=S.requests.filter(r=>String(r.personId)===myPersonId()), pending=rq.filter(r=>r.status==="In attesa").length;
-    return `<section class="card"><div class="small">RISORSA</div><h2 style="margin:6px 0 16px">${esc(me?.name||"Risorsa")}</h2>
-      <div class="grid"><div class="metric"><span>I miei turni</span><b>${sh.length}</b></div><div class="metric"><span>Le mie attività</span><b>${ta.length}</b></div><div class="metric"><span>Richieste</span><b>${rq.length}</b></div><div class="metric"><span>In attesa</span><b>${pending}</b></div></div></section>
-      <section class="card notice"><b>Accesso risorsa</b><div class="small" style="margin-top:6px">Puoi vedere e gestire esclusivamente i tuoi dati.</div></section>`;
-  }
-  const pending=S.requests.filter(r=>r.status==="In attesa").length;
-  return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 16px">Panoramica negozio</h2><div class="grid"><div class="metric"><span>Risorse attive</span><b>${S.people.filter(p=>p.active).length}</b></div><div class="metric"><span>Turni inseriti</span><b>${S.shifts.length}</b></div><div class="metric"><span>Attività</span><b>${S.tasks.length}</b></div><div class="metric"><span>Richieste</span><b>${pending}</b></div></div></section><div class="section">Accessi rapidi</div><section class="card"><div class="actions"><button class="btn" onclick="S.tab='people';render()">+ Risorsa</button><button class="btn gray" onclick="S.tab='planning';render()">+ Turno</button><button class="btn gray" onclick="S.tab='requests';loadRequests()">Richieste ${pending?`(${pending})`:""}</button></div></section><section class="card"><div class="${S.online?"ok":"danger"}"><b>${S.online?"☁️ Collegamento online attivo":"⚠️ Collegamento online non disponibile"}</b><div class="small" style="margin-top:5px">${S.online?"Le richieste vengono salvate in Supabase.":"Le richieste online non sono raggiungibili in questo momento."}</div></div></section>`;
-}
-
 function planning(){
   if(!isManager()){
+    const ds=planningWeekDates(S.planningWeek||planningToday());
     const rows=resourceShifts();
-    return `<div class="section">I miei turni</div><section class="card">${rows.length?rows.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.date)}</b><div class="small">${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><span class="pill">Turno</span></div>`).join(""):`<div class="empty">Nessun turno assegnato.</div>`}</section>`;
+    return `<div class="weeknav">
+      <button class="btn gray" onclick="planningShiftWeek(-1)">‹</button>
+      <div class="weektitle"><b>I miei turni</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div>
+      <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
+    </div>
+    <button class="btn gray" style="width:100%;margin-bottom:12px" onclick="S.planningWeek=planningStartOfWeek(planningToday());save();render()">Oggi</button>
+    <section class="resource-week">
+      ${ds.map(d=>{
+        const dt=new Date(d+"T12:00:00");
+        const day=new Intl.DateTimeFormat("it-IT",{weekday:"long"}).format(dt);
+        const x=rows.find(s=>s.date===d);
+        return `<div class="day-card ${d===planningToday()?"today":""}">
+          <div class="dayrow">
+            <div><div class="dayname">${day.charAt(0).toUpperCase()+day.slice(1)}</div>
+            <div class="date">${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}</div></div>
+            ${d===planningToday()?'<span class="pill">Oggi</span>':""}
+          </div>
+          ${x
+            ? `<div class="shiftmain">${esc(x.start)} – ${esc(x.end)}</div><div class="pause">☕ Pausa ${esc(x.breakStart||"—")} – ${esc(x.breakEnd||"—")}</div>`
+            : `<div class="rest">Riposo</div>`}
+        </div>`;
+      }).join("")}
+    </section>`;
   }
-  return `<div class="row"><div class="section">Planning</div><button class="btn" onclick="editShift()">+ Turno</button></div><section class="card">${S.shifts.length?S.shifts.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.person)}</b><div class="small">${esc(x.date)} · ${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessun turno inserito.</div>`}</section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni inseriti.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`;
+
+  const ds=planningWeekDates(S.planningWeek||planningToday());
+  const active=S.people.filter(p=>p.active);
+  const heads=ds.map(d=>{
+    const dt=new Date(d+"T12:00:00");
+    const name=new Intl.DateTimeFormat("it-IT",{weekday:"short"}).format(dt);
+    return `<div class="week-head ${d===planningToday()?"today":""}"><b>${name}</b><span>${dt.getDate()}/${dt.getMonth()+1}</span></div>`;
+  }).join("");
+  const rows=active.map(p=>{
+    const cells=ds.map(d=>{
+      const x=(S.shifts||[]).find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);
+      return `<div class="shift-cell">${
+        x
+          ? `<button class="shift-box" onclick="editShift('${x.id}')"><b>${esc(x.start||"")}–${esc(x.end||"")}</b><small>☕ Pausa ${esc(x.breakStart||"—")}–${esc(x.breakEnd||"—")}</small></button>`
+          : `<button class="shift-empty" onclick="editShift(null,'${d}',${p.id})">+ turno</button>`
+      }</div>`;
+    }).join("");
+    return `<div class="person-cell"><b>${esc(p.name)}</b><small>${esc(p.role||"Risorsa")}</small></div>${cells}`;
+  }).join("");
+
+  return `<div class="weeknav">
+    <button class="btn gray" onclick="planningShiftWeek(-1)">‹</button>
+    <div class="weektitle"><b>Planning · settimana</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div>
+    <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
+  </div>
+  <div class="row" style="margin-bottom:10px">
+    <button class="btn gray" onclick="S.planningWeek=planningStartOfWeek(planningToday());save();render()">Oggi</button>
+    <button class="btn" onclick="editShift(null,planningToday())">+ Turno</button>
+  </div>
+  <section class="card">
+    ${active.length
+      ? `<div class="weekly-wrap"><div class="weekly-grid"><div class="week-head"><b>Risorsa</b></div>${heads}${rows}</div></div>`
+      : `<div class="empty">Nessuna risorsa attiva.</div>`}
+  </section>
+  <section class="card">
+    <b>🤖 Organizza pause</b>
+    <p class="small">Propone automaticamente una pausa centrale nel turno per le risorse della settimana.</p>
+    <button class="btn" onclick="proposeBreaks()">Proponi pause</button>
+  </section>`;
 }
-function editShift(id){
+
+function editShift(id,day,personId){
   if(!isManager()) return alert("Solo il Manager può modificare il planning.");
-  let x=S.shifts.find(a=>a.id===id)||{id:Date.now(),person:"",date:today(),start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};
-  openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option ${p.name==x.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div></div><button class="btn" style="width:100%" onclick="saveShift(${x.id})">Salva turno</button>`);
+  const old=(S.shifts||[]).find(a=>String(a.id)===String(id));
+  const date=day||old?.date||planningToday();
+  const first=S.people.find(p=>p.active);
+  const x=old||{
+    id:null, personId:personId||first?.id||"", date,
+    start:"09:00", end:"17:00", breakStart:"13:00", breakEnd:"13:30"
+  };
+  const options=S.people.filter(p=>p.active).map(p=>
+    `<option value="${p.id}" ${String(p.id)===String(x.personId??"")?"selected":""}>${esc(p.name)}</option>`
+  ).join("");
+  openModal(id?"Modifica turno":"Nuovo turno",`
+    <label>Risorsa</label><select id="sp" class="select">${options}</select>
+    <label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}">
+    <div class="grid">
+      <div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start||""}"></div>
+      <div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end||""}"></div>
+    </div>
+    <div class="grid">
+      <div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart||""}"></div>
+      <div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd||""}"></div>
+    </div>
+    <button class="btn" style="width:100%" onclick="saveShift(${id?`'${id}'`:"null"})">Salva turno</button>
+    ${id?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteShift('${id}')">Elimina turno</button>`:""}
+  `);
 }
-function saveShift(id){ if(!isManager())return alert("Solo il Manager può modificare il planning."); let x=S.shifts.find(a=>a.id===id);if(!x){x={id};S.shifts.push(x)}x.person=document.getElementById("sp").value;x.date=document.getElementById("sd").value;x.start=document.getElementById("ss").value;x.end=document.getElementById("se").value;x.breakStart=document.getElementById("bs").value;x.breakEnd=document.getElementById("be").value;save();closeModal();render(); }
+
+async function saveShift(id){
+  if(!isManager())return alert("Solo il Manager può modificare il planning.");
+  const pid=Number(document.getElementById("sp").value);
+  const date=document.getElementById("sd").value;
+  if(!pid||!date)return alert("Seleziona risorsa e giorno.");
+  const payload={
+    dipendente_id:pid,
+    data_turno:date,
+    entrata:document.getElementById("ss").value||null,
+    uscita:document.getElementById("se").value||null,
+    pausa_inizio:document.getElementById("bs").value||null,
+    pausa_fine:document.getElementById("be").value||null
+  };
+  try{
+    if(id && String(id)!=="null"){
+      await sb("Planning?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(payload),prefer:"return=minimal"});
+    }else{
+      await sb("Planning",{method:"POST",body:JSON.stringify(payload),prefer:"return=minimal"});
+    }
+    closeModal();
+    S.planningWeek=planningStartOfWeek(date);
+    save();
+    await loadShifts();
+  }catch(e){
+    alert("Impossibile salvare il turno.\n\n"+(e.message||e));
+  }
+}
+
+async function deleteShift(id){
+  if(!isManager())return;
+  if(!confirm("Eliminare questo turno?"))return;
+  try{
+    await sb("Planning?id=eq."+encodeURIComponent(id),{method:"DELETE",prefer:"return=minimal"});
+    await loadShifts();
+  }catch(e){
+    alert("Impossibile eliminare il turno.\n\n"+(e.message||e));
+  }
+}
+
+function proposeBreaks(){
+  if(!isManager())return;
+  const ds=planningWeekDates(S.planningWeek||planningToday());
+  const active=S.people.filter(p=>p.active);
+  let changed=0;
+  (S.shifts||[]).forEach(x=>{
+    if(!ds.includes(x.date))return;
+    if(!x.breakStart||!x.breakEnd){
+      const [sh,sm]=String(x.start||"09:00").split(":").map(Number);
+      const [eh,em]=String(x.end||"17:00").split(":").map(Number);
+      const start=sh*60+sm,end=eh*60+em,mid=Math.round((start+end)/2);
+      const bs=Math.max(start+120,Math.min(mid,end-30));
+      const hh=String(Math.floor(bs/60)).padStart(2,"0"), mm=String(bs%60).padStart(2,"0");
+      x.breakStart=`${hh}:${mm}`;
+      x.breakEnd=`${String(Math.floor((bs+30)/60)).padStart(2,"0")}:${String((bs+30)%60).padStart(2,"0")}`;
+      changed++;
+    }
+  });
+  if(!changed)return alert("Tutti i turni della settimana hanno già una pausa.");
+  save();
+  render();
+  alert(`Proposta pause preparata per ${changed} turno/i. Apri il turno per verificarla e salvarla online.`);
+}
 
 function tasks(){
   if(!isManager()){
