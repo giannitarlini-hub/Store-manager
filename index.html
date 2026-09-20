@@ -114,7 +114,7 @@ function requestForm(){let a=S.people.filter(p=>p.active);openModal("Nuova richi
 function home(){let pending=S.requests.filter(r=>r.status==="In attesa").length;return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 16px">Panoramica negozio</h2><div class="grid"><div class="metric"><span>Risorse attive</span><b>${S.people.filter(p=>p.active).length}</b></div><div class="metric"><span>Turni inseriti</span><b>${S.shifts.length}</b></div><div class="metric"><span>Attività</span><b>${S.tasks.length}</b></div><div class="metric"><span>Richieste</span><b>${pending}</b></div></div></section><div class="section">Accessi rapidi</div><section class="card"><div class="actions"><button class="btn" onclick="S.tab='people';render()">+ Risorsa</button><button class="btn gray" onclick="S.tab='planning';render()">+ Turno</button><button class="btn gray" onclick="S.tab='requests';loadRequests()">Richieste ${pending?`(${pending})`:""}</button></div></section><section class="card"><div class="${S.online?"ok":"danger"}"><b>${S.online?"☁️ Collegamento online attivo":"⚠️ Collegamento online non disponibile"}</b><div class="small" style="margin-top:5px">${S.online?"Le richieste vengono salvate in Supabase.":"Le richieste online non sono raggiungibili in questo momento."}</div></div></section>`}
 async function sendInvite(id){let p=S.people.find(x=>x.id===id);if(!p)return;if(!p.email){editPerson(id,true);return}if(!AUTH?.access_token)return alert("Sessione Manager non disponibile. Effettua di nuovo l'accesso.");try{p.inviteStatus="Invio in corso…";p.inviteError="";save();render();const r=await fetch(SUPABASE_URL+"/functions/v1/invita-utente",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+AUTH.access_token,"Content-Type":"application/json"},body:JSON.stringify({email:p.email,dipendente_id:p.id,nome:p.name})});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(data.error||data.message||"Invio invito non riuscito.");p.inviteStatus="Invito inviato";p.inviteError="";p.invitedAt=new Date().toISOString();save();render();alert("Invito inviato correttamente a "+p.email)}catch(e){p.inviteStatus="Invio non riuscito";p.inviteError=e.message||String(e);save();render();alert("Impossibile inviare l'invito.\n\n"+p.inviteError)}}
 function people(){
-  const activePeople=S.people.filter(p=>p.active);
+  const activePeople=(S.people||[]).filter(p=>p && p.active===true);
   return `<div class="row"><div class="section">Personale</div><button class="btn" onclick="editPerson()">+ Aggiungi</button></div>
   <section class="card">${activePeople.length?activePeople.map(p=>`<div class="person">
     <div class="avatar">${esc((p.name||"?")[0])}</div>
@@ -133,48 +133,53 @@ function people(){
 
 function editPerson(id,focusEmail=false){let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}"><label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}"><label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa"><label>Data uscita</label><input id="po" class="input" value="${esc(p.out)}"><label>Email</label><input id="pe" class="input" type="email" autocomplete="email" value="${esc(p.email||"")}" placeholder="email della risorsa"><div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div><button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>${p.email&&id?`<button class="btn green" style="width:100%;margin-top:8px" onclick="savePerson(${p.id},true)">Salva e invia invito</button>`:""}${p.inviteStatus?`<div class="small" style="margin-top:10px">Stato invito: ${esc(p.inviteStatus)}</div>`:""}`);if(focusEmail)setTimeout(()=>document.getElementById("pe")?.focus(),100)}
 async function savePerson(id,sendAfterSave=false){
-  let p=S.people.find(x=>x.id===id);
+  let p=S.people.find(x=>String(x.id)===String(id));
   if(!p){
     p={id,name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};
     S.people.push(p);
   }
 
-  const wasActive=p.active;
+  const nameBefore=p.name;
+  const active=document.getElementById("pa").checked;
   p.name=document.getElementById("pn").value.trim();
   p.role=document.getElementById("pr").value.trim();
   p.in=document.getElementById("pi").value.trim();
   p.out=document.getElementById("po").value.trim();
   p.email=document.getElementById("pe").value.trim();
-  p.active=document.getElementById("pa").checked;
+  p.active=active;
 
   if(!p.name)return alert("Inserisci il nome.");
   if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))
     return alert("Controlla l'indirizzo email.");
 
-  if(wasActive && !p.active){
+  if(!active){
     const ok=confirm(
-      `Disattivando ${p.name} verranno rimossi dal gestionale anche turni, attività, richieste e KPI della risorsa.\\n\\nContinuare?`
+      `Rimuovere definitivamente ${p.name} dal gestionale?\\n\\nVerranno rimossi anche turni, attività, richieste e KPI collegati.`
     );
     if(!ok){
       p.active=true;
+      save();
       return;
     }
 
-    // Remove the resource everywhere from the operational/local data.
-    S.people=S.people.filter(x=>String(x.id)!==String(p.id));
-    S.shifts=(S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)!==String(p.id));
+    const pid=String(p.id);
+    const pname=String(nameBefore||p.name);
+
+    S.people=(S.people||[]).filter(x=>String(x.id)!==pid);
+    S.shifts=(S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)!==pid);
     S.tasks=(S.tasks||[]).filter(x=>{
-      const assignedId=String(x.personId??x.dipendente_id??"");
-      const assignedName=String(x.person??"");
-      return assignedId!==String(p.id) && assignedName!==String(p.name);
+      const tid=String(x.personId??x.dipendente_id??"");
+      const tname=String(x.person??"");
+      return tid!==pid && tname!==pname;
     });
-    S.requests=(S.requests||[]).filter(x=>String(x.personId??x.dipendente_id)!==String(p.id));
+    S.requests=(S.requests||[]).filter(x=>String(x.personId??x.dipendente_id)!==pid);
+
     if(S.kpi?.daily){
       Object.keys(S.kpi.daily).forEach(k=>{
-        if(String(S.kpi.daily[k]?.personId)===String(p.id)) delete S.kpi.daily[k];
+        if(String(S.kpi.daily[k]?.personId)===pid) delete S.kpi.daily[k];
       });
     }
-    if(S.kpi?.peopleByPeriod) delete S.kpi.peopleByPeriod[p.id];
+    if(S.kpi?.peopleByPeriod) delete S.kpi.peopleByPeriod[pid];
 
     save();
     closeModal();
