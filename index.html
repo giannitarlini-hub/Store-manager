@@ -12,11 +12,6 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 
 .auth-gate{position:fixed;inset:0;background:#f4f6fa;z-index:100;display:grid;place-items:center;padding:22px}.auth-card{width:min(100%,420px);background:#fff;border-radius:26px;padding:24px;box-shadow:0 10px 40px #17203318}.auth-brand{font-size:12px;font-weight:800;letter-spacing:.08em;color:#687386}.auth-title{font-size:28px;font-weight:850;margin:6px 0 5px}.auth-sub{color:#687386;font-size:14px;line-height:1.45;margin-bottom:20px}.auth-error{display:none;background:#fff0f1;border:1px solid #ffd8dc;color:#b52d3c;border-radius:13px;padding:11px;font-size:13px;margin-bottom:12px}.auth-loading{display:none;color:#687386;font-size:13px;margin-top:10px}.logout-btn{position:absolute;right:14px;top:14px;border:0;background:#263248;color:#fff;border-radius:10px;padding:8px 10px;font-weight:750;font-size:12px}
 </style>
-
-<style>
-.weeknav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px}.weeknav .btn{padding:9px 11px}.weektitle{text-align:center;flex:1}.weektitle b{display:block}.weektitle span{font-size:12px;color:#748095}.weekly-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.weekly-grid{display:grid;grid-template-columns:135px repeat(7,minmax(118px,1fr));min-width:970px;border:1px solid #e4e9f0;border-radius:16px;overflow:hidden;background:#fff}.weekly-grid>div{border-right:1px solid #e7ebf0;border-bottom:1px solid #e7ebf0}.week-head{padding:10px 6px;text-align:center;background:#f6f8fb;font-size:12px}.week-head b{display:block;font-size:13px}.week-head.today{background:#eef5ff}.person-cell{padding:10px;background:#fff;font-weight:800}.person-cell small{display:block;color:#7b8595;font-weight:500;margin-top:3px}.shift-cell{padding:7px;min-height:92px}.shift-box{width:100%;min-height:76px;border:1px solid #d8e3f5;border-radius:12px;background:#f5f9ff;padding:9px;text-align:left;cursor:pointer}.shift-box b{display:block;font-size:13px}.shift-box small{display:block;margin-top:5px;color:#66748a;font-size:11px;line-height:1.35}.shift-empty{width:100%;min-height:76px;border:1px dashed #cbd5e1;border-radius:12px;background:#fff;color:#8a94a3;font-size:12px;cursor:pointer}.resource-week{display:grid;gap:8px}.day-card{background:#fff;border:1px solid #e4e9f0;border-radius:16px;padding:13px}.day-card.today{border-color:#bcd0ff;background:#f8fbff}.day-card .dayrow{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.day-card .dayname{font-weight:800}.day-card .date{font-size:12px;color:#7b8595;margin-top:3px}.day-card .shiftmain{margin-top:10px;font-weight:800;font-size:17px}.day-card .pause{font-size:12px;color:#66748a;margin-top:4px}.rest{color:#8a94a3;font-weight:700;margin-top:10px}.online-note{font-size:12px;color:#6d7889;margin-top:7px}
-</style>
-
 </head>
 <body>
 <div id="inviteGate" class="auth-gate" style="display:none">
@@ -103,9 +98,223 @@ async function sendInvite(id){let p=S.people.find(x=>x.id===id);if(!p)return;if(
 function people(){return `<div class="row"><div class="section">Personale</div><button class="btn" onclick="editPerson()">+ Aggiungi</button></div><section class="card">${S.people.length?S.people.map(p=>`<div class="person"><div class="avatar">${esc((p.name||"?")[0])}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="small">${esc(p.role||"Risorsa")} · ingresso ${esc(p.in||"—")}${p.out?" · uscita "+esc(p.out):""}</div>${p.email?`<div class="small">✉ ${esc(p.email)}</div>`:""}${p.inviteStatus?`<div class="invite ${p.inviteStatus==="Invito inviato"?"ok":p.inviteStatus==="Invio in corso…"?"pending":"err"}">${esc(p.inviteStatus)}</div>`:""}${p.inviteError?`<div class="small" style="color:#c42e3f">${esc(p.inviteError)}</div>`:""}</div><span class="pill ${p.active?"":"gray"}">${p.active?"Attiva":"Archiviata"}</span><button class="btn gray" onclick="editPerson(${p.id})">Modifica</button>${p.email?`<button class="btn green" onclick="sendInvite(${p.id})">${p.inviteStatus==="Invito inviato"?"Reinvia invito":"Invia invito"}</button>`:""}</div>`).join(""):`<div class="empty">Nessuna risorsa inserita.</div>`}</section>`}
 function editPerson(id,focusEmail=false){let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}"><label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}"><label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa"><label>Data uscita</label><input id="po" class="input" value="${esc(p.out)}"><label>Email</label><input id="pe" class="input" type="email" autocomplete="email" value="${esc(p.email||"")}" placeholder="email della risorsa"><div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div><button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>${p.email&&id?`<button class="btn green" style="width:100%;margin-top:8px" onclick="savePerson(${p.id},true)">Salva e invia invito</button>`:""}${p.inviteStatus?`<div class="small" style="margin-top:10px">Stato invito: ${esc(p.inviteStatus)}</div>`:""}`);if(focusEmail)setTimeout(()=>document.getElementById("pe")?.focus(),100)}
 async function savePerson(id,sendAfterSave=false){let p=S.people.find(x=>x.id===id);if(!p){p={id,name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};S.people.push(p)}p.name=document.getElementById("pn").value.trim();p.role=document.getElementById("pr").value.trim();p.in=document.getElementById("pi").value.trim();p.out=document.getElementById("po").value.trim();p.email=document.getElementById("pe").value.trim();p.active=document.getElementById("pa").checked;if(!p.name)return alert("Inserisci il nome.");if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return alert("Controlla l'indirizzo email.");save();closeModal();render();if(sendAfterSave)await sendInvite(p.id)}
-function planning(){return `<div class="row"><div class="section">Planning</div><button class="btn" onclick="editShift()">+ Turno</button></div><section class="card">${S.shifts.length?S.shifts.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.person)}</b><div class="small">${esc(x.date)} · ${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessun turno inserito.</div>`}</section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni inseriti.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`}
-function editShift(id){let x=S.shifts.find(a=>a.id===id)||{id:Date.now(),person:"",date:today(),start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option ${p.name==x.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div></div><button class="btn" style="width:100%" onclick="saveShift(${x.id})">Salva turno</button>`)}
-function saveShift(id){let x=S.shifts.find(a=>a.id===id);if(!x){x={id};S.shifts.push(x)}x.person=document.getElementById("sp").value;x.date=document.getElementById("sd").value;x.start=document.getElementById("ss").value;x.end=document.getElementById("se").value;x.breakStart=document.getElementById("bs").value;x.breakEnd=document.getElementById("be").value;save();closeModal();render()}
+
+function planningToday(){ return dateLocal(new Date()); }
+function planningStartOfWeek(iso){
+  let d=new Date((iso||planningToday())+"T12:00:00");
+  let day=d.getDay()||7;
+  d.setDate(d.getDate()-day+1);
+  return dateLocal(d);
+}
+function planningAddDays(iso,n){
+  let d=new Date(iso+"T12:00:00");
+  d.setDate(d.getDate()+n);
+  return dateLocal(d);
+}
+function planningWeekDates(baseDate){
+  const s=planningStartOfWeek(baseDate||S.planningWeek||planningToday());
+  return Array.from({length:7},(_,i)=>planningAddDays(s,i));
+}
+function planningWeekLabel(baseDate){
+  const ds=planningWeekDates(baseDate);
+  const a=new Date(ds[0]+"T12:00:00"), b=new Date(ds[6]+"T12:00:00");
+  const f=new Intl.DateTimeFormat("it-IT",{day:"2-digit",month:"short"});
+  return `${f.format(a)} – ${f.format(b)}`;
+}
+function planningShiftWeek(delta){
+  S.planningWeek=planningAddDays(planningStartOfWeek(S.planningWeek||planningToday()),delta*7);
+  save();
+  render();
+}
+function planningPersonName(id){
+  const p=S.people.find(x=>String(x.id)===String(id));
+  return p?.name||"Risorsa";
+}
+function resourceShifts(){
+  const pid=myPersonId();
+  return pid ? (S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)===pid) : [];
+}
+async function loadShifts(){
+  try{
+    const rows=await sb('Planning?select=*&order=data_turno.asc');
+    const all=(rows||[]).map(r=>({
+      id:r.id,
+      personId:Number(r.dipendente_id),
+      person:planningPersonName(r.dipendente_id),
+      date:r.data_turno,
+      start:r.entrata||"",
+      end:r.uscita||"",
+      breakStart:r.pausa_inizio||"",
+      breakEnd:r.pausa_fine||""
+    }));
+    S.shifts=isManager()?all:all.filter(x=>String(x.personId)===myPersonId());
+    S.online=true;
+    save();
+    render();
+  }catch(e){
+    console.warn("Planning online non caricato",e);
+    // Non bloccare mai il login se il planning online ha un problema.
+  }
+}
+function editShift(id,day){
+  if(!isManager()) return alert("Solo il Manager può modificare il planning.");
+  const old=(S.shifts||[]).find(x=>String(x.id)===String(id));
+  const date=day||old?.date||planningToday();
+  const first=S.people.find(p=>p.active);
+  const x=old||{
+    id:null,
+    personId:first?.id||"",
+    date,
+    start:"09:00",
+    end:"17:00",
+    breakStart:"13:00",
+    breakEnd:"13:30"
+  };
+  const options=S.people.filter(p=>p.active).map(p=>
+    `<option value="${p.id}" ${String(p.id)===String(x.personId)?"selected":""}>${esc(p.name)}</option>`
+  ).join("");
+  openModal(
+    id?"Modifica turno":"Nuovo turno",
+    `<label>Risorsa</label>
+     <select id="sp" class="select">${options}</select>
+     <label>Giorno</label>
+     <input id="sd" class="input" type="date" value="${x.date}">
+     <div class="grid">
+       <div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div>
+       <div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div>
+     </div>
+     <div class="grid">
+       <div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div>
+       <div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div>
+     </div>
+     <button class="btn" style="width:100%" onclick="saveShift(${id?`'${id}'`:"null"})">Salva turno</button>
+     ${id?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteShift('${id}')">Elimina turno</button>`:""}`
+  );
+}
+async function saveShift(id){
+  if(!isManager()) return alert("Solo il Manager può modificare il planning.");
+  const pid=Number(document.getElementById("sp").value);
+  const date=document.getElementById("sd").value;
+  if(!pid||!date) return alert("Seleziona risorsa e giorno.");
+  const payload={
+    dipendente_id:pid,
+    data_turno:date,
+    entrata:document.getElementById("ss").value||null,
+    uscita:document.getElementById("se").value||null,
+    pausa_inizio:document.getElementById("bs").value||null,
+    pausa_fine:document.getElementById("be").value||null
+  };
+  try{
+    if(id && String(id)!=="null"){
+      await sb("Planning?id=eq."+encodeURIComponent(id),{
+        method:"PATCH",
+        body:JSON.stringify(payload),
+        prefer:"return=minimal"
+      });
+    }else{
+      await sb("Planning",{
+        method:"POST",
+        body:JSON.stringify(payload),
+        prefer:"return=minimal"
+      });
+    }
+    closeModal();
+    S.planningWeek=planningStartOfWeek(date);
+    save();
+    await loadShifts();
+  }catch(e){
+    alert("Impossibile salvare il turno.\n\n"+(e.message||e));
+  }
+}
+async function deleteShift(id){
+  if(!isManager()) return;
+  if(!confirm("Eliminare questo turno?")) return;
+  try{
+    await sb("Planning?id=eq."+encodeURIComponent(id),{
+      method:"DELETE",
+      prefer:"return=minimal"
+    });
+    await loadShifts();
+  }catch(e){
+    alert("Impossibile eliminare il turno.\n\n"+(e.message||e));
+  }
+}
+function managerPlanningWeek(){
+  const ds=planningWeekDates(S.planningWeek||planningToday());
+  const active=S.people.filter(p=>p.active);
+  const heads=ds.map(d=>{
+    const dt=new Date(d+"T12:00:00");
+    const name=new Intl.DateTimeFormat("it-IT",{weekday:"short"}).format(dt);
+    return `<div class="week-head ${d===planningToday()?"today":""}">
+      <b>${name}</b><span>${dt.getDate()}/${dt.getMonth()+1}</span>
+    </div>`;
+  }).join("");
+  const rows=active.map(p=>{
+    const cells=ds.map(d=>{
+      const x=(S.shifts||[]).find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);
+      return `<div class="shift-cell">
+        ${x
+          ? `<button class="shift-box" onclick="editShift('${x.id}')">
+               <b>${esc(x.start)}–${esc(x.end)}</b>
+               <small>☕ Pausa ${esc(x.breakStart||"—")}–${esc(x.breakEnd||"—")}</small>
+             </button>`
+          : `<button class="shift-empty" onclick="editShift(null,'${d}');setTimeout(()=>{const e=document.getElementById('sp');if(e)e.value='${p.id}'},0)">+ turno</button>`
+        }
+      </div>`;
+    }).join("");
+    return `<div class="person-cell"><b>${esc(p.name)}</b><small>${esc(p.role||"Risorsa")}</small></div>${cells}`;
+  }).join("");
+  return `
+    <div class="weeknav">
+      <button class="btn gray" onclick="planningShiftWeek(-1)">‹</button>
+      <div class="weektitle"><b>Planning · settimana</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div>
+      <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn gray" onclick="S.planningWeek=planningStartOfWeek(planningToday());save();render()">Oggi</button>
+      <button class="btn" onclick="editShift(null,planningToday())">+ Turno</button>
+    </div>
+    <section class="card">
+      <div class="weekly-wrap"><div class="weekly-grid">
+        <div class="week-head"><b>Risorsa</b></div>${heads}${rows}
+      </div></div>
+    </section>
+    <section class="card">
+      <b>🤖 Organizza pause</b>
+      <p class="small">Proposta automatica basata sui turni della settimana.</p>
+      <button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button>
+    </section>`;
+}
+function resourcePlanningWeek(){
+  const ds=planningWeekDates(S.planningWeek||planningToday());
+  const rows=resourceShifts();
+  return `
+    <div class="weeknav">
+      <button class="btn gray" onclick="planningShiftWeek(-1)">‹</button>
+      <div class="weektitle"><b>I miei turni</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div>
+      <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
+    </div>
+    <section class="resource-week">
+      ${ds.map(d=>{
+        const dt=new Date(d+"T12:00:00");
+        const day=new Intl.DateTimeFormat("it-IT",{weekday:"long"}).format(dt);
+        const x=rows.find(s=>s.date===d);
+        return `<div class="day-card ${d===planningToday()?"today":""}">
+          <div class="dayrow">
+            <div><div class="dayname">${day.charAt(0).toUpperCase()+day.slice(1)}</div>
+            <div class="date">${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}</div></div>
+            ${d===planningToday()?'<span class="pill">Oggi</span>':""}
+          </div>
+          ${x
+            ? `<div class="shiftmain">${esc(x.start)} – ${esc(x.end)}</div><div class="pause">☕ Pausa ${esc(x.breakStart||"—")} – ${esc(x.breakEnd||"—")}</div>`
+            : `<div class="rest">Riposo</div>`}
+        </div>`;
+      }).join("")}
+    </section>`;
+}
+function planning(){
+  return isManager()?managerPlanningWeek():resourcePlanningWeek();
+}
 function tasks(){return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div><section class="card">${S.tasks.length?S.tasks.map(t=>`<div class="task"><div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div><button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button><button class="btn gray" onclick="editTask(${t.id})">Modifica</button><button class="btn gray" onclick="deleteTask(${t.id})">Elimina</button><span class="pill">${t.done?"Fatto":"Assegnata"}</span></div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section><section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`}
 function addTask(){let a=S.people.filter(p=>p.active);if(!a.length)return alert("Prima inserisci una risorsa.");openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${today()}"><button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`)}
 function saveNewTask(){let n=document.getElementById("taskName").value.trim();if(!n)return alert("Inserisci il nome.");S.tasks.push({id:Date.now(),name:n,person:document.getElementById("taskPerson").value,date:document.getElementById("taskDate").value,done:false});save();closeModal();render()}
@@ -309,67 +518,22 @@ async function completeInvite(){
     history.replaceState(null,"",location.pathname+location.search);document.getElementById("inviteGate").style.display="none";PROFILE=await fetchProfile();if(!PROFILE)PROFILE={ruolo:"ragazzo",dipendente_id:ud.user_metadata?.dipendente_id??null};bootApp();alert("Password impostata correttamente. Benvenuto in Gestionale Replay Barberino.");
   }catch(e){showInviteError(e.message||"Errore durante l'attivazione dell'account.");}finally{setInviteLoading(false)}
 }
-function bootApp(){if(!isManager())S.tab="home";render();loadRequests();loadKpis();loadHistory();}
+function bootApp(){
+  if(!isManager()) S.tab="home";
+  if(!S.planningWeek) S.planningWeek=planningStartOfWeek(planningToday());
+  render();
+  loadRequests();
+  loadKpis();
+  loadHistory();
+  loadShifts();
+}
 async function bootAuth(){
   const tok=inviteTokens();
   if(tok.access_token&&(tok.type==="invite"||tok.type==="recovery")){document.getElementById("authGate").style.display="none";document.getElementById("inviteGate").style.display="grid";return;}
   document.getElementById("authGate").style.display="grid";
   if(await restoreAuth()){document.getElementById("authGate").style.display="none";bootApp();}
 }
-/* === PLANNING SETTIMANALE STABILE === */
-function planningToday(){ return dateLocal(new Date()); }
-function planningStartOfWeek(iso){ let d=new Date((iso||planningToday())+'T12:00:00'); let day=d.getDay()||7; d.setDate(d.getDate()-day+1); return dateLocal(d); }
-function planningAddDays(iso,n){ let d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return dateLocal(d); }
-function planningWeekDates(base){ let s=planningStartOfWeek(base||S.planningWeek||planningToday()); return Array.from({length:7},(_,i)=>planningAddDays(s,i)); }
-function planningWeekLabel(base){ const ds=planningWeekDates(base); const a=new Date(ds[0]+'T12:00:00'),b=new Date(ds[6]+'T12:00:00'); const f=new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'short'}); return `${f.format(a)} – ${f.format(b)}`; }
-function planningShiftWeek(delta){ S.planningWeek=planningAddDays(planningStartOfWeek(S.planningWeek||planningToday()),delta*7); save(); render(); }
-function planningPersonIdByName(name){ const p=S.people.find(x=>String(x.name)===String(name)); return p?Number(p.id):null; }
-function planningPersonName(id){ const p=S.people.find(x=>String(x.id)===String(id)); return p?.name||'Risorsa'; }
-function resourceShifts(){ const pid=PROFILE?.dipendente_id; return (S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)===String(pid)); }
-async function loadShifts(){
-  try{
-    const rows=await sb('Planning?select=*&order=data_turno.asc');
-    S.shifts=rows.map(r=>({id:r.id,personId:Number(r.dipendente_id),person:planningPersonName(r.dipendente_id),date:r.data_turno,start:r.entrata||'',end:r.uscita||'',breakStart:r.pausa_inizio||'',breakEnd:r.pausa_fine||''}));
-    S.online=true; save(); render();
-  }catch(e){ console.warn('Planning online non caricato',e); }
-}
-async function saveShift(id){
-  if(!isManager()) return alert('Solo il Manager può modificare il planning.');
-  const pid=Number(document.getElementById('sp').value);
-  const date=document.getElementById('sd').value;
-  const payload={dipendente_id:pid,data_turno:date,entrata:document.getElementById('ss').value||null,uscita:document.getElementById('se').value||null,pausa_inizio:document.getElementById('bs').value||null,pausa_fine:document.getElementById('be').value||null};
-  try{
-    let rows;
-    if(id && String(id).length<14){ rows=await sb('Planning?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(payload),prefer:'return=representation'}); }
-    else { rows=await sb('Planning',{method:'POST',body:JSON.stringify(payload),prefer:'return=representation'}); }
-    closeModal(); S.planningWeek=planningStartOfWeek(date); save(); await loadShifts();
-  }catch(e){ alert('Impossibile salvare il turno.\
-\
-'+(e.message||e)); }
-}
-async function deleteShift(id){ if(!isManager())return; if(!confirm('Eliminare questo turno?'))return; try{await sb('Planning?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadShifts()}catch(e){alert('Impossibile eliminare il turno.\
-\
-'+(e.message||e))} }
-function editShift(id,day){
-  if(!isManager()) return alert('Solo il Manager può modificare il planning.');
-  const old=S.shifts.find(x=>String(x.id)===String(id));
-  const date=day||old?.date||planningToday();
-  const x=old||{personId:S.people.find(p=>p.active)?.id||'',date,start:'09:00',end:'17:00',breakStart:'13:00',breakEnd:'13:30'};
-  const options=S.people.filter(p=>p.active).map(p=>`<option value="${p.id}" ${String(p.id)===String(x.personId??planningPersonIdByName(x.person))?'selected':''}>${esc(p.name)}</option>`).join('');
-  openModal(id?'Modifica turno':'Nuovo turno',`<label>Risorsa</label><select id="sp" class="select">${options}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date||date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start||'09:00'}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end||'17:00'}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart||''}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd||''}"></div></div><button class="btn" style="width:100%" onclick="saveShift(${id?`'${id}'`:'null'})">Salva turno</button>${id?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteShift('${id}');closeModal()">Elimina turno</button>`:''}`);
-}
-function managerPlanningWeek(){
-  const ds=planningWeekDates(S.planningWeek||planningToday()), active=S.people.filter(p=>p.active);
-  return `<div class="weeknav"><button class="btn gray" onclick="planningShiftWeek(-1)">‹</button><div class="weektitle"><b>Planning · settimana</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div><button class="btn gray" onclick="planningShiftWeek(1)">›</button></div><div class="row" style="margin-bottom:10px"><button class="btn gray" onclick="S.planningWeek=planningStartOfWeek(planningToday());save();render()">Oggi</button><button class="btn" onclick="editShift(null,planningToday())">+ Turno</button></div><section class="card"><div class="weekly-wrap"><div class="weekly-grid"><div class="week-head"><b>Risorsa</b></div>${ds.map(d=>{let dt=new Date(d+'T12:00:00');let name=new Intl.DateTimeFormat('it-IT',{weekday:'short'}).format(dt);return `<div class="week-head ${d===planningToday()?'today':''}"><b>${name}</b><span>${dt.getDate()}/${dt.getMonth()+1}</span></div>`}).join('')}${active.map(p=>`<div class="person-cell"><b>${esc(p.name)}</b><small>${esc(p.role||'Risorsa')}</small></div>${ds.map(d=>{let x=S.shifts.find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);return `<div class="shift-cell">${x?`<button class="shift-box" onclick="editShift('${x.id}')"><b>${esc(x.start)}–${esc(x.end)}</b><small>☕ Pausa ${esc(x.breakStart||'—')}–${esc(x.breakEnd||'—')}</small></button>`:`<button class="shift-empty" onclick="editShift(null,'${d}');document.getElementById('sp').value='${p.id}'">+ turno</button>`}</div>`}).join('')}`).join('')}</div></div></section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni della settimana.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`;
-}
-function resourcePlanningWeek(){
-  const ds=planningWeekDates(S.planningWeek||planningToday()), rows=resourceShifts();
-  return `<div class="weeknav"><button class="btn gray" onclick="planningShiftWeek(-1)">‹</button><div class="weektitle"><b>I miei turni</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div><button class="btn gray" onclick="planningShiftWeek(1)">›</button></div><section class="resource-week">${ds.map(d=>{const dt=new Date(d+'T12:00:00'),day=new Intl.DateTimeFormat('it-IT',{weekday:'long'}).format(dt),x=rows.find(s=>s.date===d);return `<div class="day-card ${d===planningToday()?'today':''}"><div class="dayrow"><div><div class="dayname">${day.charAt(0).toUpperCase()+day.slice(1)}</div><div class="date">${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}</div></div>${d===planningToday()?'<span class="pill">Oggi</span>':''}</div>${x?`<div class="shiftmain">${esc(x.start)} – ${esc(x.end)}</div><div class="pause">☕ Pausa ${esc(x.breakStart||'—')} – ${esc(x.breakEnd||'—')}</div>`:'<div class="rest">Riposo</div>'}</div>`}).join('')}</section>`;
-}
-function planning(){ return isManager()?managerPlanningWeek():resourcePlanningWeek(); }
-const _oldBootApp=bootApp;
-function bootApp(){ if(!isManager()) S.tab='home'; if(!S.planningWeek) S.planningWeek=planningStartOfWeek(planningToday()); render(); loadRequests(); loadKpis(); loadHistory(); loadShifts(); }
-</script>\n
+
 bootAuth();
 </script>
 </body></html>
