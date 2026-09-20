@@ -12,6 +12,28 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 
 .auth-gate{position:fixed;inset:0;background:#f4f6fa;z-index:100;display:grid;place-items:center;padding:22px}.auth-card{width:min(100%,420px);background:#fff;border-radius:26px;padding:24px;box-shadow:0 10px 40px #17203318}.auth-brand{font-size:12px;font-weight:800;letter-spacing:.08em;color:#687386}.auth-title{font-size:28px;font-weight:850;margin:6px 0 5px}.auth-sub{color:#687386;font-size:14px;line-height:1.45;margin-bottom:20px}.auth-error{display:none;background:#fff0f1;border:1px solid #ffd8dc;color:#b52d3c;border-radius:13px;padding:11px;font-size:13px;margin-bottom:12px}.auth-loading{display:none;color:#687386;font-size:13px;margin-top:10px}.logout-btn{position:absolute;right:14px;top:14px;border:0;background:#263248;color:#fff;border-radius:10px;padding:8px 10px;font-weight:750;font-size:12px}
 </style>
+
+<style>
+.weekly-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.weekly-grid{display:grid;grid-template-columns:150px repeat(7,minmax(118px,1fr));min-width:980px;border:1px solid #e7ebf0;border-radius:16px;overflow:hidden;background:#fff}
+.week-corner,.week-head,.person-cell,.shift-cell{border-right:1px solid #e7ebf0;border-bottom:1px solid #e7ebf0;min-height:82px}
+.week-corner{padding:14px;background:#f6f8fb;font-weight:800;display:flex;align-items:center}
+.week-head{padding:10px;text-align:center;background:#f6f8fb;display:flex;flex-direction:column;gap:3px;justify-content:center}
+.week-head span{font-size:12px;color:#697386}
+.week-head.today,.today-col{background:#eef5ff}
+.person-cell{padding:12px;background:#fff;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.person-cell span{font-size:11px;color:#7a8494}
+.shift-cell{position:relative;padding:7px;display:flex;align-items:stretch}
+.shift-box{width:100%;border:1px solid #d9e4f7;border-radius:12px;background:#f5f9ff;padding:9px;text-align:left;cursor:pointer;color:#172033}
+.shift-box b{display:block;font-size:13px}.shift-box small{display:block;margin-top:5px;color:#64748b;font-size:11px}
+.delete-mini{position:absolute;right:3px;top:3px;width:20px;height:20px;border:0;border-radius:50%;background:#fff;color:#b42318;cursor:pointer;font-weight:700;line-height:20px;padding:0}
+.empty-shift{width:100%;border:1px dashed #cbd5e1;border-radius:12px;background:#fff;color:#64748b;cursor:pointer;font-size:12px}
+.weekly-resource{display:grid;grid-template-columns:repeat(7,minmax(145px,1fr));gap:8px;min-width:1020px}
+.week-day{border:1px solid #e7ebf0;border-radius:14px;padding:12px;background:#fff;min-height:118px}.week-day.today{background:#eef5ff;border-color:#c8dcff}
+.week-day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.week-day-head span{font-size:12px;color:#697386}
+.shift-main{display:flex;justify-content:space-between;gap:8px;align-items:center}.shift-main span{font-size:11px;color:#2563eb}.shift-break{margin-top:12px;padding-top:9px;border-top:1px solid #edf0f3;font-size:12px;color:#697386}.shift-break b{color:#172033}.rest-day{margin-top:26px;text-align:center;color:#8a94a6;font-size:13px}
+@media(max-width:700px){.weekly-grid{min-width:900px}.weekly-resource{min-width:1000px}}
+</style>
 </head>
 <body>
 <div id="inviteGate" class="auth-gate" style="display:none">
@@ -239,11 +261,34 @@ function home(){
 }
 
 function planning(){
+  const base=startOfWeek(S.planningWeek||today()), ds=weekDates(base);
+  const dayNames=['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+  const fmtDay=d=>{const x=new Date(d+'T12:00:00');return new Intl.DateTimeFormat('it-IT',{day:'2-digit',month:'2-digit'}).format(x)};
+  const byDate={};
+  S.shifts.forEach(x=>{(byDate[x.date]??=[]).push(x)});
+
   if(!isManager()){
-    const rows=resourceShifts();
-    return `<div class="section">I miei turni</div><section class="card">${rows.length?rows.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.date)}</b><div class="small">${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><span class="pill">Turno</span></div>`).join(""):`<div class="empty">Nessun turno assegnato.</div>`}</section>`;
+    const me=myPerson(), myId=myPersonId();
+    const rows=S.shifts.filter(x=>String(x.personId)===String(myId) || (!x.personId && String(x.person)===String(me?.name)));
+    return `<div class="row"><div><div class="section" style="margin-bottom:2px">I miei turni</div><div class="small">${weekLabel(base)}</div></div><div class="actions"><button class="btn gray" onclick="shiftWeek(-1)">‹</button><button class="btn gray" onclick="S.planningWeek=startOfWeek(today());save();render()">Oggi</button><button class="btn gray" onclick="shiftWeek(1)">›</button></div></div>
+    <section class="card"><div class="weekly-resource">
+      ${ds.map((d,i)=>{const x=rows.find(r=>r.date===d);return `<div class="week-day ${d===today()?'today':''}"><div class="week-day-head"><b>${dayNames[i]}</b><span>${fmtDay(d)}</span></div>${x?`<div class="shift-main"><b>${esc(x.start)}–${esc(x.end)}</b><span>Turno</span></div><div class="shift-break">Pausa <b>${x.breakStart&&x.breakEnd?esc(x.breakStart)+'–'+esc(x.breakEnd):'—'}</b></div>`:`<div class="rest-day">Riposo</div>`}</div>`}).join('')}
+    </div></section>`;
   }
-  return `<div class="row"><div class="section">Planning</div><button class="btn" onclick="editShift()">+ Turno</button></div><section class="card">${S.shifts.length?S.shifts.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.person)}</b><div class="small">${esc(x.date)} · ${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessun turno inserito.</div>`}</section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni inseriti.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`;
+
+  const people=S.people.filter(p=>p.active);
+  return `<div class="row"><div><div class="section" style="margin-bottom:2px">Planning</div><div class="small">${weekLabel(base)}</div></div><div class="actions"><button class="btn gray" onclick="shiftWeek(-1)">‹</button><button class="btn gray" onclick="S.planningWeek=startOfWeek(today());save();render()">Oggi</button><button class="btn gray" onclick="shiftWeek(1)">›</button></div></div>
+  <section class="card"><div class="weekly-wrap"><div class="weekly-grid manager-grid">
+    <div class="week-corner">Risorsa</div>${ds.map((d,i)=>`<div class="week-head ${d===today()?'today':''}"><b>${dayNames[i]}</b><span>${fmtDay(d)}</span></div>`).join('')}
+    ${people.map(p=>`<div class="person-cell"><b>${esc(p.name)}</b><span>${esc(p.role||'')}</span></div>${ds.map(d=>{const x=(byDate[d]||[]).find(r=>String(r.personId)===String(p.id));return `<div class="shift-cell ${d===today()?'today-col':''}">${x?`<button class="shift-box" onclick="editShift(${x.id})"><b>${esc(x.start)}–${esc(x.end)}</b><small>${x.breakStart&&x.breakEnd?'Pausa '+esc(x.breakStart)+'–'+esc(x.breakEnd):'Pausa —'}</small></button><button class="delete-mini" onclick="event.stopPropagation();deleteShift(${x.id})" aria-label="Elimina turno">×</button>`:`<button class="empty-shift" onclick="editShiftFor(${p.id},'${d}')">+ Turno</button>`}</div>`}).join('')}`).join('')}
+  </div></div></section>
+  <section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni della settimana.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`;
+}
+function editShiftFor(personId,date){
+  if(!isManager())return alert("Solo il Manager può modificare il planning.");
+  const p=S.people.find(x=>String(x.id)===String(personId));
+  const x={id:null,personId,person:p?.name||'',date,start:'09:00',end:'17:00',breakStart:'13:00',breakEnd:'13:30'};
+  openModal("Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option value="${p.id}" ${String(p.id)===String(personId)?'selected':''}>${esc(p.name)}</option>`).join('')}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div></div><button class="btn" style="width:100%" onclick="saveShiftOnline(null)">Salva turno</button>`);
 }
 function editShift(id){
   if(!isManager()) return alert("Solo il Manager può modificare il planning.");
@@ -440,7 +485,7 @@ async function completeInvite(){
     history.replaceState(null,"",location.pathname+location.search);document.getElementById("inviteGate").style.display="none";PROFILE=await fetchProfile();if(!PROFILE)PROFILE={ruolo:"ragazzo",dipendente_id:ud.user_metadata?.dipendente_id??null};bootApp();alert("Password impostata correttamente. Benvenuto in Gestionale Replay Barberino.");
   }catch(e){showInviteError(e.message||"Errore durante l'attivazione dell'account.");}finally{setInviteLoading(false)}
 }
-function bootApp(){if(!isManager())S.tab="home";render();loadRequests();loadKpis();loadHistory();}
+function bootApp(){if(!isManager())S.tab="home";render();loadRequests();loadKpis();loadHistory();loadShifts();}
 async function bootAuth(){
   const tok=inviteTokens();
   if(tok.access_token&&(tok.type==="invite"||tok.type==="recovery")){document.getElementById("authGate").style.display="none";document.getElementById("inviteGate").style.display="grid";return;}
