@@ -51,7 +51,8 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 const SUPABASE_URL="https://mgklvroxfowgqljehquz.supabase.co";
 const SUPABASE_KEY="sb_publishable_Jro2VCtNW_GFYE6w0hfUYw_SBNsvb8M";
 const KEY="store_manager_v5";
-let S=JSON.parse(localStorage.getItem(KEY)||"null")||{tab:"home",people:[],requests:[],tasks:[],shifts:[],kpi:{selected:"2026-09",storeByPeriod:{},peopleByPeriod:{},daily:{},history:{}},online:true};
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||{tab:"home",people:[],requests:[],tasks:[],shifts:[],planningWeek:null,kpi:{selected:"2026-09",storeByPeriod:{},peopleByPeriod:{},daily:{},history:{}},online:true};
+if(!S.planningWeek)S.planningWeek=startOfWeek(today());
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
 const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const fmt=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(Number(n)||0);
@@ -83,10 +84,80 @@ function setAuthLoading(v){document.getElementById("authLoading").style.display=
 async function login(){const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value;if(!email||!password){showAuthError("Inserisci email e password.");return}document.getElementById("authError").style.display="none";setAuthLoading(true);try{AUTH=await authToken(email,password);localStorage.setItem("sm_auth",JSON.stringify(AUTH));PROFILE=await fetchProfile();if(!PROFILE)throw new Error("Account creato, ma non è ancora associato a un ruolo Store Manager.");document.getElementById("authGate").style.display="none";bootApp()}catch(e){AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");showAuthError(e.message||"Accesso non riuscito.")}finally{setAuthLoading(false)}}
 async function logout(){try{if(AUTH?.access_token)await fetch(SUPABASE_URL+"/auth/v1/logout",{method:"POST",headers:authHeaders()})}catch{}AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");document.getElementById("authGate").style.display="grid";document.getElementById("authPassword").value=""}
 async function restoreAuth(){const raw=localStorage.getItem("sm_auth");if(!raw)return false;try{AUTH=JSON.parse(raw);const r=await fetch(SUPABASE_URL+"/auth/v1/user",{headers:authHeaders()});if(!r.ok)throw new Error("sessione scaduta");AUTH.user=await r.json();localStorage.setItem("sm_auth",JSON.stringify(AUTH));PROFILE=await fetchProfile();return !!PROFILE}catch{localStorage.removeItem("sm_auth");AUTH=null;PROFILE=null;return false}}
-function bootApp(){render();loadRequests();loadKpis();loadHistory()}
+function bootApp(){render();loadRequests();loadKpis();loadHistory();loadShifts()}
 async function bootAuth(){document.getElementById("authGate").style.display="grid";if(await restoreAuth()){document.getElementById("authGate").style.display="none";bootApp()}}
 async function loadRequests(){try{let rows=await sb("Richieste?select=*&order=created_at.desc");S.requests=rows.map(r=>({id:r.id,personId:r.dipendente_id,type:r.tipo,start:r.data_richiesta,end:r.data_richiesta_fine,note:r.note,status:r.stato,created:r.created_at}));S.online=true;save();render()}catch(e){S.online=false;save();render()}}
 async function loadKpis(){try{let rows=await sb('KpiGiornalieri?select=*&order=data.asc');S.kpi.daily={};rows.forEach(r=>{let key=String(r.dipendente_id)+'_'+r.data;S.kpi.daily[key]={id:r.id,personId:r.dipendente_id,date:r.data,sales:Number(r.fatturato)||0,receipts:Number(r.scontrini)||0,pieces:Number(r.pezzi_venduti)||0,updatedAt:r.created_at||null}});S.online=true;save();render()}catch(e){console.warn('KPI online non caricati',e);S.online=false;save();render()}}
+async function loadShifts(){
+  try{
+    const rows=await sb('Planning?select=*&order=data_turno.asc,entrata.asc');
+    S.shifts=rows.map(r=>({
+      id:r.id,
+      personId:r.dipendente_id,
+      person:(S.people.find(p=>String(p.id)===String(r.dipendente_id))||{}).name||'',
+      date:r.data_turno,
+      start:r.entrata||'',
+      end:r.uscita||'',
+      breakStart:r.pausa_inizio||'',
+      breakEnd:r.pausa_fine||''
+    }));
+    S.online=true; save(); render();
+  }catch(e){
+    console.warn('Planning online non caricato',e);
+  }
+}
+function startOfWeek(d){
+  let x=new Date(d+"T12:00:00"), day=x.getDay()||7;
+  x.setDate(x.getDate()-day+1);
+  return dateLocal(x);
+}
+function addDays(iso,n){
+  let x=new Date(iso+"T12:00:00"); x.setDate(x.getDate()+n); return dateLocal(x);
+}
+function weekDates(base){
+  const s=startOfWeek(base||today());
+  return Array.from({length:7},(_,i)=>addDays(s,i));
+}
+function weekLabel(base){
+  const ds=weekDates(base), a=new Date(ds[0]+"T12:00:00"), b=new Date(ds[6]+"T12:00:00");
+  const f=new Intl.DateTimeFormat("it-IT",{day:"2-digit",month:"short"});
+  return `${f.format(a)} – ${f.format(b)}`;
+}
+function shiftWeek(delta){
+  S.planningWeek=addDays(startOfWeek(S.planningWeek||today()),delta*7);
+  save(); render();
+}
+async function saveShiftOnline(id){
+  if(!isManager())return alert("Solo il Manager può modificare il planning.");
+  const pid=+document.getElementById("sp").value;
+  const person=S.people.find(p=>String(p.id)===String(pid));
+  const payload={
+    dipendente_id:pid,
+    data_turno:document.getElementById("sd").value,
+    entrata:document.getElementById("ss").value,
+    uscita:document.getElementById("se").value,
+    pausa_inizio:document.getElementById("bs").value||null,
+    pausa_fine:document.getElementById("be").value||null
+  };
+  try{
+    let rows;
+    if(id){
+      rows=await sb('Planning?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(payload)});
+    }else{
+      rows=await sb('Planning',{method:'POST',body:JSON.stringify(payload)});
+    }
+    closeModal();
+    await loadShifts();
+    S.planningWeek=startOfWeek(payload.data_turno); save(); render();
+  }catch(e){alert("Impossibile salvare il turno.\n\n"+(e.message||e))}
+}
+async function deleteShift(id){
+  if(!isManager())return;
+  if(!confirm("Eliminare questo turno?"))return;
+  try{await sb('Planning?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadShifts();render()}
+  catch(e){alert("Impossibile eliminare il turno.\n\n"+(e.message||e))}
+}
+
 async function saveDailyKpi(){let pid=+document.getElementById('kePerson').value,date=document.getElementById('keDate').value;if(!pid||!date)return alert('Seleziona risorsa e data.');let sales=+document.getElementById('keSales').value||0,receipts=+document.getElementById('keReceipts').value||0,pieces=+document.getElementById('kePieces').value||0;let payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};try{let rows=await sb('KpiGiornalieri?on_conflict=dipendente_id,data',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify(payload)});let r=Array.isArray(rows)?rows[0]:rows;let key=pid+'_'+date;S.kpi.daily[key]={id:r?.id||key,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};save();closeModal();await loadKpis()}catch(e){alert('Supabase non ha accettato il KPI.\n\n'+(e.message||e))}}
 async function deleteDailyKpi(key){let r=S.kpi.daily?.[key];if(!r)return;if(!confirm(`Eliminare i KPI del ${r.date}?`))return;try{if(r.id&&String(r.id)!==key)await sb('KpiGiornalieri?id=eq.'+encodeURIComponent(r.id),{method:'DELETE',prefer:'return=minimal'});delete S.kpi.daily[key];save();await loadKpis()}catch(e){alert('Impossibile eliminare il KPI.\n\n'+(e.message||e))}}
 function editDailyKpi(pid,date){kpiEntry(pid,date)}
@@ -98,36 +169,31 @@ async function sendInvite(id){let p=S.people.find(x=>x.id===id);if(!p)return;if(
 function people(){return `<div class="row"><div class="section">Personale</div><button class="btn" onclick="editPerson()">+ Aggiungi</button></div><section class="card">${S.people.length?S.people.map(p=>`<div class="person"><div class="avatar">${esc((p.name||"?")[0])}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="small">${esc(p.role||"Risorsa")} · ingresso ${esc(p.in||"—")}${p.out?" · uscita "+esc(p.out):""}</div>${p.email?`<div class="small">✉ ${esc(p.email)}</div>`:""}${p.inviteStatus?`<div class="invite ${p.inviteStatus==="Invito inviato"?"ok":p.inviteStatus==="Invio in corso…"?"pending":"err"}">${esc(p.inviteStatus)}</div>`:""}${p.inviteError?`<div class="small" style="color:#c42e3f">${esc(p.inviteError)}</div>`:""}</div><span class="pill ${p.active?"":"gray"}">${p.active?"Attiva":"Archiviata"}</span><button class="btn gray" onclick="editPerson(${p.id})">Modifica</button>${p.email?`<button class="btn green" onclick="sendInvite(${p.id})">${p.inviteStatus==="Invito inviato"?"Reinvia invito":"Invia invito"}</button>`:""}</div>`).join(""):`<div class="empty">Nessuna risorsa inserita.</div>`}</section>`}
 function editPerson(id,focusEmail=false){let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}"><label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}"><label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa"><label>Data uscita</label><input id="po" class="input" value="${esc(p.out)}"><label>Email</label><input id="pe" class="input" type="email" autocomplete="email" value="${esc(p.email||"")}" placeholder="email della risorsa"><div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div><button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>${p.email&&id?`<button class="btn green" style="width:100%;margin-top:8px" onclick="savePerson(${p.id},true)">Salva e invia invito</button>`:""}${p.inviteStatus?`<div class="small" style="margin-top:10px">Stato invito: ${esc(p.inviteStatus)}</div>`:""}`);if(focusEmail)setTimeout(()=>document.getElementById("pe")?.focus(),100)}
 async function savePerson(id,sendAfterSave=false){let p=S.people.find(x=>x.id===id);if(!p){p={id,name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};S.people.push(p)}p.name=document.getElementById("pn").value.trim();p.role=document.getElementById("pr").value.trim();p.in=document.getElementById("pi").value.trim();p.out=document.getElementById("po").value.trim();p.email=document.getElementById("pe").value.trim();p.active=document.getElementById("pa").checked;if(!p.name)return alert("Inserisci il nome.");if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return alert("Controlla l'indirizzo email.");save();closeModal();render();if(sendAfterSave)await sendInvite(p.id)}
-function planning(){return `<div class="row"><div class="section">Planning</div><button class="btn" onclick="editShift()">+ Turno</button></div><section class="card">${S.shifts.length?S.shifts.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.person)}</b><div class="small">${esc(x.date)} · ${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessun turno inserito.</div>`}</section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni inseriti.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`}
-function editShift(id){let x=S.shifts.find(a=>a.id===id)||{id:Date.now(),person:"",date:today(),start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option ${p.name==x.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div></div><button class="btn" style="width:100%" onclick="saveShift(${x.id})">Salva turno</button>`)}
-function saveShift(id){let x=S.shifts.find(a=>a.id===id);if(!x){x={id};S.shifts.push(x)}x.person=document.getElementById("sp").value;x.date=document.getElementById("sd").value;x.start=document.getElementById("ss").value;x.end=document.getElementById("se").value;x.breakStart=document.getElementById("bs").value;x.breakEnd=document.getElementById("be").value;save();closeModal();render()}
-function tasks(){return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div><section class="card">${S.tasks.length?S.tasks.map(t=>`<div class="task"><div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div><button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button><button class="btn gray" onclick="editTask(${t.id})">Modifica</button><button class="btn gray" onclick="deleteTask(${t.id})">Elimina</button><span class="pill">${t.done?"Fatto":"Assegnata"}</span></div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section><section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`}
-function addTask(){let a=S.people.filter(p=>p.active);if(!a.length)return alert("Prima inserisci una risorsa.");openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${today()}"><button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`)}
-function saveNewTask(){let n=document.getElementById("taskName").value.trim();if(!n)return alert("Inserisci il nome.");S.tasks.push({id:Date.now(),name:n,person:document.getElementById("taskPerson").value,date:document.getElementById("taskDate").value,done:false});save();closeModal();render()}
-function editTask(id){let t=S.tasks.find(x=>x.id===id),a=S.people.filter(p=>p.active);if(!t)return;openModal("Modifica attività",`<label>Attività</label><input id="taskName" class="input" value="${esc(t.name)}"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option ${p.name===t.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${t.date||today()}"><button class="btn" style="width:100%" onclick="saveTaskEdit(${id})">Salva modifiche</button>`)}
-function saveTaskEdit(id){let t=S.tasks.find(x=>x.id===id);if(!t)return;t.name=document.getElementById("taskName").value.trim();t.person=document.getElementById("taskPerson").value;t.date=document.getElementById("taskDate").value;save();closeModal();render()}
-function toggleTask(id){let t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;save();render()}}
-function deleteTask(id){let t=S.tasks.find(x=>x.id===id);if(t&&confirm(`Eliminare "${t.name}"?`)){S.tasks=S.tasks.filter(x=>x.id!==id);save();render()}}
-function autoTasks(){let a=S.people.filter(p=>p.active).map(p=>p.name);if(!a.length)return;S.tasks.forEach((t,i)=>t.person=a[i%a.length]);save();render()}
-function requests(){let p=S.requests.filter(r=>r.status==="In attesa").length;return `<div class="row"><div class="section">Richieste giorni liberi</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div><section class="card"><div class="notice"><b>${p} ${p===1?"richiesta":"richieste"} in sospeso</b><div class="small">Le richieste vengono salvate online in Supabase.</div></div></section><section class="card">${S.requests.length?S.requests.map(r=>{let person=S.people.find(p=>p.id==r.personId);return `<div style="padding:13px 0;border-bottom:1px solid #edf0f3"><div class="row"><div><b>${esc(person?.name||"Risorsa")}</b><div class="small">${r.start}${r.end&&r.end!==r.start?" → "+r.end:""} · ${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":"red"}">${esc(r.status)}</span></div>${r.note?`<div class="small" style="margin:8px 0">Motivazione: ${esc(r.note)}</div>`:""}${r.status==="In attesa"?`<div class="actions" style="margin-top:8px"><button class="btn green" onclick="updateRequest(${r.id},'Approvata')">Approva</button><button class="btn red" onclick="updateRequest(${r.id},'Rifiutata')">Rifiuta</button></div>`:""}</div>`}).join(""):`<div class="empty">Nessuna richiesta.</div>`}</section>`}
-async function loadHistory(){try{let rows=await sb('KpiStorico?select=*&order=anno.asc,settimana.asc');S.kpi.history={};rows.forEach(r=>{S.kpi.history[String(r.anno)+'_'+String(r.settimana)]={id:r.id,year:+r.anno,week:+r.settimana,sales:+r.fatturato||0,receipts:+r.scontrini||0,pieces:+r.pezzi_venduti||0}});save();render()}catch(e){console.warn('Storico KPI non caricato',e)}}
-function histKey(y,w){return String(y)+'_'+String(w)}
-function historyRow(y,w){return S.kpi.history?.[histKey(y,w)]||null}
-function historyEntry(y,w){let r=historyRow(y,w);openModal(r?'Modifica storico KPI':'Inserisci storico KPI',`<div class="notice">Dati storici del negozio. Questi valori servono per il confronto con la stessa settimana dell'anno successivo.</div><label>Anno</label><input id="hy" class="input" type="number" min="2020" max="2100" value="${y}"><label>Settimana</label><input id="hw" class="input" type="number" min="1" max="53" value="${w}"><label>Fatturato</label><input id="hs" class="input" type="number" step="0.01" value="${r?.sales??''}"><label>Scontrini</label><input id="hr" class="input" type="number" min="0" step="1" value="${r?.receipts??''}"><label>Pezzi venduti</label><input id="hp" class="input" type="number" min="0" step="1" value="${r?.pieces??''}"><button class="btn" style="width:100%" onclick="saveHistory()">${r?'Salva modifiche':'Salva storico'}</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteHistory(${r.id});closeModal()">Elimina settimana</button>`:''}`)}
-async function saveHistory(){let year=+document.getElementById('hy').value,week=+document.getElementById('hw').value,sales=+document.getElementById('hs').value||0,receipts=+document.getElementById('hr').value||0,pieces=+document.getElementById('hp').value||0;if(!year||week<1||week>53)return alert('Anno o settimana non validi.');let payload={anno:year,settimana:week,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};try{let rows=await sb('KpiStorico?on_conflict=anno,settimana',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify(payload)});let r=Array.isArray(rows)?rows[0]:rows;S.kpi.history=S.kpi.history||{};S.kpi.history[histKey(year,week)]={id:r?.id||histKey(year,week),year,week,sales,receipts,pieces};save();closeModal();await loadHistory()}catch(e){alert('Supabase non ha accettato lo storico KPI.\n\n'+(e.message||e))}}
-async function deleteHistory(id){if(!confirm('Eliminare questo dato storico?'))return;try{await sb('KpiStorico?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadHistory()}catch(e){alert('Impossibile eliminare lo storico.\n\n'+(e.message||e))}}
-function historyCard(year,week){let r=historyRow(year,week);let c=r?calcKpi([{sales:r.sales,receipts:r.receipts,pieces:r.pieces}]):{sales:0,receipts:0,pieces:0,atv:0,upt:0};return `<section class="card"><div class="row"><div><b>🔵 Storico settimana ${week} · ${year}</b><div class="small">Solo Manager · base di confronto</div></div><button class="btn gray" onclick="historyEntry(${year},${week})">${r?'Modifica':'Inserisci'}</button></div>${r?`<div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div>`:`<div class="empty">Nessun dato storico inserito per questa settimana.</div>`}</section>`}
-function kpi(){
- let period=S.kpi.selected||dateLocal().slice(0,7), active=S.people.filter(p=>p.active), today=dateLocal(), missing=kpiCutoffMissing();
- let todayRows=active.map(p=>({p,row:Object.values(todayKpiRows()).find(r=>String(r.personId)===String(p.id)&&r.date===today)}));
- let store=calcKpi(Object.values(todayKpiRows()).filter(r=>r.date.startsWith(period)));
- let weekStart=new Date(period+"-01T12:00:00"), selectedDate=today.startsWith(period)?today:period+"-01", wn=weekNumber(selectedDate), year=+period.slice(0,4), weekRows=Object.values(todayKpiRows()).filter(r=>weekNumber(r.date)===wn&&+r.date.slice(0,4)===year), wk=calcKpi(weekRows), hist=historyRow(year-1,wn), ly=hist?calcKpi([{sales:hist.sales,receipts:hist.receipts,pieces:hist.pieces}]):{sales:0,receipts:0,pieces:0,atv:0,upt:0}, pct=(a,b)=>b?((a-b)/b*100):null;
- return `<div class="row"><div class="section">KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div><section class="card notice"><b>☁️ KPI condivisi online</b><div class="small">I dati giornalieri vengono salvati in Supabase e sono visibili anche dagli altri dispositivi.</div></section>
- <section class="card"><div class="grid"><div><label>Mese</label><select id="kpiMonth" class="select" onchange="changeKpiPeriod()">${monthOptions()}</select></div><div><label>Anno</label><select id="kpiYear" class="select" onchange="changeKpiPeriod()">${yearOptions(period)}</select></div></div></section>
- ${missing.length?`<section class="card danger"><b>⚠️ KPI non inseriti entro le 22:00</b><div class="small" style="margin-top:6px">${missing.map(p=>esc(p.name)).join(" · ")}</div></section>`:""}
- <section class="card"><b>🏪 KPI negozio · settimana ${wn}</b><div class="small" style="margin:5px 0 12px">Settimana ${wn} ${year} vs settimana ${wn} ${year-1}</div><div class="grid"><div class="kpi-card"><span>Fatturato</span><div class="kpi-big">${fmt(wk.sales)}</div><div class="small">${fmt(ly.sales)} anno prec. ${pct(wk.sales,ly.sales)==null?"":`· ${pct(wk.sales,ly.sales)>=0?"+":""}${pct(wk.sales,ly.sales).toFixed(1)}%`}</div></div><div class="kpi-card"><span>ATV</span><div class="kpi-big">${fmt(wk.atv)}</div><div class="small">${fmt(ly.atv)} anno prec. ${pct(wk.atv,ly.atv)==null?"":`· ${pct(wk.atv,ly.atv)>=0?"+":""}${pct(wk.atv,ly.atv).toFixed(1)}%`}</div></div><div class="kpi-card"><span>UPT</span><div class="kpi-big">${wk.upt.toFixed(2)}</div><div class="small">${ly.upt.toFixed(2)} anno prec. ${pct(wk.upt,ly.upt)==null?"":`· ${pct(wk.upt,ly.upt)>=0?"+":""}${pct(wk.upt,ly.upt).toFixed(1)}%`}</div></div></div></section>
- <section class="card"><div class="row"><div><b>🔵 Storico anno precedente</b><div class="small">Inserisci i dati della settimana ${wn} ${year-1} per il confronto.</div></div><button class="btn gray" onclick="historyEntry(${year-1},${wn})">${hist?"Modifica":"Inserisci"}</button></div>${hist?`<div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato ${year-1}</span><b>${fmt(ly.sales)}</b></div><div class="metric"><span>ATV ${year-1}</span><b>${fmt(ly.atv)}</b></div><div class="metric"><span>UPT ${year-1}</span><b>${ly.upt.toFixed(2)}</b></div></div>`:`<div class="small" style="margin-top:10px">Nessun dato storico inserito per questa settimana.</div>`}</section>
- <section class="card"><b>👤 KPI personali · ${periodLabel(period)}</b><div class="small" style="margin:5px 0 12px">Fatturato · ATV · UPT, calcolati dai dati giornalieri inseriti.</div>${active.map(p=>{let rows=kpiRowsForPerson(p.id,period),c=calcKpi(rows);return `<div class="kpi-card"><div class="row"><b>${esc(p.name)}</b><span class="pill ${rows.length?'':'gray'}">${rows.length?`${rows.length} giorni`:'Nessun dato'}</span></div><div class="grid" style="margin-top:8px"><div><span class="small">Fatturato</span><div><b>${fmt(c.sales)}</b></div></div><div><span class="small">ATV</span><div><b>${fmt(c.atv)}</b></div></div><div><span class="small">UPT</span><div><b>${c.upt.toFixed(2)}</b></div></div></div>${rows.length?`<div style="margin-top:10px"><b class="small">Giornate inserite</b>${rows.map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid #edf0f3"><span class="small">${r.date}</span><span class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</span><button class="btn gray" onclick="editDailyKpi(${p.id},'${r.date}')">Modifica</button></div>`).join('')}</div>`:''}</div>`}).join('')||`<div class="empty">Nessuna risorsa attiva.</div>`}</section>`
+function planning(){
+  const base=startOfWeek(S.planningWeek||today()), ds=weekDates(base);
+  if(!isManager()){
+    const me=myPerson(), pid=myPersonId();
+    return `<div class="row"><div><div class="section" style="margin-bottom:2px">I miei turni</div><div class="small">${weekLabel(base)}</div></div><div class="actions"><button class="btn gray" onclick="shiftWeek(-1)">‹</button><button class="btn gray" onclick="S.planningWeek=startOfWeek(today());save();render()">Oggi</button><button class="btn gray" onclick="shiftWeek(1)">›</button></div></div>
+    <section class="card">${ds.map((d,i)=>{
+      const x=S.shifts.find(s=>String(s.personId)===String(pid)&&s.date===d);
+      const day=new Intl.DateTimeFormat("it-IT",{weekday:"long"}).format(new Date(d+"T12:00:00"));
+      return `<div class="task"><div style="width:92px;text-transform:capitalize"><b>${day}</b><div class="small">${d.slice(8,10)}/${d.slice(5,7)}</div></div><div style="flex:1">${x?`<b>${esc(x.start)}–${esc(x.end)}</b><div class="small">${x.breakStart&&x.breakEnd?`Pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}`:"Pausa non indicata"}</div>`:`<span class="pill gray">Riposo</span>`}</div></div>`;
+    }).join("")}</section>`;
+  }
+  return `<div class="row"><div><div class="section" style="margin-bottom:2px">Planning</div><div class="small">${weekLabel(base)}</div></div><div class="actions"><button class="btn gray" onclick="shiftWeek(-1)">‹</button><button class="btn gray" onclick="S.planningWeek=startOfWeek(today());save();render()">Oggi</button><button class="btn gray" onclick="shiftWeek(1)">›</button></div></div>
+  <section class="card"><button class="btn" style="width:100%;margin-bottom:12px" onclick="editShift()">+ Nuovo turno</button>
+  ${ds.map((d,i)=>{
+    const day=new Intl.DateTimeFormat("it-IT",{weekday:"long"}).format(new Date(d+"T12:00:00"));
+    const rows=S.shifts.filter(s=>s.date===d).sort((a,b)=>String(a.start).localeCompare(String(b.start)));
+    return `<div style="padding:10px 0;border-bottom:1px solid #edf0f3"><b style="text-transform:capitalize">${day} ${d.slice(8,10)}/${d.slice(5,7)}</b>${rows.length?rows.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.person||"Risorsa")}</b><div class="small">${esc(x.start)}–${esc(x.end)} · ${x.breakStart&&x.breakEnd?`pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}`:"pausa —"}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button><button class="btn red" onclick="deleteShift(${x.id})">Elimina</button></div>`).join(""):`<div class="small" style="padding:8px 0">Nessun turno</div>`}</div>`;
+  }).join("")}</section>
+  <section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni della settimana.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`;
+}
+function editShift(id){
+  if(!isManager()) return alert("Solo il Manager può modificare il planning.");
+  let x=S.shifts.find(a=>String(a.id)===String(id));
+  if(!x)x={id:null,personId:S.people.find(p=>p.active)?.id||"",person:"",date:S.planningWeek||today(),start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};
+  openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option value="${p.id}" ${String(p.id)===String(x.personId||"")?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart||""}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd||""}"></div></div><button class="btn" style="width:100%" onclick="saveShiftOnline(${id||"null"})">Salva turno</button>`);
 }
 function kpiEntry(pid,date){let a=S.people.filter(p=>p.active),d=date||dateLocal(),r=pid?S.kpi.daily?.[String(pid)+'_'+d]:null;openModal(r?'Modifica KPI giornalieri':'Inserimento KPI giornalieri',`<div class="notice">Inserisci o correggi i dati della giornata. ATV e UPT vengono calcolati automaticamente.</div><label>Risorsa</label><select id="kePerson" class="select" ${pid?'disabled':''}>${a.map(p=>`<option value="${p.id}" ${String(p.id)===String(pid||a[0]?.id)?'selected':''}>${esc(p.name)}</option>`).join('')}</select><label>Data</label><input id="keDate" class="input" type="date" value="${d}" ${pid?'disabled':''}><label>Fatturato</label><input id="keSales" class="input" type="number" step="0.01" value="${r?.sales??''}" placeholder="0,00"><label>Scontrini</label><input id="keReceipts" class="input" type="number" min="0" step="1" value="${r?.receipts??''}" placeholder="0"><label>Pezzi venduti</label><input id="kePieces" class="input" type="number" min="0" step="1" value="${r?.pieces??''}" placeholder="0"><button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?'Salva modifiche':'Salva KPI'}</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:''}`)}
 
@@ -246,6 +312,76 @@ async function loadKpis(){
     S.online=true;save();render();
   }catch(e){console.warn("KPI online non caricati",e);S.online=false;save();render();}
 }
+async function loadShifts(){
+  try{
+    const rows=await sb('Planning?select=*&order=data_turno.asc,entrata.asc');
+    S.shifts=rows.map(r=>({
+      id:r.id,
+      personId:r.dipendente_id,
+      person:(S.people.find(p=>String(p.id)===String(r.dipendente_id))||{}).name||'',
+      date:r.data_turno,
+      start:r.entrata||'',
+      end:r.uscita||'',
+      breakStart:r.pausa_inizio||'',
+      breakEnd:r.pausa_fine||''
+    }));
+    S.online=true; save(); render();
+  }catch(e){
+    console.warn('Planning online non caricato',e);
+  }
+}
+function startOfWeek(d){
+  let x=new Date(d+"T12:00:00"), day=x.getDay()||7;
+  x.setDate(x.getDate()-day+1);
+  return dateLocal(x);
+}
+function addDays(iso,n){
+  let x=new Date(iso+"T12:00:00"); x.setDate(x.getDate()+n); return dateLocal(x);
+}
+function weekDates(base){
+  const s=startOfWeek(base||today());
+  return Array.from({length:7},(_,i)=>addDays(s,i));
+}
+function weekLabel(base){
+  const ds=weekDates(base), a=new Date(ds[0]+"T12:00:00"), b=new Date(ds[6]+"T12:00:00");
+  const f=new Intl.DateTimeFormat("it-IT",{day:"2-digit",month:"short"});
+  return `${f.format(a)} – ${f.format(b)}`;
+}
+function shiftWeek(delta){
+  S.planningWeek=addDays(startOfWeek(S.planningWeek||today()),delta*7);
+  save(); render();
+}
+async function saveShiftOnline(id){
+  if(!isManager())return alert("Solo il Manager può modificare il planning.");
+  const pid=+document.getElementById("sp").value;
+  const person=S.people.find(p=>String(p.id)===String(pid));
+  const payload={
+    dipendente_id:pid,
+    data_turno:document.getElementById("sd").value,
+    entrata:document.getElementById("ss").value,
+    uscita:document.getElementById("se").value,
+    pausa_inizio:document.getElementById("bs").value||null,
+    pausa_fine:document.getElementById("be").value||null
+  };
+  try{
+    let rows;
+    if(id){
+      rows=await sb('Planning?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(payload)});
+    }else{
+      rows=await sb('Planning',{method:'POST',body:JSON.stringify(payload)});
+    }
+    closeModal();
+    await loadShifts();
+    S.planningWeek=startOfWeek(payload.data_turno); save(); render();
+  }catch(e){alert("Impossibile salvare il turno.\n\n"+(e.message||e))}
+}
+async function deleteShift(id){
+  if(!isManager())return;
+  if(!confirm("Eliminare questo turno?"))return;
+  try{await sb('Planning?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadShifts();render()}
+  catch(e){alert("Impossibile eliminare il turno.\n\n"+(e.message||e))}
+}
+
 async function saveDailyKpi(){
   let pid=+document.getElementById("kePerson").value,date=document.getElementById("keDate").value;
   if(!isManager()){const me=myPerson();if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");pid=+me.id;if(String(pid)!==myPersonId())return alert("Puoi inserire KPI solo per te.");}
