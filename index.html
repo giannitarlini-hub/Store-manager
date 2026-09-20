@@ -93,11 +93,72 @@ function editDailyKpi(pid,date){kpiEntry(pid,date)}
 async function createRequest(id){let p=S.people.find(x=>x.id===id);if(!p){alert("Seleziona una risorsa.");return}let start=document.getElementById("rqStart").value,end=document.getElementById("rqEnd").value,note=document.getElementById("rqNote").value.trim();if(!start){alert("Inserisci la data.");return}if(!end)end=start;try{await sb("Richieste",{method:"POST",body:JSON.stringify({dipendente_id:p.id,tipo:"Giorno libero",data_richiesta:start,data_richiesta_fine:end,note,stato:"In attesa"})});closeModal();await loadRequests();alert("Richiesta inviata.")}catch(e){alert("Supabase non ha accettato la richiesta.\n\n"+(e.message||e))}}
 async function updateRequest(id,status){try{await sb("Richieste?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({stato:status})});await loadRequests()}catch(e){alert("Impossibile aggiornare la richiesta.\n\n"+(e.message||e))}}
 function requestForm(){let a=S.people.filter(p=>p.active);openModal("Nuova richiesta giorno libero",`<label>Risorsa</label><select id="rqPerson" class="select">${a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><label>Dal</label><input id="rqStart" class="input" type="date" value="${today()}"><label>Al</label><input id="rqEnd" class="input" type="date" value="${today()}"><label>Nota / motivazione</label><textarea id="rqNote" class="input" rows="3" placeholder="Facoltativa"></textarea><button class="btn" style="width:100%" onclick="createRequest(+document.getElementById('rqPerson').value)">Invia richiesta</button>`)}
-function home(){let pending=S.requests.filter(r=>r.status==="In attesa").length;return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 16px">Panoramica negozio</h2><div class="grid"><div class="metric"><span>Risorse attive</span><b>${S.people.filter(p=>p.active).length}</b></div><div class="metric"><span>Turni inseriti</span><b>${S.shifts.length}</b></div><div class="metric"><span>Attività</span><b>${S.tasks.length}</b></div><div class="metric"><span>Richieste</span><b>${pending}</b></div></div></section><div class="section">Accessi rapidi</div><section class="card"><div class="actions"><button class="btn" onclick="S.tab='people';render()">+ Risorsa</button><button class="btn gray" onclick="S.tab='planning';render()">+ Turno</button><button class="btn gray" onclick="S.tab='requests';loadRequests()">Richieste ${pending?`(${pending})`:""}</button></div></section><section class="card"><div class="${S.online?"ok":"danger"}"><b>${S.online?"☁️ Collegamento online attivo":"⚠️ Collegamento online non disponibile"}</b><div class="small" style="margin-top:5px">${S.online?"Le richieste vengono salvate in Supabase.":"Le richieste online non sono raggiungibili in questo momento."}</div></div></section>`}
-async function sendInvite(id){let p=S.people.find(x=>x.id===id);if(!p)return;if(!p.email){editPerson(id,true);return}if(!AUTH?.access_token)return alert("Sessione Manager non disponibile. Effettua di nuovo l'accesso.");try{p.inviteStatus="Invio in corso…";p.inviteError="";save();render();const r=await fetch(SUPABASE_URL+"/functions/v1/invita-utente",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+AUTH.access_token,"Content-Type":"application/json"},body:JSON.stringify({email:p.email,dipendente_id:p.id,nome:p.name})});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(data.error||data.message||"Invio invito non riuscito.");p.inviteStatus="Invito inviato";p.inviteError="";p.invitedAt=new Date().toISOString();save();render();alert("Invito inviato correttamente a "+p.email)}catch(e){p.inviteStatus="Invio non riuscito";p.inviteError=e.message||String(e);save();render();alert("Impossibile inviare l'invito.\n\n"+p.inviteError)}}
-function people(){return `<div class="row"><div class="section">Personale</div><button class="btn" onclick="editPerson()">+ Aggiungi</button></div><section class="card">${S.people.length?S.people.map(p=>`<div class="person"><div class="avatar">${esc((p.name||"?")[0])}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="small">${esc(p.role||"Risorsa")} · ingresso ${esc(p.in||"—")}${p.out?" · uscita "+esc(p.out):""}</div>${p.email?`<div class="small">✉ ${esc(p.email)}</div>`:""}${p.inviteStatus?`<div class="invite ${p.inviteStatus==="Invito inviato"?"ok":p.inviteStatus==="Invio in corso…"?"pending":"err"}">${esc(p.inviteStatus)}</div>`:""}${p.inviteError?`<div class="small" style="color:#c42e3f">${esc(p.inviteError)}</div>`:""}</div><span class="pill ${p.active?"":"gray"}">${p.active?"Attiva":"Archiviata"}</span><button class="btn gray" onclick="editPerson(${p.id})">Modifica</button>${p.email?`<button class="btn green" onclick="sendInvite(${p.id})">${p.inviteStatus==="Invito inviato"?"Reinvia invito":"Invia invito"}</button>`:""}</div>`).join(""):`<div class="empty">Nessuna risorsa inserita.</div>`}</section>`}
-function editPerson(id,focusEmail=false){let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}"><label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}"><label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa"><label>Data uscita</label><input id="po" class="input" value="${esc(p.out)}"><label>Email</label><input id="pe" class="input" type="email" autocomplete="email" value="${esc(p.email||"")}" placeholder="email della risorsa"><div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div><button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>${p.email&&id?`<button class="btn green" style="width:100%;margin-top:8px" onclick="savePerson(${p.id},true)">Salva e invia invito</button>`:""}${p.inviteStatus?`<div class="small" style="margin-top:10px">Stato invito: ${esc(p.inviteStatus)}</div>`:""}`);if(focusEmail)setTimeout(()=>document.getElementById("pe")?.focus(),100)}
-async function savePerson(id,sendAfterSave=false){let p=S.people.find(x=>x.id===id);if(!p){p={id,name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};S.people.push(p)}p.name=document.getElementById("pn").value.trim();p.role=document.getElementById("pr").value.trim();p.in=document.getElementById("pi").value.trim();p.out=document.getElementById("po").value.trim();p.email=document.getElementById("pe").value.trim();p.active=document.getElementById("pa").checked;if(!p.name)return alert("Inserisci il nome.");if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return alert("Controlla l'indirizzo email.");save();closeModal();render();if(sendAfterSave)await sendInvite(p.id)}
+function home(){
+  if(!isManager()){
+    const me=myPerson(), sh=resourceShifts(), ta=resourceTasks(), rq=S.requests.filter(r=>String(r.personId)===myPersonId()), pending=rq.filter(r=>r.status==="In attesa").length;
+    return `<section class="card"><div class="small">RISORSA</div><h2 style="margin:6px 0 16px">${esc(me?.name||"Risorsa")}</h2>
+      <div class="grid"><div class="metric"><span>I miei turni</span><b>${sh.length}</b></div><div class="metric"><span>Le mie attività</span><b>${ta.length}</b></div><div class="metric"><span>Richieste</span><b>${rq.length}</b></div><div class="metric"><span>In attesa</span><b>${pending}</b></div></div></section>
+      <section class="card notice"><b>Accesso risorsa</b><div class="small" style="margin-top:6px">Puoi vedere e gestire esclusivamente i tuoi dati.</div></section>`;
+  }
+
+  const pending=S.requests.filter(r=>r.status==="In attesa").length;
+  const active=S.people.filter(p=>p.active).length;
+  const todayDate=today();
+  const todayShifts=S.shifts.filter(x=>x.date===todayDate);
+  const todayTasks=S.tasks.filter(x=>(x.date||todayDate)===todayDate);
+  const period=todayDate.slice(0,7), year=+period.slice(0,4), wn=weekNumber(todayDate);
+  const weekRows=Object.values(todayKpiRows()).filter(r=>weekNumber(r.date)===wn&&+r.date.slice(0,4)===year);
+  const wk=calcKpi(weekRows);
+  const hist=historyRow(year-1,wn);
+  const ly=hist?calcKpi([{sales:hist.sales,receipts:hist.receipts,pieces:hist.pieces}]):{sales:0,receipts:0,pieces:0};
+  const pct=(a,b)=>b?((a-b)/b*100):null;
+  const ps=pct(wk.sales,ly.sales), pa=pct(wk.atv,ly.atv), pu=pct(wk.upt,ly.upt);
+  const varText=(v)=>v==null?"n.d.":`${v>=0?"+":""}${v.toFixed(1)}%`;
+
+  return `
+    <section class="card">
+      <div class="small">OGGI · ${todayDate}</div>
+      <h2 style="margin:6px 0 16px">Panoramica negozio</h2>
+      <div class="grid">
+        <div class="metric"><span>Risorse attive</span><b>${active}</b></div>
+        <div class="metric"><span>Presenti oggi</span><b>${todayShifts.length}</b></div>
+        <div class="metric"><span>Attività oggi</span><b>${todayTasks.length}</b></div>
+        <div class="metric"><span>Richieste in attesa</span><b>${pending}</b></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <div><b>📊 KPI negozio · settimana ${wn}</b><div class="small">Confronto con la stessa settimana dell'anno precedente · settimana ${wn} ${year-1}</div></div>
+        <button class="btn gray" onclick="S.tab='kpi';save();render()">Apri KPI</button>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <div class="kpi-card"><span>Fatturato</span><div class="kpi-big">${fmt(wk.sales)}</div><div class="small">${hist?fmt(ly.sales):"n.d."} anno prec. · ${varText(ps)}</div></div>
+        <div class="kpi-card"><span>ATV</span><div class="kpi-big">${fmt(wk.atv)}</div><div class="small">${hist?fmt(ly.atv):"n.d."} anno prec. · ${varText(pa)}</div></div>
+        <div class="kpi-card"><span>UPT</span><div class="kpi-big">${wk.upt.toFixed(2)}</div><div class="small">${hist?ly.upt.toFixed(2):"n.d."} anno prec. · ${varText(pu)}</div></div>
+      </div>
+      ${!hist?`<div class="small" style="margin-top:10px">Lo storico della settimana ${wn} ${year-1} non è ancora inserito.</div>`:""}
+    </section>
+
+    <div class="section">Azioni rapide</div>
+    <section class="card">
+      <div class="actions">
+        <button class="btn" onclick="S.tab='people';render()">+ Risorsa</button>
+        <button class="btn gray" onclick="S.tab='planning';render()">+ Turno</button>
+        <button class="btn gray" onclick="S.tab='tasks';render()">+ Attività</button>
+        <button class="btn gray" onclick="S.tab='requests';loadRequests()">Richieste ${pending?`(${pending})`:""}</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="row"><b>⚡ Da fare oggi</b><span class="pill">${pending+todayTasks.filter(t=>!t.done).length}</span></div>
+      <div class="small" style="margin-top:8px">${pending?`Hai ${pending} richiesta${pending===1?"":"e"} in attesa.`:"Nessuna richiesta in attesa."} ${todayTasks.filter(t=>!t.done).length?`Ci sono ${todayTasks.filter(t=>!t.done).length} attività da completare oggi.`:"Nessuna attività in sospeso oggi."}</div>
+    </section>
+
+    <section class="card">
+      <div class="${S.online?"ok":"danger"}"><b>${S.online?"☁️ Collegamento online attivo":"⚠️ Collegamento online non disponibile"}</b><div class="small" style="margin-top:5px">${S.online?"Dati condivisi e sincronizzati con Supabase.":"I dati online non sono raggiungibili in questo momento."}</div></div>
+    </section>`;
+}
 function planning(){return `<div class="row"><div class="section">Planning</div><button class="btn" onclick="editShift()">+ Turno</button></div><section class="card">${S.shifts.length?S.shifts.map(x=>`<div class="task"><div style="flex:1"><b>${esc(x.person)}</b><div class="small">${esc(x.date)} · ${esc(x.start)}–${esc(x.end)} · pausa ${esc(x.breakStart)}–${esc(x.breakEnd)}</div></div><button class="btn gray" onclick="editShift(${x.id})">Modifica</button></div>`).join(""):`<div class="empty">Nessun turno inserito.</div>`}</section><section class="card"><b>🤖 Organizza pause</b><p class="small">Proposta automatica basata sui turni inseriti.</p><button class="btn" onclick="alert('Proposta automatica disponibile nel modulo planning.')">Proponi pause</button></section>`}
 function editShift(id){let x=S.shifts.find(a=>a.id===id)||{id:Date.now(),person:"",date:today(),start:"09:00",end:"17:00",breakStart:"13:00",breakEnd:"13:30"};openModal(id?"Modifica turno":"Nuovo turno",`<label>Risorsa</label><select id="sp" class="select">${S.people.filter(p=>p.active).map(p=>`<option ${p.name==x.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}"><div class="grid"><div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div><div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div></div><div class="grid"><div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div><div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div></div><button class="btn" style="width:100%" onclick="saveShift(${x.id})">Salva turno</button>`)}
 function saveShift(id){let x=S.shifts.find(a=>a.id===id);if(!x){x={id};S.shifts.push(x)}x.person=document.getElementById("sp").value;x.date=document.getElementById("sd").value;x.start=document.getElementById("ss").value;x.end=document.getElementById("se").value;x.breakStart=document.getElementById("bs").value;x.breakEnd=document.getElementById("be").value;save();closeModal();render()}
