@@ -94,6 +94,35 @@ let AUTH=null;
 let PROFILE=null;
 const authHeaders=()=>({apikey:SUPABASE_KEY,Authorization:"Bearer "+(AUTH?.access_token||SUPABASE_KEY),"Content-Type":"application/json"});
 async function sb(path,opt={}){const headers={...authHeaders(),Prefer:opt.prefer||"return=representation",...(opt.headers||{})};const r=await fetch(SUPABASE_URL+"/rest/v1/"+path,{...opt,headers});const raw=await r.text();if(!r.ok)throw new Error(raw||r.status);if(!raw.trim())return null;try{return JSON.parse(raw)}catch(e){return null}}
+async function migrateLegacyOnline(){
+  if(!isManager()) return true;
+  try{
+    const onlinePeople=await sb('Dipendenti?select=id&limit=1');
+    if((onlinePeople||[]).length) return true;
+    const localPeople=(S.people||[]).filter(p=>p&&p.name);
+    if(localPeople.length){
+      const payload=localPeople.map(p=>({id:Number(p.id),nome:p.name,ruolo:p.role||"",data_ingresso:p.in||null,data_uscita:p.out||null,attivo:p.active!==false,email:p.email||null,invite_status:p.inviteStatus||null,invite_error:p.inviteError||null}));
+      await sb('Dipendenti?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify(payload)});
+    }
+    const localTasks=(S.tasks||[]).filter(t=>t&&t.name).map(t=>{const p=(S.people||[]).find(x=>String(x.name)===String(t.person));return {id:Number(t.id),nome:t.name,dipendente_id:p?Number(p.id):null,data_attivita:t.date||null,completata:t.done===true};});
+    if(localTasks.length) await sb('Attivita?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify(localTasks)});
+    return true;
+  }catch(e){console.warn('Migrazione online non riuscita',e);return false;}
+}
+async function loadPeople(){
+  try{let rows=await sb('Dipendenti?select=*&order=id.asc');
+    if((rows||[]).length===0&&isManager()&&(S.people||[]).length){if(await migrateLegacyOnline())rows=await sb('Dipendenti?select=*&order=id.asc');}
+    const mapped=(rows||[]).map(r=>({id:Number(r.id),name:r.nome||'',role:r.ruolo||'',in:r.data_ingresso||'',out:r.data_uscita||'',active:r.attivo!==false,email:r.email||'',inviteStatus:r.invite_status||'',inviteError:r.invite_error||''}));
+    S.people=isManager()?mapped:mapped.filter(p=>p.active&&String(p.id)===myPersonId());S.online=true;save();render();return true;
+  }catch(e){console.warn('Personale online non caricato',e);S.online=false;return false;}
+}
+async function loadTasks(){
+  try{let rows=await sb('Attivita?select=*&order=data_attivita.asc,id.asc');
+    const mapped=(rows||[]).map(r=>{const p=S.people.find(x=>String(x.id)===String(r.dipendente_id));return {id:Number(r.id),name:r.nome||'',person:p?.name||'',personId:r.dipendente_id==null?null:Number(r.dipendente_id),date:r.data_attivita||'',done:r.completata===true};});
+    S.tasks=isManager()?mapped:mapped.filter(t=>String(t.personId)===myPersonId());S.online=true;save();render();return true;
+  }catch(e){console.warn('Attività online non caricate',e);S.online=false;return false;}
+}
+
 async function authToken(email,password){const r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email,password})});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(data.error_description||data.msg||data.message||"Email o password non corretti.");return data}
 async function fetchProfile(){if(!AUTH?.user?.id)return null;const rows=await sb("profili?id=eq."+encodeURIComponent(AUTH.user.id)+"&select=ruolo,dipendente_id");return rows?.[0]||null}
 function showAuthError(msg){const e=document.getElementById("authError");e.textContent=msg;e.style.display="block"}
@@ -138,30 +167,12 @@ function people(){
 }
 function editPerson(id,focusEmail=false){let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}"><label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}"><label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa"><label>Data uscita</label><input id="po" class="input" value="${esc(p.out)}"><label>Email</label><input id="pe" class="input" type="email" autocomplete="email" value="${esc(p.email||"")}" placeholder="email della risorsa"><div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div><button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>${p.email&&id?`<button class="btn green" style="width:100%;margin-top:8px" onclick="savePerson(${p.id},true)">Salva e invia invito</button>`:""}${p.inviteStatus?`<div class="small" style="margin-top:10px">Stato invito: ${esc(p.inviteStatus)}</div>`:""}`);if(focusEmail)setTimeout(()=>document.getElementById("pe")?.focus(),100)}
 async function savePerson(id,sendAfterSave=false){
-  let p=S.people.find(x=>x.id===id);
-  const isNew=!p;
-  if(!p){p={id,name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};S.people.push(p)}
-  p.name=document.getElementById("pn").value.trim();
-  p.role=document.getElementById("pr").value.trim();
-  p.in=document.getElementById("pi").value.trim();
-  p.out=document.getElementById("po").value.trim();
-  p.email=document.getElementById("pe").value.trim();
-  p.active=document.getElementById("pa").checked;
-  if(!p.name)return alert("Inserisci il nome.");
-  if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return alert("Controlla l'indirizzo email.");
-  if(!p.active && !isNew){
-    if(!confirm("Disattivando questa risorsa verrà rimossa dal gestionale insieme a turni, attività, richieste e KPI collegati. Continuare?")){p.active=true;return;}
-    const pid=String(p.id);
-    S.people=S.people.filter(x=>String(x.id)!==pid);
-    S.shifts=(S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)!==pid);
-    S.tasks=(S.tasks||[]).filter(t=>String(t.personId??t.dipendente_id)!==pid && String(t.person)!==String(p.name));
-    S.requests=(S.requests||[]).filter(r=>String(r.personId??r.dipendente_id)!==pid);
-    if(S.kpi?.daily)Object.keys(S.kpi.daily).forEach(k=>{if(String(S.kpi.daily[k]?.personId)===pid)delete S.kpi.daily[k]});
-    if(S.kpi?.peopleByPeriod)delete S.kpi.peopleByPeriod[p.id];
-    save();closeModal();render();return;
-  }
-  save();closeModal();render();
-  if(sendAfterSave)await sendInvite(p.id);
+  let p=S.people.find(x=>x.id===id);const isNew=!p;
+  if(!p){p={id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};S.people.push(p)}
+  p.name=document.getElementById("pn").value.trim();p.role=document.getElementById("pr").value.trim();p.in=document.getElementById("pi").value.trim();p.out=document.getElementById("po").value.trim();p.email=document.getElementById("pe").value.trim();p.active=document.getElementById("pa").checked;
+  if(!p.name)return alert("Inserisci il nome.");if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return alert("Controlla l'indirizzo email.");
+  if(!p.active&&!isNew){if(!confirm("Disattivando questa risorsa verrà rimossa dal gestionale insieme a turni, attività, richieste e KPI collegati. Continuare?")){p.active=true;return;}const pid=String(p.id);try{await sb('Attivita?dipendente_id=eq.'+encodeURIComponent(pid),{method:'DELETE',prefer:'return=minimal'});await sb('Dipendenti?id=eq.'+encodeURIComponent(pid),{method:'DELETE',prefer:'return=minimal'});}catch(e){return alert('Impossibile rimuovere la risorsa online.\n\n'+(e.message||e));}S.people=S.people.filter(x=>String(x.id)!==pid);S.shifts=(S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)!==pid);S.tasks=(S.tasks||[]).filter(t=>String(t.personId??t.dipendente_id)!==pid&&String(t.person)!==String(p.name));S.requests=(S.requests||[]).filter(r=>String(r.personId??r.dipendente_id)!==pid);if(S.kpi?.daily)Object.keys(S.kpi.daily).forEach(k=>{if(String(S.kpi.daily[k]?.personId)===pid)delete S.kpi.daily[k]});if(S.kpi?.peopleByPeriod)delete S.kpi.peopleByPeriod[p.id];save();closeModal();await loadPeople();await loadTasks();return;}
+  try{const payload={id:Number(p.id),nome:p.name,ruolo:p.role||"",data_ingresso:p.in||null,data_uscita:p.out||null,attivo:p.active,email:p.email||null,invite_status:p.inviteStatus||null,invite_error:p.inviteError||null};await sb('Dipendenti?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify(payload)});save();closeModal();await loadPeople();if(sendAfterSave)await sendInvite(p.id);}catch(e){alert('Impossibile salvare la risorsa online.\n\n'+(e.message||e));}
 }
 
 function planningToday(){ return dateLocal(new Date()); }
@@ -591,13 +602,13 @@ function tasks(){
   }
   return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div><section class="card">${S.tasks.length?S.tasks.map(t=>`<div class="task"><div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div><button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button><button class="btn gray" onclick="editTask(${t.id})">Modifica</button><button class="btn gray" onclick="deleteTask(${t.id})">Elimina</button><span class="pill">${t.done?"Fatto":"Assegnata"}</span></div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section><section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`;
 }
-function addTask(){if(!isManager())return alert("Solo il Manager può creare attività.");let a=S.people.filter(p=>p.active);if(!a.length)return alert("Prima inserisci una risorsa.");openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${today()}"><button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`);}
-function saveNewTask(){if(!isManager())return alert("Solo il Manager può creare attività.");let n=document.getElementById("taskName").value.trim();if(!n)return alert("Inserisci il nome.");S.tasks.push({id:Date.now(),name:n,person:document.getElementById("taskPerson").value,date:document.getElementById("taskDate").value,done:false});save();closeModal();render();}
-function editTask(id){if(!isManager())return alert("Solo il Manager può modificare attività.");let t=S.tasks.find(x=>x.id===id),a=S.people.filter(p=>p.active);if(!t)return;openModal("Modifica attività",`<label>Attività</label><input id="taskName" class="input" value="${esc(t.name)}"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option ${p.name===t.person?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${t.date||today()}"><button class="btn" style="width:100%" onclick="saveTaskEdit(${id})">Salva modifiche</button>`);}
-function saveTaskEdit(id){if(!isManager())return alert("Solo il Manager può modificare attività.");let t=S.tasks.find(x=>x.id===id);if(!t)return;t.name=document.getElementById("taskName").value.trim();t.person=document.getElementById("taskPerson").value;t.date=document.getElementById("taskDate").value;save();closeModal();render();}
-function toggleTask(id){let t=S.tasks.find(x=>x.id===id);if(!t)return;if(!isManager()&&String(t.person)!==String(myPerson()?.name))return alert("Puoi gestire solo le tue attività.");t.done=!t.done;save();render();}
-function deleteTask(id){if(!isManager())return alert("Solo il Manager può eliminare attività.");let t=S.tasks.find(x=>x.id===id);if(t&&confirm(`Eliminare "${t.name}"?`)){S.tasks=S.tasks.filter(x=>x.id!==id);save();render();}}
-function autoTasks(){if(!isManager())return alert("Solo il Manager può assegnare automaticamente le attività.");let a=S.people.filter(p=>p.active).map(p=>p.name);if(!a.length)return;S.tasks.forEach((t,i)=>t.person=a[i%a.length]);save();render();}
+function addTask(){if(!isManager())return alert("Solo il Manager può creare attività.");let a=S.people.filter(p=>p.active);if(!a.length)return alert("Prima inserisci una risorsa.");openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${today()}"><button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`);}
+async function saveNewTask(){if(!isManager())return alert("Solo il Manager può creare attività.");let n=document.getElementById("taskName").value.trim(),pid=document.getElementById("taskPerson").value;if(!n)return alert("Inserisci il nome.");let t={id:Date.now(),name:n,personId:pid?Number(pid):null,person:pid?(S.people.find(p=>String(p.id)===String(pid))?.name||""):"",date:document.getElementById("taskDate").value,done:false};try{await sb('Attivita?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify({id:t.id,nome:t.name,dipendente_id:t.personId,data_attivita:t.date||null,completata:false})});S.tasks.push(t);save();closeModal();await loadTasks();}catch(e){alert('Impossibile salvare l\'attività online.\n\n'+(e.message||e));}}
+function editTask(id){if(!isManager())return alert("Solo il Manager può modificare attività.");let t=S.tasks.find(x=>x.id===id),a=S.people.filter(p=>p.active);if(!t)return;openModal("Modifica attività",`<label>Attività</label><input id="taskName" class="input" value="${esc(t.name)}"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option value="${p.id}" ${String(p.id)===String(t.personId)?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${t.date||today()}"><button class="btn" style="width:100%" onclick="saveTaskEdit(${id})">Salva modifiche</button>`);}
+async function saveTaskEdit(id){if(!isManager())return alert("Solo il Manager può modificare attività.");let t=S.tasks.find(x=>x.id===id);if(!t)return;let n=document.getElementById("taskName").value.trim(),pid=document.getElementById("taskPerson").value;if(!n)return alert("Inserisci il nome.");t.name=n;t.personId=pid?Number(pid):null;t.person=pid?(S.people.find(p=>String(p.id)===String(pid))?.name||""):"";t.date=document.getElementById("taskDate").value;try{await sb('Attivita?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({nome:t.name,dipendente_id:t.personId,data_attivita:t.date||null,completata:t.done})});save();closeModal();await loadTasks();}catch(e){alert('Impossibile modificare l\'attività online.\n\n'+(e.message||e));}}
+async function toggleTask(id){let t=S.tasks.find(x=>x.id===id);if(!t)return;if(!isManager()&&String(t.personId)!==myPersonId())return alert("Puoi gestire solo le tue attività.");let done=!t.done;try{await sb('Attivita?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({completata:done})});await loadTasks();}catch(e){alert('Impossibile aggiornare l\'attività online.\n\n'+(e.message||e));}}
+async function deleteTask(id){if(!isManager())return alert("Solo il Manager può eliminare attività.");let t=S.tasks.find(x=>x.id===id);if(t&&confirm(`Eliminare "${t.name}"?`)){try{await sb('Attivita?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadTasks();}catch(e){alert('Impossibile eliminare l\'attività online.\n\n'+(e.message||e));}}}
+async function autoTasks(){if(!isManager())return alert("Solo il Manager può assegnare automaticamente le attività.");let a=S.people.filter(p=>p.active);if(!a.length)return;try{for(let i=0;i<S.tasks.length;i++){const p=a[i%a.length];await sb('Attivita?id=eq.'+encodeURIComponent(S.tasks[i].id),{method:'PATCH',body:JSON.stringify({dipendente_id:p.id})});}await loadTasks();}catch(e){alert('Impossibile aggiornare le assegnazioni online.\n\n'+(e.message||e));}}
 
 async function loadRequests(){
   try{
@@ -706,11 +717,14 @@ async function completeInvite(){
     history.replaceState(null,"",location.pathname+location.search);document.getElementById("inviteGate").style.display="none";PROFILE=await fetchProfile();if(!PROFILE)PROFILE={ruolo:"ragazzo",dipendente_id:ud.user_metadata?.dipendente_id??null};bootApp();alert("Password impostata correttamente. Benvenuto in Gestionale Replay Barberino.");
   }catch(e){showInviteError(e.message||"Errore durante l'attivazione dell'account.");}finally{setInviteLoading(false)}
 }
-function bootApp(){
+async function bootApp(){
   purgeInactivePeople();
   if(!isManager()) S.tab="home";
   if(!S.planningWeek) S.planningWeek=planningStartOfWeek(planningToday());
   render();
+  if(isManager()) await migrateLegacyOnline();
+  await loadPeople();
+  await loadTasks();
   loadRequests();
   loadKpis();
   loadHistory();
