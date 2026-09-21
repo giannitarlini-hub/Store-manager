@@ -445,8 +445,8 @@ function resourceShifts(){
   return pid ? (S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)===pid) : [];
 }
 function resourceTasks(){
-  const me=myPerson();
-  return me ? S.tasks.filter(x=>String(x.person)===String(me.name)) : [];
+  const pid=myPersonId();
+  return pid ? S.tasks.filter(x=>String(x.personId)===pid) : [];
 }
 
 function planning(){
