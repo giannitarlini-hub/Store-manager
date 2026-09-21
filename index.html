@@ -206,7 +206,7 @@ async function loadShifts(){
       id:r.id,
       personId:Number(r.dipendente_id),
       person:planningPersonName(r.dipendente_id),
-      date:r.data_turno,
+      date:String(r.data_turno||"").slice(0,10),
       start:r.entrata||"",
       end:r.uscita||"",
       breakStart:r.pausa_inizio||"",
@@ -538,6 +538,7 @@ async function saveShift(id){
   if(!pid||!date)return alert("Seleziona risorsa e giorno.");
   const payload={
     dipendente_id:pid,
+    // Mezzogiorno evita qualsiasi spostamento di giorno se la colonna Supabase è timestamp/timestamptz.
     data_turno:date,
     entrata:document.getElementById("ss").value||null,
     uscita:document.getElementById("se").value||null,
@@ -546,9 +547,22 @@ async function saveShift(id){
   };
   try{
     if(id && String(id)!=="null"){
-      await sb("Planning?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(payload),prefer:"return=minimal"});
+      // Se esiste già un altro turno della stessa risorsa nello stesso giorno,
+      // lo eliminiamo per evitare doppioni che rendono invisibile una modifica.
+      await sb("Planning?id=eq."+encodeURIComponent(id),{
+        method:"PATCH",body:JSON.stringify(payload),prefer:"return=representation"
+      });
+      const dup=await sb("Planning?select=id&dipendente_id=eq."+encodeURIComponent(pid)+"&data_turno=eq."+encodeURIComponent(date)+"&id=neq."+encodeURIComponent(id));
+      if(Array.isArray(dup)&&dup.length){
+        for(const r of dup) await sb("Planning?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});
+      }
     }else{
-      await sb("Planning",{method:"POST",body:JSON.stringify(payload),prefer:"return=minimal"});
+      // Evita doppioni: per una risorsa può esserci un solo turno per giorno.
+      const existing=await sb("Planning?select=id&dipendente_id=eq."+encodeURIComponent(pid)+"&data_turno=eq."+encodeURIComponent(date));
+      if(Array.isArray(existing)&&existing.length){
+        for(const r of existing) await sb("Planning?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});
+      }
+      await sb("Planning",{method:"POST",body:JSON.stringify(payload),prefer:"return=representation"});
     }
     closeModal();
     S.planningWeek=planningStartOfWeek(date);
