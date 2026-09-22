@@ -732,24 +732,29 @@ async function saveKpiTarget(pid,period){
   if(!Number.isFinite(atv)||atv<0)return alert('Inserisci un ATV valido.');
   if(!Number.isFinite(upt)||upt<0)return alert('Inserisci un UPT valido.');
   const [y,m]=period.split('-');
-  const payload={dipendente_id:+pid,anno:+y,mese:+m,fatturato_riferimento:0,atv_riferimento:atv,upt_riferimento:upt};
   try{
     const filter='KpiTargetMensile?dipendente_id=eq.'+encodeURIComponent(pid)+'&anno=eq.'+encodeURIComponent(y)+'&mese=eq.'+encodeURIComponent(+m);
-    const existing=await sb(filter+'&select=id',{method:'GET',prefer:'return=minimal'});
-    let rows;
+    const existing=await sb(filter+'&select=id',{method:'GET'});
+    const body={fatturato_riferimento:0,atv_riferimento:atv,upt_riferimento:upt};
     if(Array.isArray(existing)&&existing.length){
-      rows=await sb('KpiTargetMensile?id=eq.'+encodeURIComponent(existing[0].id),{method:'PATCH',prefer:'return=representation',body:JSON.stringify({fatturato_riferimento:0,atv_riferimento:atv,upt_riferimento:upt})});
+      await sb('KpiTargetMensile?id=eq.'+encodeURIComponent(existing[0].id),{method:'PATCH',prefer:'return=minimal',body:JSON.stringify(body)});
     }else{
-      rows=await sb('KpiTargetMensile',{method:'POST',prefer:'return=representation',body:JSON.stringify(payload)});
+      await sb('KpiTargetMensile',{method:'POST',prefer:'return=minimal',body:JSON.stringify({dipendente_id:+pid,anno:+y,mese:+m,...body})});
     }
-    const r=Array.isArray(rows)?rows[0]:rows;
-    S.kpi.targets=S.kpi.targets||{};
-    S.kpi.targets[String(pid)+'_'+y+'_'+m]={id:r?.id||existing?.[0]?.id||null,personId:+pid,year:+y,month:+m,sales:0,atv,upt};
-    save();
+    // Ricarica il valore direttamente da Supabase: la schermata non deve usare un valore locale vecchio.
+    const verify=await sb(filter+'&select=id,dipendente_id,anno,mese,fatturato_riferimento,atv_riferimento,upt_riferimento',{method:'GET'});
+    if(!Array.isArray(verify)||!verify.length)throw new Error('Il riferimento non è stato trovato dopo il salvataggio.');
+    const saved=verify[0];
+    if(Math.abs(Number(saved.atv_riferimento)-atv)>0.0001||Math.abs(Number(saved.upt_riferimento)-upt)>0.0001){
+      throw new Error('Supabase ha restituito valori diversi da quelli inseriti.');
+    }
+    await loadKpiTargets();
     closeModal();
     render();
-    alert('Riferimento salvato correttamente.');
-  }catch(e){alert('Impossibile salvare il riferimento del mese precedente.\n\n'+(e.message||e));}
+    alert('Riferimento salvato e aggiornato correttamente.');
+  }catch(e){
+    alert('Impossibile salvare/aggiornare il riferimento del mese precedente.\n\n'+(e.message||e));
+  }
 }
 
 async function loadStoreMonthTotal(period){
@@ -819,7 +824,7 @@ function kpi(){
   ${missing.length?`<section class="card danger"><b>⚠️ KPI non inseriti entro le 22:00</b><div class="small" style="margin-top:6px">${missing.map(p=>esc(p.name)).join(' · ')}</div></section>`:''}
   <section class="card"><div class="row"><b>👔 KPI Manager · ${periodLabel(period)}</b><button class="btn gray" onclick="managerKpiEntry()">Inserisci/modifica</button></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato</span><b>${fmt(manager.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(manager.atv)}</b></div><div class="metric"><span>UPT</span><b>${manager.upt.toFixed(2)}</b></div><div class="metric"><span>Incidenza</span><b>${total?((manager.sales/total)*100).toFixed(1):'0.0'}%</b></div></div></section>
   <section class="card"><div class="row"><div><b>👥 KPI risorse · ${periodLabel(period)}</b><div class="small" style="margin-top:4px">Riferimento ATV e UPT: <b>${prev}</b>. L'incidenza non ha colori di confronto.</div></div><button class="btn gray" onclick="targetEntry('${period}')">Gestisci riferimenti</button></div>
-  ${active.map(p=>{const rows=kpiRowsForPerson(p.id,period),c=calcKpi(rows),inc=total>0?(c.sales/total*100):0,t=targetFor(p.id,period);const atvClass=t?.atv?kpiCompareClass(c.atv,t.atv):'',uptClass=t?.upt?kpiCompareClass(c.upt,t.upt):'';return `<div class="kpi-card" style="margin-top:12px"><div class="row"><div><b>${esc(p.name)}</b><div class="small">${rows.length?`${rows.length} giornate inserite`:'Nessun dato inserito'}</div></div><button class="btn gray" onclick="targetEntry('${period}',${p.id})">${t?'Modifica riferimento':'Inserisci riferimento'}</button></div><div class="grid" style="margin-top:10px"><div><span class="small">Fatturato</span><div><b>${fmt(c.sales)}</b></div></div><div><span class="small">Incidenza</span><div><b>${inc.toFixed(1)}%</b></div></div><div><span class="small">ATV</span><div><b class="${atvClass}">${fmt(c.atv)}</b><div class="small">${t?.atv?`vs ${prev}: ${fmt(t.atv)} · ${kpiDelta(c.atv,t.atv)}`:'riferimento non inserito'}</div></div></div><div><span class="small">UPT</span><div><b class="${uptClass}">${c.upt.toFixed(2)}</b><div class="small">${t?.upt?`vs ${prev}: ${t.upt.toFixed(2)} · ${kpiDelta(c.upt,t.upt)}`:'riferimento non inserito'}</div></div></div></div></div>`}).join('')||`<div class="empty">Nessuna risorsa attiva.</div>`}</section>
+  ${active.map(p=>{const rows=kpiRowsForPerson(p.id,period),c=calcKpi(rows),inc=total>0?(c.sales/total*100):0,t=targetFor(p.id,period);const atvClass=t?.atv?kpiCompareClass(c.atv,t.atv):'',uptClass=t?.upt?kpiCompareClass(c.upt,t.upt):'';return `<div class="kpi-card" style="margin-top:12px"><div class="row"><div><b>${esc(p.name)}</b><div class="small">${rows.length?`${rows.length} giornate inserite`:'Nessun dato inserito'}</div></div></div><div class="grid" style="margin-top:10px"><div><span class="small">Fatturato</span><div><b>${fmt(c.sales)}</b></div></div><div><span class="small">Incidenza</span><div><b>${inc.toFixed(1)}%</b></div></div><div><span class="small">ATV</span><div><b class="${atvClass}">${fmt(c.atv)}</b><div class="small">${t?.atv?`vs ${prev}: ${fmt(t.atv)} · ${kpiDelta(c.atv,t.atv)}`:'riferimento non inserito'}</div></div></div><div><span class="small">UPT</span><div><b class="${uptClass}">${c.upt.toFixed(2)}</b><div class="small">${t?.upt?`vs ${prev}: ${t.upt.toFixed(2)} · ${kpiDelta(c.upt,t.upt)}`:'riferimento non inserito'}</div></div></div></div></div>`}).join('')||`<div class="empty">Nessuna risorsa attiva.</div>`}</section>
   <section class="card"><b>🏪 Totale negozio · ${periodLabel(period)}</b><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato totale</span><b>${fmt(total)}</b></div><div class="metric"><span>ATV</span><b>${fmt(total?(manager.sales+peopleTotal.sales)/(manager.receipts+peopleTotal.receipts):0)}</b></div><div class="metric"><span>UPT</span><b>${(manager.receipts+peopleTotal.receipts)?((manager.pieces+peopleTotal.pieces)/(manager.receipts+peopleTotal.receipts)).toFixed(2):'0.00'}</b></div><div class="metric"><span>Incidenza totale</span><b>100,0%</b></div></div></section>`;
 }
 
