@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827">
+<link rel="manifest" href="manifest.webmanifest">
 <title>Gestionale Replay Barberino</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
@@ -972,5 +973,13 @@ async function bootAuth(){
 window.logout=logout;
 
 bootAuth();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .catch(err => console.warn('Service Worker non registrato:', err));
+  });
+}
 </script>
 </body></html>
