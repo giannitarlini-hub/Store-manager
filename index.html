@@ -169,104 +169,8 @@ function closeModal(){document.getElementById("modal").classList.remove("open")}
 function nav(){let a=[["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"]];document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("")}
 let AUTH=null;
 let PROFILE=null;
-let AUTH_REFRESHING=null;
-let LIVE_REFRESH_TIMER=null;
-
 const authHeaders=()=>({apikey:SUPABASE_KEY,Authorization:"Bearer "+(AUTH?.access_token||SUPABASE_KEY),"Content-Type":"application/json"});
-
-function saveAuth(){try{localStorage.setItem("sm_auth",JSON.stringify(AUTH));}catch(e){}}
-
-function tokenExpiringSoon(){
-  try{
-    const token=AUTH?.access_token;
-    if(!token)return true;
-    const part=token.split('.')[1];
-    if(!part)return true;
-    const json=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/')));
-    return !json.exp || (json.exp*1000-Date.now())<120000;
-  }catch(e){return true;}
-}
-
-async function refreshAuth(){
-  if(!AUTH?.refresh_token)return false;
-  if(AUTH_REFRESHING)return AUTH_REFRESHING;
-  AUTH_REFRESHING=(async()=>{
-    try{
-      const r=await fetch(SUPABASE_URL+"/auth/v1/token?grant_type=refresh_token",{
-        method:"POST",
-        headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},
-        body:JSON.stringify({refresh_token:AUTH.refresh_token})
-      });
-      let data={};try{data=await r.json()}catch{}
-      if(!r.ok||!data.access_token)throw new Error(data.error_description||data.msg||data.message||"Sessione scaduta");
-      AUTH={...AUTH,...data,access_token:data.access_token,refresh_token:data.refresh_token||AUTH.refresh_token};
-      saveAuth();
-      return true;
-    }catch(e){
-      console.warn("Refresh sessione non riuscito",e);
-      return false;
-    }finally{AUTH_REFRESHING=null;}
-  })();
-  return AUTH_REFRESHING;
-}
-
-async function ensureAuth(){
-  if(!AUTH?.access_token)return false;
-  if(tokenExpiringSoon())return await refreshAuth();
-  return true;
-}
-
-async function restoreAuth(){
-  try{
-    const raw=localStorage.getItem("sm_auth");
-    if(!raw)return false;
-    AUTH=JSON.parse(raw);
-    if(!AUTH?.access_token)return false;
-    if(!(await ensureAuth())){
-      AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");return false;
-    }
-    PROFILE=await fetchProfile();
-    if(!PROFILE){AUTH=null;PROFILE=null;localStorage.removeItem("sm_auth");return false;}
-    return true;
-  }catch(e){
-    console.warn("Ripristino sessione non riuscito",e);
-    AUTH=null;PROFILE=null;
-    try{localStorage.removeItem("sm_auth")}catch(_){}
-    return false;
-  }
-}
-
-async function sb(path,opt={}){
-  if(!(await ensureAuth()))throw new Error("SESSION_EXPIRED");
-  const makeRequest=()=>{
-    const headers={...authHeaders(),Prefer:opt.prefer||"return=representation",...(opt.headers||{})};
-    return fetch(SUPABASE_URL+"/rest/v1/"+path,{...opt,headers});
-  };
-  let r=await makeRequest();
-  if(r.status===401){
-    const refreshed=await refreshAuth();
-    if(refreshed)r=await makeRequest();
-  }
-  const raw=await r.text();
-  if(!r.ok){
-    if(r.status===401)throw new Error("La sessione è scaduta. Effettua nuovamente l'accesso.");
-    throw new Error(raw||r.status);
-  }
-  if(!raw.trim())return null;
-  try{return JSON.parse(raw)}catch(e){return null}
-}
-
-function startLiveRefresh(){
-  if(LIVE_REFRESH_TIMER)clearInterval(LIVE_REFRESH_TIMER);
-  LIVE_REFRESH_TIMER=setInterval(async()=>{
-    if(!AUTH||!PROFILE)return;
-    if(document.getElementById("modal")?.classList.contains("open"))return;
-    await ensureAuth();
-    try{
-      await Promise.all([loadPeople(),loadTasks(),loadRequests(),loadKpis(),loadShifts(),isManager()?loadManagerKpis():Promise.resolve()]);
-    }catch(e){console.warn("Aggiornamento automatico non riuscito",e);}
-  },15000);
-}
+async function sb(path,opt={}){const headers={...authHeaders(),Prefer:opt.prefer||"return=representation",...(opt.headers||{})};const r=await fetch(SUPABASE_URL+"/rest/v1/"+path,{...opt,headers});const raw=await r.text();if(!r.ok)throw new Error(raw||r.status);if(!raw.trim())return null;try{return JSON.parse(raw)}catch(e){return null}}
 async function migrateLegacyOnline(){
   if(!isManager()) return true;
   try{
@@ -954,7 +858,11 @@ function storeMonthTotal(period){return Number(S.kpi.storeTotals?.[period]||0);}
 
 async function loadKpiTargets(){
   try{
-    const rows=await sb('KpiTargetMensile?select=*&order=anno.asc,mese.asc');
+    // Il Manager può caricare tutti i riferimenti; una risorsa carica solo il proprio.
+    const ownId=!isManager()?myPersonId():null;
+    let endpoint='KpiTargetMensile?select=*&order=anno.asc,mese.asc';
+    if(ownId!=null) endpoint+='&dipendente_id=eq.'+encodeURIComponent(ownId);
+    const rows=await sb(endpoint,{method:'GET'});
     S.kpi.targets={};
     (rows||[]).forEach(r=>{
       const key=String(r.dipendente_id)+'_'+String(r.anno)+'_'+String(r.mese).padStart(2,'0');
@@ -1038,13 +946,15 @@ async function bootApp(){
   render();
   if(isManager()) await migrateLegacyOnline();
   await loadPeople();
-  if(isManager()) { await loadKpiTargets(); await loadManagerKpis(); }
+  // Carica anche per le risorse il riferimento del mese precedente,
+  // limitandolo al proprio dipendente per non esporre i dati degli altri.
+  await loadKpiTargets();
+  if(isManager()) { await loadManagerKpis(); }
   await loadTasks();
   loadRequests();
   loadKpis();
   loadHistory();
   loadShifts();
-  startLiveRefresh();
 }
 async function bootAuth(){
   const qs=new URLSearchParams(location.search);
