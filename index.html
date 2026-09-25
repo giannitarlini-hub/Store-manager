@@ -976,10 +976,13 @@ function kpiPreviousPeriod(period){
 }
 function kpiReferenceFor(pid,period){
   const prev=kpiPreviousPeriod(period);
-  const rows=kpiRowsForPerson(pid,prev);
-  if(!rows.length)return null;
-  const c=calcKpi(rows);
-  return {period:prev,sales:c.sales,receipts:c.receipts,pieces:c.pieces,atv:c.atv,upt:c.upt};
+  // Per le risorse il confronto ATV/UPT usa il riferimento inserito dal Manager
+  // per il mese precedente, anche se la risorsa non ha giornate inserite in quel mese.
+  const [y,m]=prev.split('-');
+  const key=String(pid)+'_'+String(y)+'_'+String(m);
+  const target=S.kpi.targets?.[key]||null;
+  if(!target)return null;
+  return {period:prev,atv:Number(target.atv)||0,upt:Number(target.upt)||0};
 }
 function kpiCompareClass(v,ref){if(ref==null||ref===0)return '';return v>=ref?'up':'down'}
 function kpiDelta(v,ref){if(ref==null||ref===0)return '';const d=(v-ref)/ref*100;return `${d>=0?'+':''}${d.toFixed(1)}%`}
