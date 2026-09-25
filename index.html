@@ -566,9 +566,6 @@ function kpi(){
       <div class="kpi-resource-compare-head">Confronto con ${ref?periodLabel(ref.period):'il mese precedente'}</div>
       <div class="kpi-resource-compare-sub">Variazione percentuale rispetto al mese precedente</div>
       <div class="grid" style="margin-top:14px">
-        ${deltaHtml('Fatturato',c.sales,ref?.sales,fmt)}
-        ${deltaHtml('Scontrini',c.receipts,ref?.receipts,v=>Number(v||0).toLocaleString('it-IT'))}
-        ${deltaHtml('Pezzi venduti',c.pieces,ref?.pieces,v=>Number(v||0).toLocaleString('it-IT'))}
         ${deltaHtml('ATV',c.atv,ref?.atv,fmt)}
         ${deltaHtml('UPT',c.upt,ref?.upt,v=>Number(v||0).toFixed(2))}
       </div>
