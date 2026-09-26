@@ -976,7 +976,7 @@ function kpiReferenceFor(pid,period){
   // Per le risorse il confronto ATV/UPT usa il riferimento inserito dal Manager
   // per il mese precedente, anche se la risorsa non ha giornate inserite in quel mese.
   const [y,m]=prev.split('-');
-  const key=String(pid)+'_'+String(y)+'_'+String(m);
+  const key=String(pid)+'_'+String(y)+'_'+String(m).padStart(2,'0');
   const target=S.kpi.targets?.[key]||null;
   if(!target)return null;
   return {period:prev,atv:Number(target.atv)||0,upt:Number(target.upt)||0};
