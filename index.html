@@ -885,7 +885,7 @@ async function saveManagerKpi(){
   try{const rows=await sb('KpiManagerGiornalieri?on_conflict=data',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify(payload)});const r=Array.isArray(rows)?rows[0]:rows;S.kpi.managerDaily=S.kpi.managerDaily||{};S.kpi.managerDaily[date]={id:r?.id||date,date,sales,receipts,pieces};save();closeModal();await loadManagerKpis();await loadStoreMonthTotal(S.kpi.selected||date.slice(0,7));render();}catch(e){alert('Supabase non ha accettato il KPI Manager.\n\n'+(e.message||e));}
 }
 async function deleteManagerKpi(date){if(!isManager())return;if(!confirm(`Eliminare i KPI Manager del ${date}?`))return;try{await sb('KpiManagerGiornalieri?data=eq.'+encodeURIComponent(date),{method:'DELETE',prefer:'return=minimal'});await loadManagerKpis();await loadStoreMonthTotal(S.kpi.selected||date.slice(0,7));closeModal();render();}catch(e){alert('Impossibile eliminare il KPI Manager.\n\n'+(e.message||e));}}
-function targetFor(pid,period){const [y,m]=period.split('-');return S.kpi.targets?.[String(pid)+'_'+y+'_'+m]||null;}
+function targetFor(pid,period){const [y,m]=period.split('-');return S.kpi.targets?.[String(pid)+'_'+y+'_'+String(m).padStart(2,'0')]||null;}
 function previousMonthLabel(period){return periodLabel(kpiPreviousPeriod(period));}
 function targetEntry(period, selectedPid){
   if(!isManager())return;
@@ -1044,7 +1044,7 @@ async function bootApp(){
   render();
   if(isManager()) await migrateLegacyOnline();
   await loadPeople();
-  if(isManager()) { await loadKpiTargets(); await loadManagerKpis(); }
+  await loadKpiTargets(); if(isManager()) { await loadManagerKpis(); }
   await loadTasks();
   loadRequests();
   loadKpis();
