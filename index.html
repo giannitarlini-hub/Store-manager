@@ -127,14 +127,13 @@ function saveKpiReference(pid){
   const sales=+document.getElementById("krSales").value||0;
   const receipts=+document.getElementById("krReceipts").value||0;
   const pieces=+document.getElementById("krPieces").value||0;
-  const atvField=document.getElementById("krAtv").value;
-  const uptField=document.getElementById("krUpt").value;
+  const atv=receipts?sales/receipts:0;
+  const upt=receipts?pieces/receipts:0;
   S.kpi.peopleByPeriod=S.kpi.peopleByPeriod||{};
   S.kpi.peopleByPeriod[pid]=S.kpi.peopleByPeriod[pid]||{};
   S.kpi.peopleByPeriod[pid][period]={
     sales,receipts,pieces,
-    atv:atvField===""?(receipts?sales/receipts:0):(+atvField||0),
-    upt:uptField===""?(receipts?pieces/receipts:0):(+uptField||0)
+    atv,upt
   };
   S.kpi.selected=period;
   save(); closeModal(); render();
