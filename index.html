@@ -242,7 +242,7 @@ function home(){
     <button class="home-menu-card" onclick="S.tab='people';save();render()"><span class="home-menu-ico">👥</span><b>Risorse</b><span>${S.people.filter(p=>p.active).length} risorse attive</span></button>
     <button class="home-menu-card" onclick="S.tab='planning';save();render()"><span class="home-menu-ico">📅</span><b>Turni</b><span>Gestisci il planning</span></button>
     <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">🎯</span><b>KPI ragazzi</b><span>Risultati individuali del mese</span></button>
-    <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">📊</span><b>Andamento negozio</b><span>Fatturato · ATV · UPT del mese</span></button>
+    <button class="home-menu-card" onclick="S.tab='storeKpi';save();render()"><span class="home-menu-ico">📊</span><b>Andamento negozio</b><span>Totale negozio · ATV · UPT · progressivo</span></button>
     <button class="home-menu-card" onclick="S.tab='tasks';save();render()"><span class="home-menu-ico">✓</span><b>Attività</b><span>${S.tasks.length?S.tasks.length+" attività":"Nessuna attività"}</span></button>
     <button class="home-menu-card" onclick="S.tab='requests';save();render()"><span class="home-menu-ico">✉️</span><b>Richieste</b><span>${pending?pending+" in attesa":"Nessuna in attesa"}</span></button>
   </section>`;
@@ -538,7 +538,7 @@ function myPerson(){
 function myPersonId(){ return PROFILE?.dipendente_id == null ? null : String(PROFILE.dipendente_id); }
 function allowedTab(t){
   return isManager()
-    ? ["home","planning","people","tasks","requests","kpi"].includes(t)
+    ? ["home","planning","people","tasks","requests","kpi","storeKpi"].includes(t)
     : ["home","planning","tasks","requests","kpi"].includes(t);
 }
 function nav(){
@@ -812,6 +812,28 @@ function historyEntry(y,w){if(!isManager())return alert("Solo il Manager può mo
 async function saveHistory(){if(!isManager())return alert("Solo il Manager può modificare lo storico.");let year=+document.getElementById("hy").value,week=+document.getElementById("hw").value,sales=+document.getElementById("hs").value||0,receipts=+document.getElementById("hr").value||0,pieces=+document.getElementById("hp").value||0;if(!year||week<1||week>53)return alert("Anno o settimana non validi.");let payload={anno:year,settimana:week,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};try{let rows=await sb("KpiStorico?on_conflict=anno,settimana",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",body:JSON.stringify(payload)});let r=Array.isArray(rows)?rows[0]:rows;S.kpi.history=S.kpi.history||{};S.kpi.history[histKey(year,week)]={id:r?.id||histKey(year,week),year,week,sales,receipts,pieces};save();closeModal();await loadHistory();}catch(e){alert("Supabase non ha accettato lo storico KPI.\n\n"+(e.message||e));}}
 async function deleteHistory(id){if(!isManager())return alert("Solo il Manager può eliminare lo storico.");if(!confirm("Eliminare questo dato storico?"))return;try{await sb("KpiStorico?id=eq."+encodeURIComponent(id),{method:"DELETE",prefer:"return=minimal"});await loadHistory();}catch(e){alert("Impossibile eliminare lo storico.\n\n"+(e.message||e));}}
 
+function storeKpi(){
+  if(!isManager()) return kpi();
+  const currentPeriod=dateLocal().slice(0,7);
+  const rows=Object.values(S.kpi.daily||{}).filter(r=>r.date.startsWith(currentPeriod));
+  const store=calcKpi(rows);
+  const people=S.people.filter(p=>p.active);
+  const peopleWithData=new Set(rows.map(r=>String(r.personId))).size;
+  return `<div class="row"><div class="section">📊 Andamento negozio</div><button class="btn gray" onclick="S.tab='kpi';save();render()">← KPI ragazzi</button></div>
+  <section class="card notice"><b>Andamento negozio · ${periodLabel(currentPeriod)}</b><div class="small">Solo andamento complessivo del negozio. I valori sono calcolati automaticamente sommando i KPI giornalieri inseriti da tutti, compreso il Manager.</div></section>
+  <section class="card">
+    <div class="grid">
+      <div class="metric"><span>💰 Fatturato progressivo</span><b>${fmt(store.sales)}</b></div>
+      <div class="metric"><span>🧾 Scontrini</span><b>${store.receipts}</b></div>
+      <div class="metric"><span>👕 Pezzi venduti</span><b>${store.pieces}</b></div>
+      <div class="metric"><span>ATV negozio</span><b>${fmt(store.atv)}</b></div>
+      <div class="metric"><span>UPT negozio</span><b>${store.upt.toFixed(2)}</b></div>
+      <div class="metric"><span>Risorse con KPI</span><b>${peopleWithData}/${people.length}</b></div>
+    </div>
+  </section>
+  <section class="card"><b>Giornate KPI registrate</b><div class="small" style="margin-top:6px">${rows.length} inserimenti nel mese. Le giornate senza KPI non vengono considerate come zero nelle formule ATV/UPT.</div></section>`;
+}
+
 function kpi(){
   const currentPeriod=dateLocal().slice(0,7);
   const refPeriod=currentReferencePeriod();
@@ -883,7 +905,7 @@ function kpiEntry(pid,date){
     <button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?"Salva modifiche":"Salva KPI"}</button>
     ${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:""}`);
 }
-function render(){purgeInactivePeople();if(!allowedTab(S.tab))S.tab="home";let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():kpi();nav();if(t==="kpi"&&isManager()){let[y,m]=(S.kpi.selected||currentReferencePeriod()).split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
+function render(){purgeInactivePeople();if(!allowedTab(S.tab))S.tab="home";let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():t==="storeKpi"?storeKpi():kpi();nav();if(t==="kpi"&&isManager()){let[y,m]=(S.kpi.selected||currentReferencePeriod()).split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
 function showInviteError(msg){const e=document.getElementById("inviteError");e.textContent=msg;e.style.display="block"}
 function setInviteLoading(v){document.getElementById("inviteLoading").style.display=v?"block":"none";document.getElementById("inviteSave").disabled=v}
 function inviteTokens(){let h=(location.hash||"").replace(/^#/,""),q=new URLSearchParams(h);return {access_token:q.get("access_token"),refresh_token:q.get("refresh_token"),type:q.get("type")}}
