@@ -823,7 +823,7 @@ function kpi(){
     <section class="card"><b>Giornate inserite</b>${rows.length?rows.map(r=>`<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(""):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>`;
   }
   const active=S.people.filter(p=>p.active);
-  return `<div class="row"><div class="section">KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci i miei KPI</button></div>
+  return `<div class="row"><div class="section">KPI</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
   <section class="card notice"><b>🎯 Riferimento individuale · ${periodLabel(refPeriod)}</b><div class="small">Viene usato automaticamente il mese precedente. Qui gestisci esclusivamente i valori di riferimento delle risorse.</div></section>
   <section class="card">
   ${active.map(p=>{const r=kpiReferenceFor(p.id,refPeriod); return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b><div class="small">Riferimento · ${periodLabel(refPeriod)}</div></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:10px"><div><span class="small">Fatturato</span><div><b>${fmt(r.sales)}</b></div></div><div><span class="small">Scontrini</span><div><b>${r.receipts}</b></div></div><div><span class="small">Pezzi</span><div><b>${r.pieces}</b></div></div><div><span class="small">ATV</span><div><b>${fmt(r.atv)}</b></div></div><div><span class="small">UPT</span><div><b>${r.upt.toFixed(2)}</b></div></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
@@ -888,6 +888,44 @@ async function bootAuth(){
   if(await restoreAuth()){document.getElementById("authGate").style.display="none";bootApp();}
 }
 
+/* === KPI MANAGER: collegamento automatico alla propria risorsa === */
+async function resolveManagerPerson(){
+  if(!isManager()) return myPerson();
+  let me=myPerson();
+  if(me) return me;
+  const email=String(AUTH?.user?.email||"").trim().toLowerCase();
+  if(email) me=S.people.find(p=>p.active && String(p.email||"").trim().toLowerCase()===email)||null;
+  if(!me) me=S.people.find(p=>p.active && /manager|store manager/i.test(String(p.role||"")))||null;
+  if(me){
+    PROFILE=PROFILE||{}; PROFILE.dipendente_id=me.id;
+    try{if(AUTH?.user?.id) await sb("profili?id=eq."+encodeURIComponent(AUTH.user.id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({dipendente_id:Number(me.id)})});}catch(e){console.warn("Collegamento profilo-manager non aggiornato online",e)}
+    return me;
+  }
+  return null;
+}
+async function managerKpiEntry(){
+  const me=await resolveManagerPerson();
+  if(!me)return alert("Non trovo la tua risorsa nel Personale. Inserisci il Manager nel Personale con la tua stessa email oppure con ruolo 'Store Manager'.");
+  openManagerKpiModal(me);
+}
+function openManagerKpiModal(me,date){
+  const pid=me.id,d=date||dateLocal(),r=S.kpi.daily?.[String(pid)+"_"+d];
+  S.kpi.entryPersonId=pid;
+  openModal(r?"Modifica i miei KPI giornalieri":"Inserisci i miei KPI giornalieri",`<div class="notice"><b>${esc(me.name)}</b><div class="small">Questi KPI vengono conteggiati anche nell'andamento totale del negozio. ATV e UPT vengono calcolati automaticamente.</div></div><label>Data</label><input id="keDate" class="input" type="date" value="${d}"><label>Fatturato</label><input id="keSales" class="input" type="number" step="0.01" value="${r?.sales??''}" placeholder="0,00"><label>Scontrini</label><input id="keReceipts" class="input" type="number" min="0" step="1" value="${r?.receipts??''}" placeholder="0"><label>Pezzi venduti</label><input id="kePieces" class="input" type="number" min="0" step="1" value="${r?.pieces??''}" placeholder="0"><div class="grid" style="margin-top:6px"><div class="metric"><span>ATV</span><b id="keAtv">0,00 €</b></div><div class="metric"><span>UPT</span><b id="keUpt">0,00</b></div></div><button class="btn" style="width:100%;margin-top:8px" onclick="saveDailyKpi()">${r?'Salva modifiche':'Salva KPI'}</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:''}`);
+  updateManagerKpiPreview();
+  ["keSales","keReceipts","kePieces"].forEach(id=>document.getElementById(id)?.addEventListener("input",updateManagerKpiPreview));
+}
+function updateManagerKpiPreview(){const sales=+document.getElementById("keSales")?.value||0,receipts=+document.getElementById("keReceipts")?.value||0,pieces=+document.getElementById("kePieces")?.value||0,atv=receipts?sales/receipts:0,upt=receipts?pieces/receipts:0,a=document.getElementById("keAtv"),u=document.getElementById("keUpt");if(a)a.textContent=fmt(atv);if(u)u.textContent=upt.toFixed(2)}
+async function saveDailyKpi(){
+  const me=await resolveManagerPerson(); if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+  const pid=Number(S.kpi.entryPersonId||me.id); if(pid!==Number(me.id))return alert("Puoi inserire solo i tuoi KPI.");
+  const date=document.getElementById("keDate")?.value;if(!date)return alert("Seleziona la data.");
+  const sales=+document.getElementById("keSales")?.value||0,receipts=+document.getElementById("keReceipts")?.value||0,pieces=+document.getElementById("kePieces")?.value||0;
+  const payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};
+  try{const existing=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id&limit=1");let r;if(Array.isArray(existing)&&existing[0]?.id){const updated=await sb("KpiGiornalieri?id=eq."+encodeURIComponent(existing[0].id),{method:"PATCH",prefer:"return=representation",body:JSON.stringify(payload)});r=Array.isArray(updated)?updated[0]:updated}else{const created=await sb("KpiGiornalieri",{method:"POST",prefer:"return=representation",body:JSON.stringify(payload)});r=Array.isArray(created)?created[0]:created}S.kpi.daily[String(pid)+"_"+date]={id:r?.id||String(pid)+"_"+date,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};save();closeModal();await loadKpis()}catch(e){alert("Non riesco a salvare il KPI.\n\n"+(e.message||e))}
+}
+async function deleteDailyKpi(key){const r=S.kpi.daily?.[key];if(!r)return;const me=await resolveManagerPerson();if(!me||String(r.personId)!==String(me.id))return alert("Puoi eliminare solo i tuoi KPI.");if(!confirm(`Eliminare i KPI del ${r.date}?`))return;try{if(r.id&&String(r.id)!==key)await sb("KpiGiornalieri?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});await loadKpis()}catch(e){alert("Impossibile eliminare il KPI.\n\n"+(e.message||e))}}
+function editDailyKpi(pid,date){if(String(pid)!==String(myPersonId()))return alert("Puoi modificare solo i tuoi KPI.");kpiEntry(pid,date)}
 window.logout=logout;
 
 bootAuth();
