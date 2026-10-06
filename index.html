@@ -109,8 +109,44 @@ function kpiReferenceFor(pid,period){
     const sales=Number(stored.sales)||0, receipts=Number(stored.receipts)||0, pieces=Number(stored.pieces)||0;
     return {sales,receipts,pieces,atv:receipts?sales/receipts:0,upt:receipts?pieces/receipts:0};
   }
-  const rows=kpiRowsForPerson(pid,period);
-  return calcKpi(rows);
+  // Se non esiste un riferimento manuale condiviso, usa automaticamente
+  // i KPI giornalieri completi del mese precedente.
+  return calcKpi(kpiRowsForPerson(pid,period));
+}
+
+async function loadKpiReferences(){
+  S.kpi=S.kpi||{}; S.kpi.peopleByPeriod=S.kpi.peopleByPeriod||{};
+  try{
+    const rows=await sb('KpiRiferimenti?select=*&order=periodo.asc,dipendente_id.asc');
+    const online={};
+    (rows||[]).forEach(r=>{
+      const pid=String(r.dipendente_id), period=String(r.periodo).slice(0,7);
+      online[pid]=online[pid]||{};
+      online[pid][period]={sales:Number(r.fatturato)||0,receipts:Number(r.scontrini)||0,pieces:Number(r.pezzi_venduti)||0};
+    });
+    // Il riferimento online è la fonte condivisa.
+    Object.keys(online).forEach(pid=>{
+      S.kpi.peopleByPeriod[pid]=S.kpi.peopleByPeriod[pid]||{};
+      Object.assign(S.kpi.peopleByPeriod[pid],online[pid]);
+    });
+    // Migrazione trasparente dei vecchi riferimenti salvati solo sul dispositivo Manager.
+    if(isManager()){
+      for(const pid of Object.keys(S.kpi.peopleByPeriod)){
+        for(const period of Object.keys(S.kpi.peopleByPeriod[pid]||{})){
+          if(!online[pid]?.[period]){
+            const r=S.kpi.peopleByPeriod[pid][period];
+            if(r && (Number(r.sales)||Number(r.receipts)||Number(r.pieces))){
+              await sb('KpiRiferimenti?on_conflict=dipendente_id,periodo',{method:'POST',prefer:'resolution=merge-duplicates,return=minimal',body:JSON.stringify({dipendente_id:Number(pid),periodo:period,fatturato:Number(r.sales)||0,scontrini:Number(r.receipts)||0,pezzi_venduti:Number(r.pieces)||0})});
+            }
+          }
+        }
+      }
+    }
+    S.kpi.referencesOnline=true; save();
+  }catch(e){
+    S.kpi.referencesOnline=false;
+    console.warn('Riferimenti KPI online non caricati. Se la tabella KpiRiferimenti non esiste, esegui lo script SQL fornito.',e);
+  }
 }
 function referenceKpiEntry(pid){
   if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
@@ -143,7 +179,7 @@ function fillReferenceFromDaily(pid){
   if(s)s.value=r.sales||""; if(rec)rec.value=r.receipts||""; if(pe)pe.value=r.pieces||"";
   updateReferencePreview();
 }
-function saveKpiReference(pid){
+async function saveKpiReference(pid){
   if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
   const period=currentReferencePeriod();
   const sales=+document.getElementById("krSales").value||0;
@@ -151,14 +187,21 @@ function saveKpiReference(pid){
   const pieces=+document.getElementById("krPieces").value||0;
   const atv=receipts?sales/receipts:0;
   const upt=receipts?pieces/receipts:0;
+  const value={sales,receipts,pieces,atv,upt};
   S.kpi.peopleByPeriod=S.kpi.peopleByPeriod||{};
   S.kpi.peopleByPeriod[pid]=S.kpi.peopleByPeriod[pid]||{};
-  S.kpi.peopleByPeriod[pid][period]={
-    sales,receipts,pieces,
-    atv,upt
-  };
-  S.kpi.selected=period;
-  save(); closeModal(); render();
+  S.kpi.peopleByPeriod[pid][period]=value;
+  try{
+    await sb('KpiRiferimenti?on_conflict=dipendente_id,periodo',{
+      method:'POST',
+      prefer:'resolution=merge-duplicates,return=minimal',
+      body:JSON.stringify({dipendente_id:Number(pid),periodo:period,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces})
+    });
+    S.kpi.referencesOnline=true; save(); closeModal(); render();
+  }catch(e){
+    save();
+    alert('Il riferimento è stato salvato localmente, ma non è stato possibile condividerlo online.\n\nEsegui una volta lo script SQL KpiRiferimenti nel progetto Supabase e riprova.\n\n'+(e.message||e));
+  }
 }
 
 function ensureKpi(p){if(!S.kpi.storeByPeriod[p])S.kpi.storeByPeriod[p]={sales:0,receipts:0,avg:0,upt:0,conv:0};S.people.forEach(x=>{if(!S.kpi.peopleByPeriod[x.id])S.kpi.peopleByPeriod[x.id]={}})}
@@ -978,6 +1021,7 @@ async function bootApp(){
   render();
   if(isManager()) await migrateLegacyOnline();
   await loadPeople();
+  await loadKpiReferences();
   await loadTasks();
   loadRequests();
   loadKpis();
