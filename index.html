@@ -80,6 +80,50 @@ function periodLabel(p){const[y,m]=p.split("-").map(Number);return new Intl.Date
 function previousPeriod(p){const[y,m]=p.split("-").map(Number);return `${y-1}-${String(m).padStart(2,"0")}`}
 function monthOptions(){return ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"].map((n,i)=>`<option value="${String(i+1).padStart(2,"0")}">${n}</option>`).join("")}
 function yearOptions(selected){let y=+selected.slice(0,4),s="";for(let i=2020;i<=2035;i++)s+=`<option value="${i}" ${i===y?"selected":""}>${i}</option>`;return s}
+
+function kpiReferenceFor(pid,period){
+  const all=S.kpi?.peopleByPeriod?.[pid]||{};
+  const r=all[period]||{};
+  const sales=Number(r.sales)||0, receipts=Number(r.receipts)||0, pieces=Number(r.pieces)||0;
+  return {
+    sales, receipts, pieces,
+    atv:r.atv!=null&&r.atv!==''?Number(r.atv):(receipts?sales/receipts:0),
+    upt:r.upt!=null&&r.upt!==''?Number(r.upt):(receipts?pieces/receipts:0)
+  };
+}
+function referenceKpiEntry(pid){
+  if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
+  const p=S.people.find(x=>String(x.id)===String(pid)); if(!p)return;
+  const period=currentReferencePeriod(), r=kpiReferenceFor(pid,period);
+  openModal("Riferimento KPI · "+esc(p.name),
+    `<div class="notice"><b>Riferimento: ${periodLabel(period)}</b><div class="small">Questo è il mese precedente a quello corrente. Inserisci qui il riferimento individuale della risorsa.</div></div>
+    <label>Fatturato</label><input id="krSales" class="input" type="number" step="0.01" value="${r.sales||''}">
+    <label>Scontrini</label><input id="krReceipts" class="input" type="number" min="0" step="1" value="${r.receipts||''}">
+    <label>Pezzi venduti</label><input id="krPieces" class="input" type="number" min="0" step="1" value="${r.pieces||''}">
+    <label>ATV di riferimento</label><input id="krAtv" class="input" type="number" step="0.01" value="${r.atv||''}">
+    <label>UPT di riferimento</label><input id="krUpt" class="input" type="number" step="0.01" value="${r.upt||''}">
+    <button class="btn" style="width:100%" onclick="saveKpiReference(${pid})">Salva riferimento</button>`
+  );
+}
+function saveKpiReference(pid){
+  if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
+  const period=currentReferencePeriod();
+  const sales=+document.getElementById("krSales").value||0;
+  const receipts=+document.getElementById("krReceipts").value||0;
+  const pieces=+document.getElementById("krPieces").value||0;
+  const atvField=document.getElementById("krAtv").value;
+  const uptField=document.getElementById("krUpt").value;
+  S.kpi.peopleByPeriod=S.kpi.peopleByPeriod||{};
+  S.kpi.peopleByPeriod[pid]=S.kpi.peopleByPeriod[pid]||{};
+  S.kpi.peopleByPeriod[pid][period]={
+    sales,receipts,pieces,
+    atv:atvField===""?(receipts?sales/receipts:0):(+atvField||0),
+    upt:uptField===""?(receipts?pieces/receipts:0):(+uptField||0)
+  };
+  S.kpi.selected=period;
+  save(); closeModal(); render();
+}
+
 function ensureKpi(p){if(!S.kpi.storeByPeriod[p])S.kpi.storeByPeriod[p]={sales:0,receipts:0,avg:0,upt:0,conv:0};S.people.forEach(x=>{if(!S.kpi.peopleByPeriod[x.id])S.kpi.peopleByPeriod[x.id]={}})}
 function dateLocal(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function kpiPeriodFromDate(d){return d.slice(0,7)}
@@ -662,20 +706,45 @@ async function loadKpis(){
   }catch(e){console.warn("KPI online non caricati",e);S.online=false;save();render();}
 }
 async function saveDailyKpi(){
-  let pid=+document.getElementById("kePerson").value,date=document.getElementById("keDate").value;
-  if(!isManager()){const me=myPerson();if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");pid=+me.id;if(String(pid)!==myPersonId())return alert("Puoi inserire KPI solo per te.");}
-  if(!pid||!date)return alert("Seleziona risorsa e data.");
-  let sales=+document.getElementById("keSales").value||0,receipts=+document.getElementById("keReceipts").value||0,pieces=+document.getElementById("kePieces").value||0,payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};
-  try{let rows=await sb("KpiGiornalieri?on_conflict=dipendente_id,data",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",body:JSON.stringify(payload)});let r=Array.isArray(rows)?rows[0]:rows;S.kpi.daily[String(pid)+"_"+date]={id:r?.id||String(pid)+"_"+date,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};save();closeModal();await loadKpis();}catch(e){alert("Supabase non ha accettato il KPI.\n\n"+(e.message||e));}
+  if(isManager())return alert("Il Manager non può inserire o modificare i KPI giornalieri.");
+  const me=myPerson();
+  if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+  const pid=+me.id, date=document.getElementById("keDate").value;
+  if(!date)return alert("Seleziona la data.");
+  const sales=+document.getElementById("keSales").value||0;
+  const receipts=+document.getElementById("keReceipts").value||0;
+  const pieces=+document.getElementById("kePieces").value||0;
+  const payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};
+  try{
+    const existing=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id&limit=1");
+    let r;
+    if(Array.isArray(existing)&&existing[0]?.id){
+      const updated=await sb("KpiGiornalieri?id=eq."+encodeURIComponent(existing[0].id),{method:"PATCH",prefer:"return=representation",body:JSON.stringify(payload)});
+      r=Array.isArray(updated)?updated[0]:updated;
+    }else{
+      const created=await sb("KpiGiornalieri",{method:"POST",prefer:"return=representation",body:JSON.stringify(payload)});
+      r=Array.isArray(created)?created[0]:created;
+    }
+    S.kpi.daily[String(pid)+"_"+date]={id:r?.id||String(pid)+"_"+date,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};
+    save();closeModal();await loadKpis();
+  }catch(e){alert("Non è stato possibile salvare il KPI.\n\n"+(e.message||e));}
 }
 async function deleteDailyKpi(key){
-  const r=S.kpi.daily?.[key];if(!r)return;
-  if(!isManager()&&String(r.personId)!==myPersonId())return alert("Puoi eliminare solo i tuoi KPI.");
+  if(isManager())return alert("Il Manager non può eliminare i KPI giornalieri.");
+  const r=S.kpi.daily?.[key];
+  if(!r)return;
+  if(String(r.personId)!==myPersonId())return alert("Puoi eliminare solo i tuoi KPI.");
   if(!confirm(`Eliminare i KPI del ${r.date}?`))return;
-  try{if(r.id&&String(r.id)!==key)await sb("KpiGiornalieri?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});await loadKpis();}catch(e){alert("Impossibile eliminare il KPI.\n\n"+(e.message||e));}
+  try{
+    if(r.id&&String(r.id)!==key)await sb("KpiGiornalieri?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});
+    await loadKpis();
+  }catch(e){alert("Impossibile eliminare il KPI.\n\n"+(e.message||e));}
 }
-function editDailyKpi(pid,date){if(!isManager()&&String(pid)!==myPersonId())return alert("Puoi modificare solo i tuoi KPI.");kpiEntry(pid,date);}
-
+function editDailyKpi(pid,date){
+  if(isManager())return alert("Il Manager non può modificare i KPI giornalieri.");
+  if(String(pid)!==myPersonId())return alert("Puoi modificare solo i tuoi KPI.");
+  kpiEntry(pid,date);
+}
 async function loadHistory(){
   if(!isManager()){S.kpi.history={};return;}
   try{let rows=await sb("KpiStorico?select=*&order=anno.asc,settimana.asc");S.kpi.history={};rows.forEach(r=>{S.kpi.history[String(r.anno)+"_"+String(r.settimana)]={id:r.id,year:+r.anno,week:+r.settimana,sales:+r.fatturato||0,receipts:+r.scontrini||0,pieces:+r.pezzi_venduti||0}});save();render();}catch(e){console.warn("Storico KPI non caricato",e);}
@@ -685,21 +754,67 @@ async function saveHistory(){if(!isManager())return alert("Solo il Manager può 
 async function deleteHistory(id){if(!isManager())return alert("Solo il Manager può eliminare lo storico.");if(!confirm("Eliminare questo dato storico?"))return;try{await sb("KpiStorico?id=eq."+encodeURIComponent(id),{method:"DELETE",prefer:"return=minimal"});await loadHistory();}catch(e){alert("Impossibile eliminare lo storico.\n\n"+(e.message||e));}}
 
 function kpi(){
-  let period=S.kpi.selected||dateLocal().slice(0,7);
+  const refPeriod=currentReferencePeriod();
+  S.kpi.selected=refPeriod;
+  save();
+
   if(!isManager()){
-    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,period):[], c=calcKpi(rows);
-    return `<div class="row"><div class="section">Il mio KPI</div><button class="btn" onclick="kpiEntry(${me?.id||''})">+ Inserisci dati</button></div>
-    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(period)}</b><div class="small">Visualizzi e modifichi esclusivamente i tuoi dati giornalieri.</div></section>
+    const me=myPerson(), currentPeriod=dateLocal().slice(0,7);
+    const rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows);
+    return `<div class="row"><div class="section">Il mio KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
+    <section class="card notice"><b>👤 KPI giornalieri · ${periodLabel(currentPeriod)}</b><div class="small">Inserisci i tuoi dati giornalieri. Il Manager gestisce i riferimenti.</div></section>
     <section class="card"><div class="grid"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div></section>
     <section class="card"><b>Giornate inserite</b>${rows.length?rows.map(r=>`<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(""):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>`;
   }
-  let active=S.people.filter(p=>p.active),today=dateLocal(),missing=kpiCutoffMissing(),store=calcKpi(Object.values(todayKpiRows()).filter(r=>r.date.startsWith(period))),selectedDate=today.startsWith(period)?today:period+"-01",wn=weekNumber(selectedDate),year=+period.slice(0,4),weekRows=Object.values(todayKpiRows()).filter(r=>weekNumber(r.date)===wn&&+r.date.slice(0,4)===year),wk=calcKpi(weekRows),hist=historyRow(year-1,wn),ly=hist?calcKpi([{sales:hist.sales,receipts:hist.receipts,pieces:hist.pieces}]):{sales:0,receipts:0,pieces:0,atv:0,upt:0},pct=(a,b)=>b?((a-b)/b*100):null;
-  return `<div class="row"><div class="section">KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div><section class="card notice"><b>☁️ KPI condivisi online</b><div class="small">Il Manager vede tutti i dati. Ogni risorsa inserisce e modifica solo i propri KPI.</div></section><section class="card"><div class="grid"><div><label>Mese</label><select id="kpiMonth" class="select" onchange="changeKpiPeriod()">${monthOptions()}</select></div><div><label>Anno</label><select id="kpiYear" class="select" onchange="changeKpiPeriod()">${yearOptions(period)}</select></div></div></section>${missing.length?`<section class="card danger"><b>⚠️ KPI non inseriti entro le 22:00</b><div class="small" style="margin-top:6px">${missing.map(p=>esc(p.name)).join(' · ')}</div></section>`:''}<section class="card"><b>🏪 KPI negozio · settimana ${wn}</b><div class="small" style="margin:5px 0 12px">Settimana ${wn} ${year} vs settimana ${wn} ${year-1}</div><div class="grid"><div class="kpi-card"><span>Fatturato</span><div class="kpi-big">${fmt(wk.sales)}</div><div class="small">${fmt(ly.sales)} anno prec. ${pct(wk.sales,ly.sales)==null?'':`· ${pct(wk.sales,ly.sales)>=0?'+':''}${pct(wk.sales,ly.sales).toFixed(1)}%`}</div></div><div class="kpi-card"><span>ATV</span><div class="kpi-big">${fmt(wk.atv)}</div><div class="small">${fmt(ly.atv)} anno prec. ${pct(wk.atv,ly.atv)==null?'':`· ${pct(wk.atv,ly.atv)>=0?'+':''}${pct(wk.atv,ly.atv).toFixed(1)}%`}</div></div><div class="kpi-card"><span>UPT</span><div class="kpi-big">${wk.upt.toFixed(2)}</div><div class="small">${ly.upt.toFixed(2)} anno prec. ${pct(wk.upt,ly.upt)==null?'':`· ${pct(wk.upt,ly.upt)>=0?'+':''}${pct(wk.upt,ly.upt).toFixed(1)}%`}</div></div></div></section><section class="card"><div class="row"><div><b>🔵 Storico anno precedente</b><div class="small">Solo Manager: dati storici della settimana ${wn} ${year-1}.</div></div><button class="btn gray" onclick="historyEntry(${year-1},${wn})">${hist?'Modifica':'Inserisci'}</button></div>${hist?`<div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato ${year-1}</span><b>${fmt(ly.sales)}</b></div><div class="metric"><span>ATV ${year-1}</span><b>${fmt(ly.atv)}</b></div><div class="metric"><span>UPT ${year-1}</span><b>${ly.upt.toFixed(2)}</b></div></div>`:`<div class="small" style="margin-top:10px">Nessun dato storico inserito per questa settimana.</div>`}</section><section class="card"><b>👥 KPI personali · ${periodLabel(period)}</b>${active.map(p=>{let rows=kpiRowsForPerson(p.id,period),c=calcKpi(rows);return `<div class="kpi-card"><div class="row"><b>${esc(p.name)}</b><span class="pill ${rows.length?'':'gray'}">${rows.length?`${rows.length} giorni`:'Nessun dato'}</span></div><div class="grid" style="margin-top:8px"><div><span class="small">Fatturato</span><div><b>${fmt(c.sales)}</b></div></div><div><span class="small">ATV</span><div><b>${fmt(c.atv)}</b></div></div><div><span class="small">UPT</span><div><b>${c.upt.toFixed(2)}</b></div></div></div>${rows.length?`<div style="margin-top:10px">${rows.map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid #edf0f3"><span class="small">${r.date}</span><span class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</span><button class="btn gray" onclick="editDailyKpi(${p.id},'${r.date}')">Modifica</button></div>`).join('')}</div>`:''}</div>`}).join('')||`<div class="empty">Nessuna risorsa attiva.</div>`}</section>`;
+
+  const active=S.people.filter(p=>p.active);
+  const currentPeriod=dateLocal().slice(0,7);
+  const missing=kpiCutoffMissing();
+  const pct=(a,b)=>b?((a-b)/b*100):null;
+
+  return `<div class="row"><div class="section">KPI</div></div>
+  <section class="card notice"><b>☁️ KPI condivisi online</b><div class="small">I ragazzi inseriscono i KPI giornalieri. Tu gestisci solo i riferimenti individuali e visualizzi i risultati.</div></section>
+  <section class="card"><div class="row"><div><b>🎯 Mese di riferimento</b><div class="small">${periodLabel(refPeriod)} · mese precedente</div></div><span class="pill">Automatico</span></div><div class="small" style="margin-top:8px">Il riferimento cambia automaticamente ogni mese: ottobre → settembre, novembre → ottobre, ecc.</div></section>
+  ${missing.length?`<section class="card danger"><b>⚠️ KPI non inseriti entro le 22:00</b><div class="small" style="margin-top:6px">${missing.map(p=>esc(p.name)).join(" · ")}</div></section>`:""}
+  <section class="card"><b>🎯 Riferimenti individuali · ${periodLabel(refPeriod)}</b>
+  ${active.map(p=>{
+    const r=kpiReferenceFor(p.id,refPeriod);
+    const rows=kpiRowsForPerson(p.id,currentPeriod);
+    const c=calcKpi(rows);
+    const ps=pct(c.sales,r.sales), pa=pct(c.atv,r.atv), pu=pct(c.upt,r.upt);
+    return `<div class="kpi-card">
+      <div class="row"><div><b>${esc(p.name)}</b><div class="small">Rif. ${fmt(r.sales)} · ATV ${fmt(r.atv)} · UPT ${r.upt.toFixed(2)}</div></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica riferimento</button></div>
+      <div class="grid" style="margin-top:10px">
+        <div><span class="small">Fatturato mese</span><div><b>${fmt(c.sales)}</b></div><div class="${ps!=null&&ps>=0?'up':'down'}">${ps==null?'—':(ps>=0?'+':'')+ps.toFixed(1)+'%'}</div></div>
+        <div><span class="small">ATV</span><div><b>${fmt(c.atv)}</b></div><div class="${pa!=null&&pa>=0?'up':'down'}">${pa==null?'—':(pa>=0?'+':'')+pa.toFixed(1)+'%'}</div></div>
+        <div><span class="small">UPT</span><div><b>${c.upt.toFixed(2)}</b></div><div class="${pu!=null&&pu>=0?'up':'down'}">${pu==null?'—':(pu>=0?'+':'')+pu.toFixed(1)+'%'}</div></div>
+      </div>
+    </div>`;
+  }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  </section>
+
+  <section class="card"><b>📋 KPI giornalieri · ${periodLabel(currentPeriod)}</b><div class="small" style="margin:5px 0 12px">Sola visualizzazione Manager: qui non puoi modificare né cancellare i dati inseriti dai ragazzi.</div>
+  ${active.map(p=>{
+    const rows=kpiRowsForPerson(p.id,currentPeriod);
+    return `<div class="kpi-card"><div class="row"><b>${esc(p.name)}</b><span class="pill ${rows.length?'':'gray'}">${rows.length?rows.length+' giorni':'Nessun dato'}</span></div>
+    ${rows.map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid #edf0f3"><span class="small">${r.date}</span><span class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</span></div>`).join("")}</div>`;
+  }).join("")}</section>`;
 }
 function kpiEntry(pid,date){
-  if(!isManager()){const me=myPerson();if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");pid=me.id;}
-  let a=isManager()?S.people.filter(p=>p.active):[myPerson()].filter(Boolean),d=date||dateLocal(),r=pid?S.kpi.daily?.[String(pid)+"_"+d]:null;
-  openModal(r?"Modifica KPI giornalieri":"Inserimento KPI giornalieri",`<div class="notice">Inserisci o correggi i dati della giornata. ATV e UPT vengono calcolati automaticamente.</div><label>Risorsa</label><select id="kePerson" class="select" ${!isManager()?'disabled':''}>${a.map(p=>`<option value="${p.id}" ${String(p.id)===String(pid||a[0]?.id)?'selected':''}>${esc(p.name)}</option>`).join('')}</select><label>Data</label><input id="keDate" class="input" type="date" value="${d}"><label>Fatturato</label><input id="keSales" class="input" type="number" step="0.01" value="${r?.sales??''}" placeholder="0,00"><label>Scontrini</label><input id="keReceipts" class="input" type="number" min="0" step="1" value="${r?.receipts??''}" placeholder="0"><label>Pezzi venduti</label><input id="kePieces" class="input" type="number" min="0" step="1" value="${r?.pieces??''}" placeholder="0"><button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?'Salva modifiche':'Salva KPI'}</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:''}`);
+  if(isManager()) return alert("Il Manager non inserisce né modifica i KPI giornalieri. I dati vengono inseriti dalla risorsa.");
+  const me=myPerson();
+  if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+  pid=me.id;
+  const d=date||dateLocal(), r=S.kpi.daily?.[String(pid)+"_"+d];
+  openModal(r?"Modifica KPI giornalieri":"Inserimento KPI giornalieri",
+    `<div class="notice"><b>Inserisci i dati della giornata.</b><div class="small">ATV e UPT vengono calcolati automaticamente.</div></div>
+    <label>Risorsa</label><input class="input" value="${esc(me.name)}" disabled>
+    <label>Data</label><input id="keDate" class="input" type="date" value="${d}">
+    <label>Fatturato</label><input id="keSales" class="input" type="number" step="0.01" value="${r?.sales??''}" placeholder="0,00">
+    <label>Scontrini</label><input id="keReceipts" class="input" type="number" min="0" step="1" value="${r?.receipts??''}" placeholder="0">
+    <label>Pezzi venduti</label><input id="kePieces" class="input" type="number" min="0" step="1" value="${r?.pieces??''}" placeholder="0">
+    <button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?"Salva modifiche":"Salva KPI"}</button>
+    ${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:""}`);
 }
 function render(){purgeInactivePeople();if(!allowedTab(S.tab))S.tab="home";let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():kpi();nav();if(t==="kpi"&&isManager()){let[y,m]=(S.kpi.selected||currentReferencePeriod()).split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
 function showInviteError(msg){const e=document.getElementById("inviteError");e.textContent=msg;e.style.display="block"}
