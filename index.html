@@ -82,27 +82,29 @@ function monthOptions(){return ["Gennaio","Febbraio","Marzo","Aprile","Maggio","
 function yearOptions(selected){let y=+selected.slice(0,4),s="";for(let i=2020;i<=2035;i++)s+=`<option value="${i}" ${i===y?"selected":""}>${i}</option>`;return s}
 
 function kpiReferenceFor(pid,period){
-  const all=S.kpi?.peopleByPeriod?.[pid]||{};
-  const r=all[period]||{};
-  const sales=Number(r.sales)||0, receipts=Number(r.receipts)||0, pieces=Number(r.pieces)||0;
-  return {
-    sales, receipts, pieces,
-    atv:r.atv!=null&&r.atv!==''?Number(r.atv):(receipts?sales/receipts:0),
-    upt:r.upt!=null&&r.upt!==''?Number(r.upt):(receipts?pieces/receipts:0)
-  };
+  const all=S.kpi?.peopleByPeriod?.[pid]||{}, stored=all[period];
+  if(stored && (Number(stored.sales)||Number(stored.receipts)||Number(stored.pieces))){
+    const sales=Number(stored.sales)||0, receipts=Number(stored.receipts)||0, pieces=Number(stored.pieces)||0;
+    return {sales,receipts,pieces,atv:receipts?sales/receipts:0,upt:receipts?pieces/receipts:0};
+  }
+  const rows=kpiRowsForPerson(pid,period);
+  return calcKpi(rows);
 }
 function referenceKpiEntry(pid){
-  if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
+  if(!isManager()) return alert("Solo il Manager può vedere i riferimenti KPI.");
   const p=S.people.find(x=>String(x.id)===String(pid)); if(!p)return;
-  const period=currentReferencePeriod(), r=kpiReferenceFor(pid,period);
+  const period=currentReferencePeriod(), r=kpiReferenceFor(pid,period), rows=kpiRowsForPerson(pid,period);
   openModal("Riferimento KPI · "+esc(p.name),
-    `<div class="notice"><b>Riferimento: ${periodLabel(period)}</b><div class="small">Questo è il mese precedente a quello corrente. Inserisci qui il riferimento individuale della risorsa.</div></div>
-    <label>Fatturato</label><input id="krSales" class="input" type="number" step="0.01" value="${r.sales||''}">
-    <label>Scontrini</label><input id="krReceipts" class="input" type="number" min="0" step="1" value="${r.receipts||''}">
-    <label>Pezzi venduti</label><input id="krPieces" class="input" type="number" min="0" step="1" value="${r.pieces||''}">
-    <label>ATV di riferimento</label><input id="krAtv" class="input" type="number" step="0.01" value="${r.atv||''}">
-    <label>UPT di riferimento</label><input id="krUpt" class="input" type="number" step="0.01" value="${r.upt||''}">
-    <button class="btn" style="width:100%" onclick="saveKpiReference(${pid})">Salva riferimento</button>`
+    `<div class="notice"><b>Riferimento: ${periodLabel(period)}</b><div class="small">Il riferimento viene calcolato automaticamente dai KPI giornalieri inseriti dalla risorsa nel mese precedente. ATV = fatturato totale ÷ scontrini totali. UPT = pezzi totali ÷ scontrini totali.</div></div>
+    <div class="grid" style="margin-top:12px">
+      <div class="metric"><span>Fatturato</span><b>${fmt(r.sales)}</b></div>
+      <div class="metric"><span>Scontrini</span><b>${r.receipts}</b></div>
+      <div class="metric"><span>Pezzi venduti</span><b>${r.pieces}</b></div>
+      <div class="metric"><span>ATV medio</span><b>${fmt(r.atv)}</b></div>
+      <div class="metric"><span>UPT medio</span><b>${r.upt.toFixed(2)}</b></div>
+      <div class="metric"><span>Giornate</span><b>${rows.length}</b></div>
+    </div>
+    <div class="small" style="margin-top:12px">Questo valore si aggiorna automaticamente quando vengono caricati i KPI giornalieri del mese di riferimento.</div>`
   );
 }
 function saveKpiReference(pid){
