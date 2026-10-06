@@ -826,8 +826,27 @@ function kpi(){
 
   const active=S.people.filter(p=>p.active);
   return `<div class="row"><div class="section">KPI ragazzi</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
-  <section class="card notice"><b>📊 KPI progressivi · ${periodLabel(currentPeriod)}</b><div class="small">Qui vedi i KPI giornalieri inseriti dai ragazzi, il progressivo del mese e il confronto con il riferimento di ${periodLabel(refPeriod)}. I dati del Manager sono inclusi separatamente nei tuoi KPI e nel totale negozio.</div></section>
+  <section class="card notice"><b>📊 KPI progressivi · ${periodLabel(currentPeriod)}</b><div class="small">Qui vedi i KPI giornalieri inseriti dai ragazzi, il progressivo del mese e il confronto con il riferimento di ${periodLabel(refPeriod)}. I tuoi KPI sono inclusi nel totale negozio.</div></section>
+
   <section class="card">
+    <div class="row"><div><b>🎯 Riferimenti manuali · ${periodLabel(refPeriod)}</b><div class="small">Inserisci o correggi manualmente i valori del mese precedente per ogni risorsa.</div></div></div>
+    ${active.map(p=>{
+      const r=kpiReferenceFor(p.id,refPeriod);
+      return `<div class="kpi-card">
+        <div class="row">
+          <div><b>${esc(p.name)}</b><div class="small">Fatturato ${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div>
+          <button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button>
+        </div>
+        <div class="grid" style="margin-top:10px">
+          <div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div>
+          <div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div>
+        </div>
+      </div>`;
+    }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  </section>
+
+  <section class="card">
+    <b>👥 KPI progressivi dei ragazzi · ${periodLabel(currentPeriod)}</b>
     ${active.map(p=>{
       const rows=kpiRowsForPerson(p.id,currentPeriod), c=calcKpi(rows), r=kpiReferenceFor(p.id,refPeriod);
       const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null, uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;
