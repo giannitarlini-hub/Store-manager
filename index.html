@@ -91,21 +91,35 @@ function kpiReferenceFor(pid,period){
   return calcKpi(rows);
 }
 function referenceKpiEntry(pid){
-  if(!isManager()) return alert("Solo il Manager può vedere i riferimenti KPI.");
+  if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
   const p=S.people.find(x=>String(x.id)===String(pid)); if(!p)return;
   const period=currentReferencePeriod(), r=kpiReferenceFor(pid,period), rows=kpiRowsForPerson(pid,period);
   openModal("Riferimento KPI · "+esc(p.name),
-    `<div class="notice"><b>Riferimento: ${periodLabel(period)}</b><div class="small">Il riferimento viene calcolato automaticamente dai KPI giornalieri inseriti dalla risorsa nel mese precedente. ATV = fatturato totale ÷ scontrini totali. UPT = pezzi totali ÷ scontrini totali.</div></div>
-    <div class="grid" style="margin-top:12px">
-      <div class="metric"><span>Fatturato</span><b>${fmt(r.sales)}</b></div>
-      <div class="metric"><span>Scontrini</span><b>${r.receipts}</b></div>
-      <div class="metric"><span>Pezzi venduti</span><b>${r.pieces}</b></div>
-      <div class="metric"><span>ATV medio</span><b>${fmt(r.atv)}</b></div>
-      <div class="metric"><span>UPT medio</span><b>${r.upt.toFixed(2)}</b></div>
-      <div class="metric"><span>Giornate</span><b>${rows.length}</b></div>
+    `<div class="notice"><b>Riferimento: ${periodLabel(period)}</b><div class="small">Puoi inserire il riferimento del mese precedente. Se il ragazzo ha già inserito i KPI giornalieri, i valori vengono proposti automaticamente.</div></div>
+    <label>Fatturato di riferimento</label><input id="krSales" class="input" type="number" step="0.01" value="${r.sales||''}" placeholder="0,00" oninput="updateReferencePreview()">
+    <label>Scontrini di riferimento</label><input id="krReceipts" class="input" type="number" min="0" step="1" value="${r.receipts||''}" placeholder="0" oninput="updateReferencePreview()">
+    <label>Pezzi venduti di riferimento</label><input id="krPieces" class="input" type="number" min="0" step="1" value="${r.pieces||''}" placeholder="0" oninput="updateReferencePreview()">
+    <div class="grid" style="margin-top:6px">
+      <div class="metric"><span>ATV calcolato</span><b id="krAtvView">${fmt(r.atv)}</b></div>
+      <div class="metric"><span>UPT calcolato</span><b id="krUptView">${r.upt.toFixed(2)}</b></div>
     </div>
-    <div class="small" style="margin-top:12px">Questo valore si aggiorna automaticamente quando vengono caricati i KPI giornalieri del mese di riferimento.</div>`
+    <div class="small" style="margin-top:10px">ATV = fatturato ÷ scontrini · UPT = pezzi ÷ scontrini. Non devi inserirli a mano.</div>
+    <button class="btn gray" style="width:100%;margin-top:10px" onclick="fillReferenceFromDaily(${pid})">↻ Usa i KPI giornalieri di ${periodLabel(period)}</button>
+    <button class="btn" style="width:100%;margin-top:8px" onclick="saveKpiReference(${pid})">Salva riferimento</button>`
   );
+  updateReferencePreview();
+}
+function updateReferencePreview(){
+  const sales=+document.getElementById("krSales")?.value||0, receipts=+document.getElementById("krReceipts")?.value||0, pieces=+document.getElementById("krPieces")?.value||0;
+  const atv=receipts?sales/receipts:0, upt=receipts?pieces/receipts:0;
+  const a=document.getElementById("krAtvView"), u=document.getElementById("krUptView");
+  if(a)a.textContent=fmt(atv); if(u)u.textContent=upt.toFixed(2);
+}
+function fillReferenceFromDaily(pid){
+  const period=currentReferencePeriod(), r=calcKpi(kpiRowsForPerson(pid,period));
+  const s=document.getElementById("krSales"), rec=document.getElementById("krReceipts"), pe=document.getElementById("krPieces");
+  if(s)s.value=r.sales||""; if(rec)rec.value=r.receipts||""; if(pe)pe.value=r.pieces||"";
+  updateReferencePreview();
 }
 function saveKpiReference(pid){
   if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
