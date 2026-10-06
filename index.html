@@ -755,50 +755,20 @@ async function deleteHistory(id){if(!isManager())return alert("Solo il Manager p
 
 function kpi(){
   const refPeriod=currentReferencePeriod();
-  S.kpi.selected=refPeriod;
-  save();
-
+  S.kpi.selected=refPeriod; save();
   if(!isManager()){
-    const me=myPerson(), currentPeriod=dateLocal().slice(0,7);
-    const rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows);
+    const me=myPerson(), currentPeriod=dateLocal().slice(0,7), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows);
     return `<div class="row"><div class="section">Il mio KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
-    <section class="card notice"><b>👤 KPI giornalieri · ${periodLabel(currentPeriod)}</b><div class="small">Inserisci i tuoi dati giornalieri. Il Manager gestisce i riferimenti.</div></section>
+    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Inserisci i dati della giornata. Puoi modificare solo i tuoi KPI.</div></section>
     <section class="card"><div class="grid"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div></section>
     <section class="card"><b>Giornate inserite</b>${rows.length?rows.map(r=>`<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(""):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>`;
   }
-
   const active=S.people.filter(p=>p.active);
-  const currentPeriod=dateLocal().slice(0,7);
-  const missing=kpiCutoffMissing();
-  const pct=(a,b)=>b?((a-b)/b*100):null;
-
-  return `<div class="row"><div class="section">KPI</div></div>
-  <section class="card notice"><b>☁️ KPI condivisi online</b><div class="small">I ragazzi inseriscono i KPI giornalieri. Tu gestisci solo i riferimenti individuali e visualizzi i risultati.</div></section>
-  <section class="card"><div class="row"><div><b>🎯 Mese di riferimento</b><div class="small">${periodLabel(refPeriod)} · mese precedente</div></div><span class="pill">Automatico</span></div><div class="small" style="margin-top:8px">Il riferimento cambia automaticamente ogni mese: ottobre → settembre, novembre → ottobre, ecc.</div></section>
-  ${missing.length?`<section class="card danger"><b>⚠️ KPI non inseriti entro le 22:00</b><div class="small" style="margin-top:6px">${missing.map(p=>esc(p.name)).join(" · ")}</div></section>`:""}
-  <section class="card"><b>🎯 Riferimenti individuali · ${periodLabel(refPeriod)}</b>
-  ${active.map(p=>{
-    const r=kpiReferenceFor(p.id,refPeriod);
-    const rows=kpiRowsForPerson(p.id,currentPeriod);
-    const c=calcKpi(rows);
-    const ps=pct(c.sales,r.sales), pa=pct(c.atv,r.atv), pu=pct(c.upt,r.upt);
-    return `<div class="kpi-card">
-      <div class="row"><div><b>${esc(p.name)}</b><div class="small">Rif. ${fmt(r.sales)} · ATV ${fmt(r.atv)} · UPT ${r.upt.toFixed(2)}</div></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica riferimento</button></div>
-      <div class="grid" style="margin-top:10px">
-        <div><span class="small">Fatturato mese</span><div><b>${fmt(c.sales)}</b></div><div class="${ps!=null&&ps>=0?'up':'down'}">${ps==null?'—':(ps>=0?'+':'')+ps.toFixed(1)+'%'}</div></div>
-        <div><span class="small">ATV</span><div><b>${fmt(c.atv)}</b></div><div class="${pa!=null&&pa>=0?'up':'down'}">${pa==null?'—':(pa>=0?'+':'')+pa.toFixed(1)+'%'}</div></div>
-        <div><span class="small">UPT</span><div><b>${c.upt.toFixed(2)}</b></div><div class="${pu!=null&&pu>=0?'up':'down'}">${pu==null?'—':(pu>=0?'+':'')+pu.toFixed(1)+'%'}</div></div>
-      </div>
-    </div>`;
-  }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
-  </section>
-
-  <section class="card"><b>📋 KPI giornalieri · ${periodLabel(currentPeriod)}</b><div class="small" style="margin:5px 0 12px">Sola visualizzazione Manager: qui non puoi modificare né cancellare i dati inseriti dai ragazzi.</div>
-  ${active.map(p=>{
-    const rows=kpiRowsForPerson(p.id,currentPeriod);
-    return `<div class="kpi-card"><div class="row"><b>${esc(p.name)}</b><span class="pill ${rows.length?'':'gray'}">${rows.length?rows.length+' giorni':'Nessun dato'}</span></div>
-    ${rows.map(r=>`<div class="row" style="padding:8px 0;border-bottom:1px solid #edf0f3"><span class="small">${r.date}</span><span class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</span></div>`).join("")}</div>`;
-  }).join("")}</section>`;
+  return `<div class="row"><div class="section">Riferimenti KPI</div></div>
+  <section class="card notice"><b>🎯 Riferimento individuale · ${periodLabel(refPeriod)}</b><div class="small">Viene usato automaticamente il mese precedente. Qui gestisci esclusivamente i valori di riferimento delle risorse.</div></section>
+  <section class="card">
+  ${active.map(p=>{const r=kpiReferenceFor(p.id,refPeriod); return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b><div class="small">Riferimento · ${periodLabel(refPeriod)}</div></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:10px"><div><span class="small">Fatturato</span><div><b>${fmt(r.sales)}</b></div></div><div><span class="small">Scontrini</span><div><b>${r.receipts}</b></div></div><div><span class="small">Pezzi</span><div><b>${r.pieces}</b></div></div><div><span class="small">ATV</span><div><b>${fmt(r.atv)}</b></div></div><div><span class="small">UPT</span><div><b>${r.upt.toFixed(2)}</b></div></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  </section>`;
 }
 function kpiEntry(pid,date){
   if(isManager()) return alert("Il Manager non inserisce né modifica i KPI giornalieri. I dati vengono inseriti dalla risorsa.");
