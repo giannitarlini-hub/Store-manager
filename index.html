@@ -70,7 +70,7 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 const SUPABASE_URL="https://mgklvroxfowgqljehquz.supabase.co";
 const SUPABASE_KEY="sb_publishable_Jro2VCtNW_GFYE6w0hfUYw_SBNsvb8M";
 const KEY="store_manager_v5";
-let S=JSON.parse(localStorage.getItem(KEY)||"null")||{tab:"home",people:[],requests:[],tasks:[],shifts:[],kpi:{selected:"",storeByPeriod:{},peopleByPeriod:{},daily:{},history:{}},online:true};
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||{tab:"home",people:[],requests:[],tasks:[],shifts:[],malattie:[],kpi:{selected:"",storeByPeriod:{},peopleByPeriod:{},daily:{},history:{}},online:true};
 function currentReferencePeriod(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function setCurrentReferencePeriod(){S.kpi=S.kpi||{};S.kpi.selected=currentReferencePeriod();save()}
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
@@ -189,7 +189,7 @@ function kpiCutoffMissing(){
 }
 function openModal(title,body){document.getElementById("sheet").innerHTML=`<div class="row"><h2 style="margin:0 0 15px">${title}</h2><button class="btn gray" onclick="closeModal()">Chiudi</button></div>${body}`;document.getElementById("modal").classList.add("open")}
 function closeModal(){document.getElementById("modal").classList.remove("open")}
-function nav(){let a=[["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"]];document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("")}
+function nav(){let a=[["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"],["malattie","⚕","Malattie"]];document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("")}
 let AUTH=null;
 let PROFILE=null;
 const authHeaders=()=>({apikey:SUPABASE_KEY,Authorization:"Bearer "+(AUTH?.access_token||SUPABASE_KEY),"Content-Type":"application/json"});
@@ -279,7 +279,7 @@ function home(){
   <section class="home-menu-grid">
     <button class="home-menu-card" onclick="S.tab='people';save();render()"><span class="home-menu-ico">👥</span><b>Risorse</b><span>${S.people.filter(p=>p.active).length} risorse attive</span></button>
     <button class="home-menu-card" onclick="S.tab='planning';save();render()"><span class="home-menu-ico">📅</span><b>Turni</b><span>Gestisci il planning</span></button>
-    <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">🎯</span><b>KPI negozio</b><span>Andamento e riepilogo KPI</span></button>
+    <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">🎯</span><b>KPI ragazzi</b><span>Riepilogo mensile e riferimenti</span></button>
     <button class="home-menu-card" onclick="S.tab='storeKpi';save();render()"><span class="home-menu-ico">📊</span><b>Andamento negozio</b><span>Totale negozio · ATV · UPT · progressivo</span></button>
     <button class="home-menu-card" onclick="S.tab='tasks';save();render()"><span class="home-menu-ico">✓</span><b>Attività</b><span>${S.tasks.length?S.tasks.length+" attività":"Nessuna attività"}</span></button>
     <button class="home-menu-card" onclick="S.tab='requests';save();render()"><span class="home-menu-ico">✉️</span><b>Richieste</b><span>${pending?pending+" in attesa":"Nessuna in attesa"}</span></button>
@@ -544,10 +544,9 @@ function kpi(){
   }
 
   const active=S.people.filter(p=>p.active);
-  const storeRows=Object.values(S.kpi.daily||{}).filter(r=>String(r.date||"").startsWith(currentPeriod));
-  const store=calcKpi(storeRows);
-  return `<div class="row"><div class="section">KPI negozio</div><button class="btn gray" onclick="S.tab='storeKpi';save();render()">Andamento negozio</button></div>
-  <section class="card notice"><b>📊 KPI aggregati · ${periodLabel(currentPeriod)}</b><div class="small">I KPI giornalieri inseriti dai ragazzi non vengono mostrati. Il sistema li utilizza automaticamente per calcolare l'andamento complessivo del negozio.</div></section>
+
+  return `<div class="row"><div class="section">KPI ragazzi</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
+  <section class="card notice"><b>📊 KPI mensili delle risorse</b><div class="small">Qui trovi solo il riepilogo mensile e i confronti con il riferimento. L'andamento aggregato del negozio è nella sezione <b>Andamento negozio</b>.</div></section>
   <section class="card">
     <div class="grid">
       <div class="metric"><span>💰 Fatturato mese</span><b>${fmt(store.sales)}</b></div>
@@ -604,6 +603,66 @@ function kpiEntry(pid,date){
     <button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?"Salva modifiche":"Salva KPI"}</button>
     ${r&&!manager?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:""}`);
 }
+async function loadMalattie(){
+  try{
+    const rows=await sb('Malattie?select=*&order=data_inizio.desc');
+    const mapped=(rows||[]).map(r=>({id:r.id,personId:r.dipendente_id,protocollo:r.protocollo||'',inizio:r.data_inizio||'',fine:r.data_fine||''}));
+    S.malattie=isManager()?mapped:mapped.filter(x=>String(x.personId)===myPersonId());
+    S.online=true;save();render();
+  }catch(e){
+    console.warn('Malattie online non caricate',e);
+    S.malattie=S.malattie||[];S.online=false;save();render();
+  }
+}
+function malattie(){
+  S.malattie=S.malattie||[];
+  const manager=isManager(), me=myPerson();
+  const records=manager
+    ? [...S.malattie].sort((a,b)=>String(b.inizio||'').localeCompare(String(a.inizio||'')))
+    : S.malattie.filter(x=>String(x.personId)===myPersonId()).sort((a,b)=>String(b.inizio||'').localeCompare(String(a.inizio||'')));
+  return `<div class="row"><div class="section">⚕ Malattie</div>${!manager?`<button class="btn" onclick="malattiaEntry()">+ Inserisci malattia</button>`:''}</div>
+  <section class="card notice"><b>${manager?'Gestione malattie':'Le mie malattie'}</b><div class="small">${manager?'Visualizzi le malattie inserite dalle risorse. Le registrazioni vengono salvate online e sono visibili anche al Manager.':'Inserisci il numero di protocollo, la data di inizio e la data di fine compresa. Puoi modificare o eliminare solo le tue registrazioni.'}</div></section>
+  <section class="card">${records.length?records.map(r=>{const p=S.people.find(x=>String(x.id)===String(r.personId));const own=!manager&&String(r.personId)===myPersonId();return `<div class="kpi-card"><div class="row"><div><b>${esc(manager?(p?.name||'Risorsa'):(me?.name||'La mia malattia'))}</b><div class="small">Protocollo: ${esc(r.protocollo||'—')}</div></div><span class="pill red">Malattia</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Inizio</span><b>${esc(r.inizio||'—')}</b></div><div class="metric"><span>Fine compresa</span><b>${esc(r.fine||'—')}</b></div></div>${own?`<div class="actions" style="margin-top:10px"><button class="btn gray" onclick="malattiaEntry(${r.id})">Modifica</button><button class="btn red" onclick="deleteMalattia(${r.id})">Elimina</button></div>`:''}</div>`}).join(''):`<div class="empty">Nessuna malattia registrata.</div>`}</section>`;
+}
+function malattiaEntry(id){
+  const manager=isManager(), me=myPerson();
+  if(manager && !id)return alert('La malattia deve essere inserita dalla risorsa.');
+  if(!me)return alert('Il tuo account non è ancora collegato a una risorsa.');
+  S.malattie=S.malattie||[];
+  const r=S.malattie.find(x=>String(x.id)===String(id));
+  if(id && (!r || String(r.personId)!==myPersonId()))return alert('Puoi modificare solo le tue malattie.');
+  const data=r||{id:null,personId:me.id,protocollo:'',inizio:dateLocal(),fine:dateLocal()};
+  openModal(r?'Modifica malattia':'Inserisci malattia',`<label>Risorsa</label><input class="input" value="${esc(me.name)}" disabled><label>Numero protocollo</label><input id="malProtocollo" class="input" value="${esc(data.protocollo||'')}" placeholder="Numero protocollo"><label>Data inizio malattia</label><input id="malInizio" class="input" type="date" value="${esc(data.inizio||dateLocal())}"><label>Data fine compresa</label><input id="malFine" class="input" type="date" value="${esc(data.fine||data.inizio||dateLocal())}"><div class="small" style="margin:4px 0 10px">La data di fine è compresa nel periodo di malattia.</div><button class="btn" style="width:100%" onclick="saveMalattia(${r?`'${r.id}'`:'null'})">Salva malattia</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteMalattia('${r.id}');closeModal()">Elimina</button>`:''}`);
+}
+async function saveMalattia(id){
+  const me=myPerson();
+  if(!me)return alert('Il tuo account non è ancora collegato a una risorsa.');
+  const protocollo=document.getElementById('malProtocollo')?.value.trim()||'';
+  const inizio=document.getElementById('malInizio')?.value||'';
+  const fine=document.getElementById('malFine')?.value||'';
+  if(!inizio||!fine)return alert('Inserisci la data di inizio e la data di fine.');
+  if(fine<inizio)return alert('La data di fine non può essere precedente alla data di inizio.');
+  const payload={dipendente_id:Number(me.id),protocollo,data_inizio:inizio,data_fine:fine};
+  try{
+    let r;
+    if(id&&String(id)!=='null'){
+      const existing=S.malattie.find(x=>String(x.id)===String(id));
+      if(!existing||String(existing.personId)!==myPersonId())return alert('Puoi modificare solo le tue malattie.');
+      const rows=await sb('Malattie?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=representation',body:JSON.stringify(payload)});
+      r=Array.isArray(rows)?rows[0]:rows;
+    }else{
+      const rows=await sb('Malattie',{method:'POST',prefer:'return=representation',body:JSON.stringify(payload)});
+      r=Array.isArray(rows)?rows[0]:rows;
+    }
+    closeModal();await loadMalattie();
+  }catch(e){alert('Non è stato possibile salvare la malattia online.\n\n'+(e.message||e));}
+}
+async function deleteMalattia(id){
+  if(!confirm('Eliminare questa registrazione di malattia?'))return;
+  const r=(S.malattie||[]).find(x=>String(x.id)===String(id));
+  if(!r||String(r.personId)!==myPersonId())return alert('Puoi eliminare solo le tue malattie.');
+  try{await sb('Malattie?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadMalattie();}catch(e){alert('Impossibile eliminare la malattia.\n\n'+(e.message||e));}
+}
 function render(){let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():kpi();nav();if(t==="kpi"){let[y,m]=(S.kpi.selected||currentReferencePeriod()).split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
 
 /* === ACCESSI E RUOLI v3 === */
@@ -614,13 +673,13 @@ function myPerson(){
 function myPersonId(){ return PROFILE?.dipendente_id == null ? null : String(PROFILE.dipendente_id); }
 function allowedTab(t){
   return isManager()
-    ? ["home","planning","people","tasks","requests","kpi","storeKpi"].includes(t)
-    : ["home","planning","tasks","requests","kpi"].includes(t);
+    ? ["home","planning","people","tasks","requests","kpi","storeKpi","malattie"].includes(t)
+    : ["home","planning","tasks","requests","kpi","malattie"].includes(t);
 }
 function nav(){
   const a=isManager()
-    ? [["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"]]
-    : [["home","⌂","Home"],["planning","▦","I miei turni"],["tasks","✓","Le mie attività"],["requests","✉","Le mie richieste"],["kpi","▥","Il mio KPI"]];
+    ? [["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"],["malattie","⚕","Malattie"]]
+    : [["home","⌂","Home"],["planning","▦","I miei turni"],["tasks","✓","Le mie attività"],["requests","✉","Le mie richieste"],["kpi","▥","Il mio KPI"],["malattie","⚕","La mia malattia"]];
   document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("");
 }
 
@@ -888,89 +947,63 @@ function historyEntry(y,w){if(!isManager())return alert("Solo il Manager può mo
 async function saveHistory(){if(!isManager())return alert("Solo il Manager può modificare lo storico.");let year=+document.getElementById("hy").value,week=+document.getElementById("hw").value,sales=+document.getElementById("hs").value||0,receipts=+document.getElementById("hr").value||0,pieces=+document.getElementById("hp").value||0;if(!year||week<1||week>53)return alert("Anno o settimana non validi.");let payload={anno:year,settimana:week,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};try{let rows=await sb("KpiStorico?on_conflict=anno,settimana",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",body:JSON.stringify(payload)});let r=Array.isArray(rows)?rows[0]:rows;S.kpi.history=S.kpi.history||{};S.kpi.history[histKey(year,week)]={id:r?.id||histKey(year,week),year,week,sales,receipts,pieces};save();closeModal();await loadHistory();}catch(e){alert("Supabase non ha accettato lo storico KPI.\n\n"+(e.message||e));}}
 async function deleteHistory(id){if(!isManager())return alert("Solo il Manager può eliminare lo storico.");if(!confirm("Eliminare questo dato storico?"))return;try{await sb("KpiStorico?id=eq."+encodeURIComponent(id),{method:"DELETE",prefer:"return=minimal"});await loadHistory();}catch(e){alert("Impossibile eliminare lo storico.\n\n"+(e.message||e));}}
 
+function setStoreTarget(){
+  if(!isManager())return alert("Solo il Manager può impostare il target.");
+  const period=dateLocal().slice(0,7), current=Number(S.kpi.storeByPeriod?.[period]?.target||0);
+  openModal("Target mensile · "+periodLabel(period),`<div class="notice"><b>Imposta il target del mese</b><div class="small">Inserisci il target mensile quando te lo comunicano. Potrai modificarlo in qualsiasi momento.</div></div><label>Target mensile</label><input id="storeTarget" class="input" type="number" min="0" step="0.01" value="${current||""}" placeholder="es. 75000"><button class="btn" style="width:100%;margin-top:8px" onclick="saveStoreTarget()">Salva target</button>`);
+}
+function saveStoreTarget(){
+  if(!isManager())return;
+  const period=dateLocal().slice(0,7),target=Number(document.getElementById("storeTarget")?.value||0);
+  S.kpi.storeByPeriod=S.kpi.storeByPeriod||{};
+  S.kpi.storeByPeriod[period]=S.kpi.storeByPeriod[period]||{};
+  S.kpi.storeByPeriod[period].target=target;
+  save();closeModal();render();
+}
 function storeKpi(){
-  if(!isManager()) return kpi();
+  if(!isManager())return kpi();
   const currentPeriod=dateLocal().slice(0,7);
   const rows=Object.values(S.kpi.daily||{}).filter(r=>String(r.date||"").startsWith(currentPeriod));
   const store=calcKpi(rows);
   const target=Number(S.kpi.storeByPeriod?.[currentPeriod]?.target||0);
-  return `<div class="row"><div class="section">📊 Andamento negozio</div><button class="btn gray" onclick="S.tab='kpi';save();render()">← KPI</button></div>
-  <section class="card notice"><b>Andamento negozio · ${periodLabel(currentPeriod)}</b><div class="small">Qui vedi solo i dati aggregati del negozio. I KPI giornalieri dei ragazzi restano nel sistema per i calcoli ma non vengono mostrati al Manager.</div></section>
-  <section class="card">
-    <div class="grid">
-      <div class="metric"><span>💰 Fatturato</span><b>${fmt(store.sales)}</b></div>
-      <div class="metric"><span>🎯 Target</span><b>${target?fmt(target):"—"}</b></div>
-      <div class="metric"><span>🧾 Scontrini</span><b>${store.receipts}</b></div>
-      <div class="metric"><span>👕 Pezzi venduti</span><b>${store.pieces}</b></div>
-      <div class="metric"><span>ATV negozio</span><b>${fmt(store.atv)}</b></div>
-      <div class="metric"><span>UPT negozio</span><b>${store.upt.toFixed(2)}</b></div>
-    </div>
-  </section>
-  <section class="card">
-    <b>Stato KPI del mese</b>
-    <div class="small" style="margin-top:6px">I dati individuali vengono utilizzati esclusivamente per costruire i KPI aggregati del negozio.</div>
-  </section>`;
+  const progress=target?(store.sales/target)*100:0;
+  return `<div class="row"><div class="section">📊 Andamento negozio</div><button class="btn gray" onclick="S.tab='home';save();render()">← Home</button></div>
+  <section class="card notice"><div class="row"><div><b>Andamento negozio · ${periodLabel(currentPeriod)}</b><div class="small">Solo dati aggregati del negozio. I KPI giornalieri dei ragazzi non vengono mostrati.</div></div><button class="btn" onclick="setStoreTarget()">🎯 Target</button></div></section>
+  <section class="card"><div class="grid">
+    <div class="metric"><span>💰 Fatturato</span><b>${fmt(store.sales)}</b></div>
+    <div class="metric"><span>🎯 Target mensile</span><b>${target?fmt(target):"—"}</b></div>
+    <div class="metric"><span>📈 Raggiungimento</span><b>${target?progress.toFixed(1)+"%":"—"}</b></div>
+    <div class="metric"><span>🧾 Scontrini</span><b>${store.receipts}</b></div>
+    <div class="metric"><span>👕 Pezzi venduti</span><b>${store.pieces}</b></div>
+    <div class="metric"><span>ATV negozio</span><b>${fmt(store.atv)}</b></div>
+    <div class="metric"><span>UPT negozio</span><b>${store.upt.toFixed(2)}</b></div>
+  </div></section>
+  <section class="card"><b>Target del mese</b><div class="small" style="margin-top:6px">${target?`Target impostato: <b>${fmt(target)}</b>. Fatturato progressivo: <b>${fmt(store.sales)}</b>.`:'Il target non è ancora stato inserito. Quando te lo comunicano, premi <b>🎯 Target</b> e impostalo qui.'}</div><button class="btn gray" style="width:100%;margin-top:10px" onclick="setStoreTarget()">${target?"Modifica target":"Inserisci target mensile"}</button></section>`;
 }
 
 function kpi(){
   const currentPeriod=dateLocal().slice(0,7);
   const refPeriod=currentReferencePeriod();
   S.kpi.selected=refPeriod; save();
-
   if(!isManager()){
     const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows);
     return `<div class="row"><div class="section">Il mio KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
     <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Inserisci i dati della giornata. Puoi modificare solo i tuoi KPI.</div></section>
     <section class="card"><div class="grid"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div></section>
     <section class="card"><b>Giornate inserite</b>${rows.length?rows.map(r=>`<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(""):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>
-    <section class="card notice"><b>🔔 Promemoria KPI</b><div class="small">Se sei in turno e non hai inserito il KPI entro le 22:00, riceverai una notifica sul dispositivo quando le notifiche del browser sono abilitate.</div><button class="btn gray" style="width:100%;margin-top:9px" onclick="requestKpiNotificationPermission()">Attiva notifiche KPI</button></section>`;
+    <section class="card notice"><b>🔔 Promemoria KPI</b><div class="small">Se sei in turno e non hai inserito il KPI entro le 22:00, riceverai una notifica.</div><button class="btn gray" style="width:100%;margin-top:9px" onclick="requestKpiNotificationPermission()">Attiva notifiche KPI</button></section>`;
   }
-
   const active=S.people.filter(p=>p.active);
-  const storeRows=Object.values(S.kpi.daily||{}).filter(r=>String(r.date||"").startsWith(currentPeriod));
-  const store=calcKpi(storeRows);
-
-  return `<div class="row"><div class="section">KPI negozio</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
-  <section class="card notice"><b>📊 KPI aggregati · ${periodLabel(currentPeriod)}</b><div class="small">I KPI giornalieri inseriti dai ragazzi <b>non vengono mostrati</b>. Il sistema li utilizza esclusivamente per calcolare gli indicatori aggregati del negozio.</div></section>
-  <section class="card">
-    <div class="grid">
-      <div class="metric"><span>💰 Fatturato mese</span><b>${fmt(store.sales)}</b></div>
-      <div class="metric"><span>🧾 Scontrini</span><b>${store.receipts}</b></div>
-      <div class="metric"><span>👕 Pezzi venduti</span><b>${store.pieces}</b></div>
-      <div class="metric"><span>ATV negozio</span><b>${fmt(store.atv)}</b></div>
-      <div class="metric"><span>UPT negozio</span><b>${store.upt.toFixed(2)}</b></div>
-    </div>
+  return `<div class="row"><div class="section">KPI ragazzi</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
+  <section class="card notice"><b>📊 Riepilogo KPI mensile</b><div class="small">Qui vedi esclusivamente il riepilogo mensile delle risorse. I KPI giornalieri restano nel sistema per i calcoli ma non vengono mostrati al Manager. L'andamento del negozio è nella sezione dedicata.</div></section>
+  <section class="card"><b>🎯 Riferimenti manuali · ${periodLabel(refPeriod)}</b><div class="small" style="margin-top:6px">Puoi impostare o correggere il riferimento del mese precedente. ATV e UPT vengono calcolati automaticamente.</div>
+    ${active.map(p=>{const r=kpiReferenceFor(p.id,refPeriod);return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato riferimento</span><b>${fmt(r.sales)}</b></div><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>
-
-  <section class="card">
-    <b>🎯 Riferimenti manuali · ${periodLabel(refPeriod)}</b>
-    <div class="small" style="margin-top:6px">Puoi continuare a impostare o correggere il riferimento del mese precedente. ATV e UPT vengono calcolati automaticamente.</div>
-    ${active.map(p=>{
-      const r=kpiReferenceFor(p.id,refPeriod);
-      return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato riferimento</span><b>${fmt(r.sales)}</b></div><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div></div>`;
-    }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
-  </section>
-
-  <section class="card">
-    <b>👥 Riepilogo mensile per risorsa</b>
-    <div class="small" style="margin-top:6px">Solo riepilogo mensile: <b>nessun KPI giornaliero viene visualizzato al Manager.</b></div>
-    ${active.map(p=>{
-      const rows=kpiRowsForPerson(p.id,currentPeriod), c=calcKpi(rows), r=kpiReferenceFor(p.id,refPeriod);
-      const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null, uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;
-      const atvClass=atvDiff===null||!rows.length?"":atvDiff>=0?"up":"down";
-      const uptClass=uptDiff===null||!rows.length?"":uptDiff>=0?"up":"down";
-      return `<div class="kpi-card">
-        <div class="row"><div><b>${esc(p.name)}</b></div><span class="pill ${rows.length?"":"gray"}">${rows.length?"Aggiornato":"In attesa"}</span></div>
-        <div class="grid" style="margin-top:10px">
-          <div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b></div>
-          <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${atvClass}">${rows.length&&r.atv?((atvDiff>=0?"+":"")+atvDiff.toFixed(1)+"% vs rif."):"—"}</div></div>
-          <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${uptClass}">${rows.length&&r.upt?((uptDiff>=0?"+":"")+uptDiff.toFixed(1)+"% vs rif."):"—"}</div></div>
-          <div class="metric"><span>Giornate</span><b>${rows.length}</b></div>
-        </div>
-      </div>`;
-    }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  <section class="card"><b>👥 Riepilogo mensile per risorsa</b><div class="small" style="margin-top:6px">Nessun KPI giornaliero viene visualizzato al Manager.</div>
+    ${active.map(p=>{const rows=kpiRowsForPerson(p.id,currentPeriod),c=calcKpi(rows),r=kpiReferenceFor(p.id,refPeriod);const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null,uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;const ac=atvDiff===null||!rows.length?"":atvDiff>=0?"up":"down",uc=uptDiff===null||!rows.length?"":uptDiff>=0?"up":"down";return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><span class="pill ${rows.length?"":"gray"}">${rows.length?"Aggiornato":"In attesa"}</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${ac}">${rows.length&&r.atv?((atvDiff>=0?"+":"")+atvDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${uc}">${rows.length&&r.upt?((uptDiff>=0?"+":"")+uptDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>Giornate</span><b>${rows.length}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>`;
 }
+
 function kpiEntry(pid,date){
   const me=myPerson();
   if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
@@ -986,7 +1019,14 @@ function kpiEntry(pid,date){
     <button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?"Salva modifiche":"Salva KPI"}</button>
     ${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:""}`);
 }
-function render(){purgeInactivePeople();if(!allowedTab(S.tab))S.tab="home";let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():t==="storeKpi"?storeKpi():kpi();nav()}
+function render(){
+  purgeInactivePeople();
+  if(!allowedTab(S.tab))S.tab="home";
+  let t=S.tab;
+  document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():t==="storeKpi"?storeKpi():t==="malattie"?malattie():kpi();
+  nav();
+}
+
 function showInviteError(msg){const e=document.getElementById("inviteError");e.textContent=msg;e.style.display="block"}
 function setInviteLoading(v){document.getElementById("inviteLoading").style.display=v?"block":"none";document.getElementById("inviteSave").disabled=v}
 function inviteTokens(){let h=(location.hash||"").replace(/^#/,""),q=new URLSearchParams(h);return {access_token:q.get("access_token"),refresh_token:q.get("refresh_token"),type:q.get("type")}}
@@ -1016,6 +1056,7 @@ async function bootApp(){
   await loadKpis();
   await loadHistory();
   await loadShifts();
+  await loadMalattie();
   startKpiNotificationMonitor();
 }
 async function bootAuth(){
