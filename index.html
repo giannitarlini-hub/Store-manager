@@ -54,6 +54,7 @@ main{padding:22px 22px 0}
 .dashboard-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.dashboard-card{background:#fff;border:1px solid #e9edf2;border-radius:20px;padding:17px;box-shadow:var(--rp-shadow)}.dashboard-label{font-size:12px;color:#7b8592;font-weight:700}.dashboard-value{font-size:28px;font-weight:900;margin-top:7px;letter-spacing:-.04em}.dashboard-diff{font-size:12px;font-weight:800;margin-top:5px}.dashboard-card.target .dashboard-value{font-size:23px}.progress{height:8px;background:#edf0f3;border-radius:999px;overflow:hidden;margin-top:11px}.progress>i{display:block;height:100%;background:linear-gradient(90deg,#1769e8,#4b8fff);border-radius:999px}.chart{height:170px;display:flex;align-items:flex-end;gap:9px;padding:20px 6px 4px;border-top:1px solid #edf0f3}.barwrap{height:100%;flex:1;display:flex;align-items:flex-end;justify-content:center;position:relative}.bar{width:100%;max-width:28px;background:#dce5f3;border-radius:7px 7px 2px 2px;min-height:3px}.bar.current{background:#1769e8}.barlabel{position:absolute;bottom:-19px;font-size:10px;color:#8a93a0}
 .table-card{overflow:hidden}.table-scroll{overflow:auto}.premium-table{width:100%;border-collapse:separate;border-spacing:0;min-width:680px}.premium-table th{background:#f7f8fa;color:#77818e;font-size:11px;text-align:left;padding:12px;border-bottom:1px solid #e7ebef}.premium-table td{padding:13px 12px;border-bottom:1px solid #edf0f3;font-size:13px}.premium-table tr:last-child td{border-bottom:0}.premium-table .today{background:#edf5ff}.premium-table .good{color:#15924c;font-weight:800}.premium-table .bad{color:#d43c4a;font-weight:800}
 .kpi-hero{background:linear-gradient(135deg,#fff,#f5f8fc);border:1px solid #e6ebf2;border-radius:22px;padding:20px;box-shadow:var(--rp-shadow)}.kpi-hero-title{font-size:20px;font-weight:850}.kpi-hero-sub{font-size:12px;color:#7b8592;margin-top:5px}.kpi-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:13px}.kpi-premium{background:#fff;border:1px solid #e8edf2;border-radius:20px;padding:18px;box-shadow:var(--rp-shadow)}.kpi-premium .label{font-size:12px;color:#75808d;font-weight:750}.kpi-premium .value{font-size:30px;font-weight:900;letter-spacing:-.04em;margin-top:7px}.kpi-premium .ref{font-size:11px;color:#8a93a0;margin-top:6px}.kpi-premium .diff{font-size:13px;font-weight:850;margin-top:6px}.kpi-premium .diff.up{color:#12924b}.kpi-premium .diff.down{color:#d43c4a}
+.weekly-store-card{background:linear-gradient(135deg,#101820,#1b2934);color:#fff;border-radius:22px;padding:19px;box-shadow:0 12px 30px rgba(16,24,32,.16);margin-bottom:15px}.weekly-store-card .small{color:#c8d0d8}.weekly-store-card .label{color:#c8d0d8;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.weekly-store-card .value{font-size:31px;font-weight:900;letter-spacing:-.04em;margin-top:5px}.weekly-store-card .targetline{font-size:12px;color:#c8d0d8;margin-top:4px}.weekly-store-card .progress{background:rgba(255,255,255,.16);height:10px}.weekly-store-card .progress>i{background:linear-gradient(90deg,#fff,#b9d3ff)}.weekly-store-card .store-note{font-size:12px;font-weight:800;margin-top:8px}
 .nav{max-width:1180px;height:76px;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border-top:1px solid #e2e7ed;box-shadow:0 -10px 30px rgba(16,24,32,.06);padding:9px 8px 8px;gap:2px}.nav button{flex:1;max-width:150px;font-size:10px;color:#7c8592}.nav button.active{color:#1769e8}.ico{font-size:20px}
 .modal{background:rgba(8,14,20,.58);backdrop-filter:blur(3px)}.sheet{max-width:760px;border-radius:28px 28px 0 0;padding:24px;box-shadow:0 -12px 40px rgba(0,0,0,.18)}.input,.select{border-color:#dfe5eb;border-radius:13px;padding:12px}.person,.task{padding:15px 0}.avatar{border-radius:14px}.weekly-grid{border-radius:18px}.shift-box{border-radius:12px}.day-card{border-radius:18px}
 @media(max-width:800px){.app{max-width:100%}.dashboard-grid{grid-template-columns:1fr 1fr}.home-menu-grid{grid-template-columns:1fr 1fr}.kpi-cards{grid-template-columns:1fr}.head{padding:19px 18px 22px}.title{font-size:24px}main{padding:16px 14px 0}.home-greeting{font-size:27px}.home-hero{min-height:225px}.nav{max-width:100%}}
@@ -292,7 +293,20 @@ function editDailyKpi(pid,date){kpiEntry(pid,date)}
 async function createRequest(id){let p=S.people.find(x=>x.id===id);if(!p){alert("Seleziona una risorsa.");return}let start=document.getElementById("rqStart").value,end=document.getElementById("rqEnd").value,note=document.getElementById("rqNote").value.trim();if(!start){alert("Inserisci la data.");return}if(!end)end=start;try{await sb("Richieste",{method:"POST",body:JSON.stringify({dipendente_id:p.id,tipo:"Giorno libero",data_richiesta:start,data_richiesta_fine:end,note,stato:"In attesa"})});closeModal();await loadRequests();alert("Richiesta inviata.")}catch(e){alert("Supabase non ha accettato la richiesta.\n\n"+(e.message||e))}}
 async function updateRequest(id,status){try{await sb("Richieste?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({stato:status})});await loadRequests()}catch(e){alert("Impossibile aggiornare la richiesta.\n\n"+(e.message||e))}}
 function requestForm(){let a=S.people.filter(p=>p.active);openModal("Nuova richiesta giorno libero",`<label>Risorsa</label><select id="rqPerson" class="select">${a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><label>Dal</label><input id="rqStart" class="input" type="date" value="${today()}"><label>Al</label><input id="rqEnd" class="input" type="date" value="${today()}"><label>Nota / motivazione</label><textarea id="rqNote" class="input" rows="3" placeholder="Facoltativa"></textarea><button class="btn" style="width:100%" onclick="createRequest(+document.getElementById('rqPerson').value)">Invia richiesta</button>`)}
-function weeklyStoreCard(){const d=dateLocal(),rows=weeklyRows(d),store=calcKpi(rows),target=weeklyTargetFor(d),progress=target?(store.sales/target)*100:0,missing=Math.max(0,target-store.sales),complete=target&&store.sales>=target;return `<section class="card" style="margin-bottom:15px"><div class="row"><div><div class="small">TARGET NEGOZIO</div><h2 style="margin:3px 0 2px">🎯 ${weekLabel(d)}</h2><div class="small">${target?`Target ${fmt(target)} · Fatturato ${fmt(store.sales)}`:'Il target della settimana non è ancora stato impostato.'}</div></div></div>${target?`<div style="margin-top:12px"><div class="row"><b>${progress.toFixed(1)}%</b><b>${complete?'🏆 TARGET RAGGIUNTO':`Mancano ${fmt(missing)}`}</b></div><div class="progress" style="height:12px;margin-top:7px"><i style="width:${Math.min(100,progress)}%"></i></div></div>`:''}</section>`}
+function weeklyStoreCard(){
+  const d=dateLocal(),rows=weeklyStoreRows(d),store=calcKpi(rows),target=weeklyTargetFor(d);
+  const progress=target?(store.sales/target)*100:0;
+  const missing=Math.max(0,target-store.sales);
+  const complete=target&&store.sales>=target;
+  return `<section class="weekly-store-card">
+    <div class="label">🎯 Target negozio · ${weekLabel(d)}</div>
+    <div class="value">${fmt(store.sales)}</div>
+    <div class="targetline">${target?`Target settimana ${fmt(target)}`:'Target settimanale non ancora impostato'}</div>
+    ${target?`<div class="progress"><i style="width:${Math.min(100,progress)}%"></i></div>
+    <div class="row" style="margin-top:9px"><b>${progress.toFixed(1)}%</b><span class="store-note">${complete?'🏆 TARGET RAGGIUNTO':`Mancano ${fmt(missing)}`}</span></div>`:''}
+    <div class="small" style="margin-top:9px">Percentuale calcolata sul fatturato complessivo del negozio, non sul singolo collaboratore.</div>
+  </section>`;
+}
 function home(){
   const me=myPerson(), name=me?.name||"Manager";
   const todayD=dateLocal(), dt=new Date(todayD+"T12:00:00");
@@ -941,13 +955,36 @@ async function loadKpis(){
   try{
     let rows=await sb("KpiGiornalieri?select=*&order=data.asc");
     const activeIds=new Set(S.people.filter(p=>p.active).map(p=>String(p.id)));
-    rows=rows.filter(r=>activeIds.has(String(r.dipendente_id)));
-    if(!isManager()) rows=rows.filter(r=>String(r.dipendente_id)===myPersonId());
+    rows=(rows||[]).filter(r=>activeIds.has(String(r.dipendente_id)));
+
+    // Dati aggregati del negozio: servono per target settimanale e andamento store.
+    // I KPI giornalieri delle altre risorse NON vengono mostrati nella UI ai ragazzi.
+    S.kpi.storeDaily={};
+    rows.forEach(r=>{
+      const date=String(r.data||"");
+      if(!date)return;
+      const key=date;
+      if(!S.kpi.storeDaily[key])S.kpi.storeDaily[key]={date,sales:0,receipts:0,pieces:0};
+      S.kpi.storeDaily[key].sales+=Number(r.fatturato)||0;
+      S.kpi.storeDaily[key].receipts+=Number(r.scontrini)||0;
+      S.kpi.storeDaily[key].pieces+=Number(r.pezzi_venduti)||0;
+    });
+
+    // KPI personali: per un ragazzo manteniamo esclusivamente i suoi dati.
     S.kpi.daily={};
-    rows.forEach(r=>{let key=String(r.dipendente_id)+'_'+r.data;S.kpi.daily[key]={id:r.id,personId:r.dipendente_id,date:r.data,sales:Number(r.fatturato)||0,receipts:Number(r.scontrini)||0,pieces:Number(r.pezzi_venduti)||0,updatedAt:r.created_at||null}});
+    const visibleRows=isManager()?rows:rows.filter(r=>String(r.dipendente_id)===myPersonId());
+    visibleRows.forEach(r=>{
+      let key=String(r.dipendente_id)+"_"+r.data;
+      S.kpi.daily[key]={id:r.id,personId:r.dipendente_id,date:r.data,sales:Number(r.fatturato)||0,receipts:Number(r.scontrini)||0,pieces:Number(r.pezzi_venduti)||0,updatedAt:r.created_at||null};
+    });
     S.online=true;save();render();
-  }catch(e){console.warn("KPI online non caricati",e);S.online=false;save();render();}
+  }catch(e){
+    console.warn("KPI online non caricati",e);
+    S.kpi.storeDaily=S.kpi.storeDaily||{};
+    S.online=false;save();render();
+  }
 }
+
 async function saveDailyKpi(){
   const me=myPerson();
   if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
@@ -991,6 +1028,10 @@ async function loadWeeklyTargets(){
 }
 function weeklyTargetFor(date){const w=isoWeekInfo(date);return Number(S.kpi.weeklyTargets?.[histKey(w.year,w.week)]?.target||0)}
 function weeklyRows(date){const a=weekStartDate(date),b=weekEndDate(date);return Object.values(S.kpi.daily||{}).filter(r=>String(r.date||"")>=a&&String(r.date||"")<=b)}
+function weeklyStoreRows(date){
+  const a=weekStartDate(date),b=weekEndDate(date);
+  return Object.values(S.kpi.storeDaily||{}).filter(r=>String(r.date||"")>=a&&String(r.date||"")<=b);
+}
 async function saveWeeklyTarget(){
   if(!isManager())return;const date=document.getElementById("targetWeekDate")?.value||dateLocal(),{year,week}=isoWeekInfo(date),target=Number(document.getElementById("weeklyTarget")?.value||0);
   if(!target)return alert("Inserisci un target settimanale.");
@@ -1020,9 +1061,13 @@ function kpi(){
   const currentPeriod=dateLocal().slice(0,7), refPeriod=currentReferencePeriod(); S.kpi.selected=refPeriod; save();
   if(!isManager()){
     const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows), ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
+    const weekDate=dateLocal(), weekRows=weeklyStoreRows(weekDate), weekStore=calcKpi(weekRows), weekTarget=weeklyTargetFor(weekDate);
+    const weekProgress=weekTarget?(weekStore.sales/weekTarget)*100:0;
+    const weekMissing=Math.max(0,weekTarget-weekStore.sales);
+
     const salesDiff=ref.sales?((c.sales-ref.sales)/ref.sales)*100:null, atvDiff=ref.atv?((c.atv-ref.atv)/ref.atv)*100:null, uptDiff=ref.upt?((c.upt-ref.upt)/ref.upt)*100:null;
     const diff=v=>v===null?'—':(v>=0?'+':'')+v.toFixed(1)+'% vs rif.', cls=v=>v===null?'':v>=0?'up':'down';
-    return `<div class="row"><div class="section">I miei KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
+    return weeklyStoreCard()+`<div class="row"><div class="section">I miei KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
     <section class="kpi-hero"><div class="kpi-hero-title">I miei KPI · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Confronto con il riferimento del mese precedente · <b>${periodLabel(refPeriod)}</b></div></section>
     <section class="kpi-cards">
       <div class="kpi-premium"><div class="label">Fatturato personale</div><div class="value">${fmt(c.sales)}</div><div class="ref">Rif. ${fmt(ref.sales)}</div><div class="diff ${cls(salesDiff)}">${diff(salesDiff)}</div></div>
