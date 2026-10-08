@@ -31,34 +31,22 @@ main{padding:16px}.card{background:#fff;border-radius:20px;padding:16px;margin-b
 .home-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.home-menu-card{min-height:150px;border:0;border-radius:20px;background:#fff;box-shadow:0 4px 18px #1720330c;padding:18px;text-align:left;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;color:#172033;cursor:pointer}.home-menu-card:active{transform:scale(.98)}.home-menu-ico{width:48px;height:48px;border-radius:15px;background:#eaf1ff;color:#2458e8;display:grid;place-items:center;font-size:25px;font-weight:800;margin-bottom:4px}.home-menu-card b{font-size:17px}.home-menu-card span:last-child{font-size:12px;color:#788294;line-height:1.3}.home-menu-card:nth-child(2) .home-menu-ico{background:#edf9f2;color:#197447}.home-menu-card:nth-child(3) .home-menu-ico{background:#fff7dc;color:#8c6500}.home-menu-card:nth-child(4) .home-menu-ico{background:#f1edff;color:#6a48c7}@media(max-width:360px){.home-menu-grid{grid-template-columns:1fr}.home-menu-card{min-height:125px}}
 .auth-gate{position:fixed;inset:0;background:#f4f6fa;z-index:100;display:grid;place-items:center;padding:22px}.auth-card{width:min(100%,420px);background:#fff;border-radius:26px;padding:24px;box-shadow:0 10px 40px #17203318}.auth-brand{font-size:12px;font-weight:800;letter-spacing:.08em;color:#687386}.auth-title{font-size:28px;font-weight:850;margin:6px 0 5px}.auth-sub{color:#687386;font-size:14px;line-height:1.45;margin-bottom:20px}.auth-error{display:none;background:#fff0f1;border:1px solid #ffd8dc;color:#b52d3c;border-radius:13px;padding:11px;font-size:13px;margin-bottom:12px}.auth-loading{display:none;color:#687386;font-size:13px;margin-top:10px}.logout-btn{position:absolute;right:14px;top:14px;border:0;background:#263248;color:#fff;border-radius:10px;padding:8px 10px;font-weight:750;font-size:12px}
 
-/* ===== REPLAY PREMIUM UI ===== */
-:root{--rp-ink:#101820;--rp-red:#e21b23;--rp-blue:#1769e8;--rp-bg:#f5f6f8;--rp-muted:#788292;--rp-line:#e8ebf0;--rp-green:#12924b;--rp-yellow:#e5a900;--rp-shadow:0 8px 28px rgba(16,24,32,.08)}
-html{background:var(--rp-bg)}
-body{background:var(--rp-bg);color:#141a22;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-.app{max-width:1180px;padding-bottom:105px}
-.head{background:linear-gradient(135deg,#0c141b 0%,#17232d 100%);padding:22px 26px 25px;border-radius:0 0 30px 30px;box-shadow:0 10px 30px rgba(0,0,0,.12);position:relative;overflow:hidden}
-.head:after{content:"";position:absolute;width:180px;height:180px;border:1px solid rgba(226,27,35,.22);border-radius:50%;right:-65px;top:-75px;box-shadow:0 0 0 28px rgba(226,27,35,.035),0 0 0 56px rgba(226,27,35,.025)}
-.eyebrow{color:#fff;opacity:1;font-size:13px;letter-spacing:.16em;font-weight:900}
-.eyebrow:before{content:"REPLAY";color:#e21b23;font-family:Georgia,serif;font-size:26px;letter-spacing:.02em;margin-right:10px}
-.title{font-size:29px;line-height:1.05;font-weight:850;margin-top:9px;letter-spacing:-.03em}
-.sub{font-size:13px;margin-top:7px;color:#cbd2da;opacity:1}
-.logout-btn{right:24px;top:22px;background:#24313c;border:1px solid rgba(255,255,255,.09);padding:9px 12px;border-radius:12px;z-index:3}
-main{padding:22px 22px 0}
-.section{font-size:20px;font-weight:850;letter-spacing:-.02em;margin:24px 2px 12px}
-.card{background:#fff;border:1px solid rgba(16,24,32,.045);border-radius:22px;padding:18px;margin-bottom:15px;box-shadow:var(--rp-shadow)}
-.grid{gap:12px}.metric{background:#f8f9fb;border:1px solid #edf0f4;border-radius:18px;padding:16px;min-height:94px}.metric span{color:#707b89;font-size:12px;font-weight:650}.metric b{font-size:25px;letter-spacing:-.03em;margin-top:6px}.small{font-size:12px;color:#7a8491}.btn{background:var(--rp-blue);border-radius:12px;padding:11px 15px;box-shadow:0 4px 10px rgba(23,105,232,.12);transition:.15s}.btn:active{transform:scale(.98)}.btn.gray{background:#edf0f4;color:#26313c;box-shadow:none}.btn.red{background:#e43b47}.btn.green{background:#13914b}.pill{border-radius:999px;padding:6px 10px}.notice{background:#f1f6ff;border-color:#dce9ff;color:#214b93}.ok{background:#edf9f2;border-color:#d6f0df}
-.home-hero{position:relative;overflow:hidden;min-height:245px;padding:0!important;background:linear-gradient(135deg,#101820,#1a2731);color:#fff;border:0;box-shadow:0 14px 34px rgba(16,24,32,.16)}
-.home-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 20%,rgba(226,27,35,.35),transparent 34%),linear-gradient(120deg,transparent 0 50%,rgba(255,255,255,.035) 50% 100%);pointer-events:none}
-.home-hero-inner{position:relative;z-index:1;padding:25px}.home-brand{font-family:Georgia,serif;font-size:31px;color:#ef3037;letter-spacing:.01em}.home-brand small{display:block;color:#fff;font-family:inherit;font-size:9px;letter-spacing:.34em;margin-top:-4px;margin-left:2px}.home-kicker{margin-top:34px;color:#d2d9df;font-size:12px;text-transform:uppercase;letter-spacing:.13em;font-weight:800}.home-greeting{font-size:31px;font-weight:850;letter-spacing:-.04em;margin-top:5px}.home-date{color:#c7cfd7;margin-top:4px;font-size:14px}.home-user{position:absolute;right:22px;top:22px;display:flex;gap:9px;align-items:center;font-size:12px}.home-avatar{width:38px;height:38px;border-radius:50%;background:#eef2f5;color:#25313a;display:grid;place-items:center;font-weight:850;border:3px solid rgba(255,255,255,.16)}
-.home-menu-grid{grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 16px}.home-menu-card{min-height:145px;border:1px solid #e9edf2;border-radius:21px;background:#fff;box-shadow:var(--rp-shadow);padding:19px;text-align:left;gap:8px;transition:.15s}.home-menu-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(16,24,32,.11)}.home-menu-card:nth-child(1) .home-menu-ico{background:#e8f0ff;color:#1769e8}.home-menu-card:nth-child(2) .home-menu-ico{background:#eaf8f0;color:#15924c}.home-menu-card:nth-child(3) .home-menu-ico{background:#fff5d9;color:#9b7100}.home-menu-card:nth-child(4) .home-menu-ico{background:#f0ebff;color:#6d4fd0}.home-menu-card:nth-child(5) .home-menu-ico{background:#ffecef;color:#d43c4a}.home-menu-card:nth-child(6) .home-menu-ico{background:#edf1f4;color:#25313a}.home-menu-ico{width:50px;height:50px;border-radius:16px;font-size:24px;margin-bottom:7px}.home-menu-card b{font-size:16px}.home-menu-card span:last-child{font-size:12px}
-.dashboard-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.dashboard-card{background:#fff;border:1px solid #e9edf2;border-radius:20px;padding:17px;box-shadow:var(--rp-shadow)}.dashboard-label{font-size:12px;color:#7b8592;font-weight:700}.dashboard-value{font-size:28px;font-weight:900;margin-top:7px;letter-spacing:-.04em}.dashboard-diff{font-size:12px;font-weight:800;margin-top:5px}.dashboard-card.target .dashboard-value{font-size:23px}.progress{height:8px;background:#edf0f3;border-radius:999px;overflow:hidden;margin-top:11px}.progress>i{display:block;height:100%;background:linear-gradient(90deg,#1769e8,#4b8fff);border-radius:999px}.chart{height:170px;display:flex;align-items:flex-end;gap:9px;padding:20px 6px 4px;border-top:1px solid #edf0f3}.barwrap{height:100%;flex:1;display:flex;align-items:flex-end;justify-content:center;position:relative}.bar{width:100%;max-width:28px;background:#dce5f3;border-radius:7px 7px 2px 2px;min-height:3px}.bar.current{background:#1769e8}.barlabel{position:absolute;bottom:-19px;font-size:10px;color:#8a93a0}
-.table-card{overflow:hidden}.table-scroll{overflow:auto}.premium-table{width:100%;border-collapse:separate;border-spacing:0;min-width:680px}.premium-table th{background:#f7f8fa;color:#77818e;font-size:11px;text-align:left;padding:12px;border-bottom:1px solid #e7ebef}.premium-table td{padding:13px 12px;border-bottom:1px solid #edf0f3;font-size:13px}.premium-table tr:last-child td{border-bottom:0}.premium-table .today{background:#edf5ff}.premium-table .good{color:#15924c;font-weight:800}.premium-table .bad{color:#d43c4a;font-weight:800}
-.kpi-hero{background:linear-gradient(135deg,#fff,#f5f8fc);border:1px solid #e6ebf2;border-radius:22px;padding:20px;box-shadow:var(--rp-shadow)}.kpi-hero-title{font-size:20px;font-weight:850}.kpi-hero-sub{font-size:12px;color:#7b8592;margin-top:5px}.kpi-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:13px}.kpi-premium{background:#fff;border:1px solid #e8edf2;border-radius:20px;padding:18px;box-shadow:var(--rp-shadow)}.kpi-premium .label{font-size:12px;color:#75808d;font-weight:750}.kpi-premium .value{font-size:30px;font-weight:900;letter-spacing:-.04em;margin-top:7px}.kpi-premium .ref{font-size:11px;color:#8a93a0;margin-top:6px}.kpi-premium .diff{font-size:13px;font-weight:850;margin-top:6px}.kpi-premium .diff.up{color:#12924b}.kpi-premium .diff.down{color:#d43c4a}
-.nav{max-width:1180px;height:76px;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border-top:1px solid #e2e7ed;box-shadow:0 -10px 30px rgba(16,24,32,.06);padding:9px 8px 8px;gap:2px}.nav button{flex:1;max-width:150px;font-size:10px;color:#7c8592}.nav button.active{color:#1769e8}.ico{font-size:20px}
-.modal{background:rgba(8,14,20,.58);backdrop-filter:blur(3px)}.sheet{max-width:760px;border-radius:28px 28px 0 0;padding:24px;box-shadow:0 -12px 40px rgba(0,0,0,.18)}.input,.select{border-color:#dfe5eb;border-radius:13px;padding:12px}.person,.task{padding:15px 0}.avatar{border-radius:14px}.weekly-grid{border-radius:18px}.shift-box{border-radius:12px}.day-card{border-radius:18px}
-@media(max-width:800px){.app{max-width:100%}.dashboard-grid{grid-template-columns:1fr 1fr}.home-menu-grid{grid-template-columns:1fr 1fr}.kpi-cards{grid-template-columns:1fr}.head{padding:19px 18px 22px}.title{font-size:24px}main{padding:16px 14px 0}.home-greeting{font-size:27px}.home-hero{min-height:225px}.nav{max-width:100%}}
-@media(min-width:1100px){main{padding:26px 30px}.home-menu-card{min-height:160px}.home-hero{min-height:280px}}
-
+/* PREMIUM VISUAL LAYER — solo grafica, logica invariata */
+:root{--rp-blue:#2458e8;--rp-dark:#101827;--rp-bg:#f3f5f9;--rp-card:#fff;--rp-text:#172033;--rp-muted:#778194;--rp-border:#e7ebf1}
+body{background:linear-gradient(180deg,#eef2f7 0%,#f7f8fb 42%,#f3f5f9 100%);color:var(--rp-text)}
+.app{max-width:560px;padding-bottom:104px}
+.head{padding:22px 19px 20px;border-radius:0 0 30px 30px;box-shadow:0 8px 28px #10182722;position:relative;overflow:hidden}
+.head:after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-75px;top:-90px;background:#ffffff12}
+.title{font-size:30px;letter-spacing:-.03em}.sub{font-size:13px}.eyebrow{letter-spacing:.12em}
+main{padding:18px 16px}.card{border:1px solid #e9edf3;border-radius:22px;padding:17px;margin-bottom:14px;box-shadow:0 7px 24px #1720330d}.section{font-size:20px;letter-spacing:-.02em;margin:22px 2px 11px}
+.metric{border:1px solid #edf0f5;border-radius:18px;background:linear-gradient(180deg,#fbfcfe,#f6f8fb);padding:15px}.metric b{font-size:24px;letter-spacing:-.02em}
+.btn{border-radius:14px;padding:12px 15px;box-shadow:0 5px 12px #2458e820;cursor:pointer}.btn.gray{box-shadow:none}.input,.select{border-radius:14px;border-color:#dfe4ec;padding:13px}.person,.task{padding:15px 0}.avatar{width:45px;height:45px;border-radius:15px}.pill{border-radius:999px;padding:7px 10px}
+.nav{height:82px;border-top:1px solid #e8ebf0;box-shadow:0 -8px 24px #1720330b;border-radius:18px 18px 0 0;padding-top:9px}.nav button{font-size:10.5px}.ico{font-size:22px}
+.weeknav{background:#fff;border:1px solid #e8ebf0;border-radius:18px;padding:8px;margin-bottom:12px;box-shadow:0 5px 18px #1720330a}.weektitle b{font-size:17px}.weekly-grid{border:0;box-shadow:0 5px 20px #1720330a}.week-head{background:#f4f6fa}.shift-box{box-shadow:0 3px 10px #2458e812}
+.day-card{border-radius:19px;box-shadow:0 5px 18px #1720330a}.day-card.today{box-shadow:0 0 0 2px #d9e4ff,0 7px 20px #2458e812}
+.home-menu-grid{gap:13px}.home-menu-card{min-height:158px;border:1px solid #e9edf3;border-radius:22px;box-shadow:0 7px 24px #1720330d;transition:transform .15s,box-shadow .15s}.home-menu-card:hover{transform:translateY(-2px);box-shadow:0 10px 28px #17203314}.home-menu-ico{width:52px;height:52px;border-radius:16px}
+.notice,.danger,.ok{border-radius:17px}.kpi-card{border:1px solid #e9edf3;border-radius:18px}.sheet{border-radius:28px 28px 0 0;padding:21px;box-shadow:0 -10px 35px #1720331c}
+.auth-card{border:1px solid #e8ebf0;box-shadow:0 15px 50px #17203318}
 </style>
 </head>
 <body>
@@ -289,43 +277,256 @@ async function createRequest(id){let p=S.people.find(x=>x.id===id);if(!p){alert(
 async function updateRequest(id,status){try{await sb("Richieste?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({stato:status})});await loadRequests()}catch(e){alert("Impossibile aggiornare la richiesta.\n\n"+(e.message||e))}}
 function requestForm(){let a=S.people.filter(p=>p.active);openModal("Nuova richiesta giorno libero",`<label>Risorsa</label><select id="rqPerson" class="select">${a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><label>Dal</label><input id="rqStart" class="input" type="date" value="${today()}"><label>Al</label><input id="rqEnd" class="input" type="date" value="${today()}"><label>Nota / motivazione</label><textarea id="rqNote" class="input" rows="3" placeholder="Facoltativa"></textarea><button class="btn" style="width:100%" onclick="createRequest(+document.getElementById('rqPerson').value)">Invia richiesta</button>`)}
 function home(){
-  const me=myPerson(), name=me?.name||"Manager";
-  const todayD=dateLocal(), dt=new Date(todayD+"T12:00:00");
-  const dateText=new Intl.DateTimeFormat("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(dt);
-  const shifts=resourceShifts(), tasks=resourceTasks();
-  const pending=S.requests.filter(r=>isManager()?r.status==="In attesa":String(r.personId)===myPersonId()&&r.status==="In attesa").length;
   if(!isManager()){
-    const todayShift=shifts.find(s=>s.date===todayD);
-    return `<section class="home-hero card"><div class="home-hero-inner"><div class="home-brand">REPLAY<small>BARBERINO</small></div><div class="home-user"><span>${esc(name)}<br><small style="color:#aeb8c2">Team</small></span><div class="home-avatar">${esc(String(name).split(/\s+/).map(x=>x[0]).slice(0,2).join(""))}</div></div><div class="home-kicker">Buongiorno</div><div class="home-greeting">Ciao, ${esc(name)} 👋</div><div class="home-date">${dateText.charAt(0).toUpperCase()+dateText.slice(1)}</div></div></section>
-    <div class="section">Accesso rapido</div><section class="home-menu-grid">
-      <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">▥</span><b>Il mio KPI</b><span>Inserisci e controlla i tuoi risultati</span></button>
-      <button class="home-menu-card" onclick="S.tab='planning';save();render()"><span class="home-menu-ico">📅</span><b>I miei turni</b><span>${todayShift?"Hai un turno oggi":"Controlla il planning"}</span></button>
-      <button class="home-menu-card" onclick="S.tab='tasks';save();render()"><span class="home-menu-ico">✓</span><b>Le mie attività</b><span>${tasks.length?tasks.length+" attività assegnate":"Nessuna attività"}</span></button>
-      <button class="home-menu-card" onclick="S.tab='requests';save();render()"><span class="home-menu-ico">✉</span><b>Le mie richieste</b><span>${pending?pending+" in attesa":"Nessuna in attesa"}</span></button>
-      <button class="home-menu-card" onclick="S.tab='malattie';save();render()"><span class="home-menu-ico">♥</span><b>La mia malattia</b><span>Gestisci le tue assenze</span></button>
-    </section>`;
+    const me=myPerson(), shifts=resourceShifts(), tasks=resourceTasks(), pending=S.requests.filter(r=>String(r.personId)===myPersonId()&&r.status==="In attesa").length;
+    const today=dateLocal(), todayShift=shifts.find(s=>s.date===today);
+    return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 4px">Ciao ${esc(me?.name||"")}</h2><div class="small">Questa è la tua area personale.</div></section>
+    <div class="section">Accesso rapido</div>
+    <section class="home-menu-grid">
+      <button class="home-menu-card" onclick="S.tab='planning';save();render()"><span class="home-menu-ico">📅</span><b>I miei turni</b><span>${todayShift?"Hai un turno oggi":"Vedi il tuo planning"}</span></button>
+      <button class="home-menu-card" onclick="S.tab='tasks';save();render()"><span class="home-menu-ico">✓</span><b>Le mie attività</b><span>${tasks.length?tasks.length+" attività":"Nessuna attività"}</span></button>
+      <button class="home-menu-card" onclick="S.tab='requests';save();render()"><span class="home-menu-ico">✉️</span><b>Le mie richieste</b><span>${pending?pending+" in attesa":"Nessuna in attesa"}</span></button>
+      <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">▥</span><b>Il mio KPI</b><span>Inserisci i dati giornalieri</span></button>
+    </section>
+    <section class="card"><div class="ok"><b>☁️ Collegamento online attivo</b><div class="small" style="margin-top:5px">I tuoi dati vengono salvati online.</div></div></section>`;
   }
-  const currentPeriod=dateLocal().slice(0,7), rows=Object.values(S.kpi.daily||{}).filter(r=>String(r.date||"").startsWith(currentPeriod));
-  const store=calcKpi(rows), target=Number(S.kpi.storeByPeriod?.[currentPeriod]?.target||0), progress=target?Math.min(100,(store.sales/target)*100):0;
-  const refs=S.kpi.storeByPeriod?.[currentPeriod]||{};
-  return `<section class="home-hero card"><div class="home-hero-inner"><div class="home-brand">REPLAY<small>BARBERINO</small></div><div class="home-user"><span>${esc(name)}<br><small style="color:#aeb8c2">Store Manager</small></span><div class="home-avatar">${esc(String(name).split(/\s+/).map(x=>x[0]).slice(0,2).join(""))}</div></div><div class="home-kicker">Dashboard Manager</div><div class="home-greeting">Buongiorno, ${esc(name)} 👋</div><div class="home-date">${dateText.charAt(0).toUpperCase()+dateText.slice(1)}</div></div></section>
-  <div class="section">Andamento negozio</div><section class="dashboard-grid">
-    <div class="dashboard-card"><div class="dashboard-label">Fatturato</div><div class="dashboard-value">${fmt(store.sales)}</div><div class="dashboard-diff up">↑ mese corrente</div></div>
-    <div class="dashboard-card target"><div class="dashboard-label">Target mensile</div><div class="dashboard-value">${target?fmt(target):"—"}</div><div class="progress"><i style="width:${progress}%"></i></div><div class="dashboard-diff">${target?progress.toFixed(1)+"% completato":"Target non impostato"}</div></div>
-    <div class="dashboard-card"><div class="dashboard-label">ATV</div><div class="dashboard-value">${fmt(store.atv)}</div><div class="dashboard-diff">Valore medio scontrino</div></div>
-    <div class="dashboard-card"><div class="dashboard-label">UPT</div><div class="dashboard-value">${store.upt.toFixed(2)}</div><div class="dashboard-diff">Pezzi per scontrino</div></div>
-  </section>
-  <section class="card" style="margin-top:15px"><div class="row"><div><b>Andamento giornaliero</b><div class="small">${periodLabel(currentPeriod)}</div></div><button class="btn gray" onclick="S.tab='storeKpi';save();render()">Dettagli</button></div><div class="chart">${(()=>{let by={};rows.forEach(r=>by[r.date]=(by[r.date]||0)+Number(r.sales||0));let vals=Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14),max=Math.max(1,...vals.map(x=>x[1]));return vals.length?vals.map(([d,v])=>`<div class="barwrap"><div class="bar current" style="height:${Math.max(3,(v/max)*100)}%"></div><span class="barlabel">${d.slice(8)}</span></div>`).join(""):`<div class="empty" style="width:100%">Nessun KPI giornaliero inserito.</div>`})()}</div></section>
-  <div class="section">Gestione</div><section class="home-menu-grid">
-    <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">▥</span><b>KPI Personali</b><span>Riferimenti e andamento risorse</span></button>
-    <button class="home-menu-card" onclick="S.tab='people';save();render()"><span class="home-menu-ico">👥</span><b>Personale</b><span>${S.people.filter(p=>p.active).length} risorse attive</span></button>
+  let pending=S.requests.filter(r=>r.status==="In attesa").length;
+  return `<section class="card"><div class="small">OGGI</div><h2 style="margin:6px 0 4px">Ciao ${esc(myPerson()?.name||"Manager")}</h2><div class="small">Area Manager · accesso rapido</div></section>
+  <div class="section">Accesso rapido</div>
+  <section class="home-menu-grid">
+    <button class="home-menu-card" onclick="S.tab='people';save();render()"><span class="home-menu-ico">👥</span><b>Risorse</b><span>${S.people.filter(p=>p.active).length} risorse attive</span></button>
     <button class="home-menu-card" onclick="S.tab='planning';save();render()"><span class="home-menu-ico">📅</span><b>Turni</b><span>Gestisci il planning</span></button>
-    <button class="home-menu-card" onclick="S.tab='malattie';save();render()"><span class="home-menu-ico">♥</span><b>Assenze e malattie</b><span>Controlla le assenze</span></button>
-    <button class="home-menu-card" onclick="S.tab='requests';save();render()"><span class="home-menu-ico">✉</span><b>Richieste</b><span>${pending?pending+" in sospeso":"Nessuna in sospeso"}</span></button>
-    <button class="home-menu-card" onclick="S.tab='tasks';save();render()"><span class="home-menu-ico">✓</span><b>Attività</b><span>Assegna e controlla le attività</span></button>
+    <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">🎯</span><b>KPI ragazzi</b><span>Riepilogo mensile e riferimenti</span></button>
+    <button class="home-menu-card" onclick="S.tab='storeKpi';save();render()"><span class="home-menu-ico">📊</span><b>Andamento negozio</b><span>Totale negozio · ATV · UPT · progressivo</span></button>
+    <button class="home-menu-card" onclick="S.tab='tasks';save();render()"><span class="home-menu-ico">✓</span><b>Attività</b><span>${S.tasks.length?S.tasks.length+" attività":"Nessuna attività"}</span></button>
+    <button class="home-menu-card" onclick="S.tab='requests';save();render()"><span class="home-menu-ico">✉️</span><b>Richieste</b><span>${pending?pending+" in attesa":"Nessuna in attesa"}</span></button>
   </section>`;
 }
+function people(){
+  const activePeople=S.people.filter(p=>p.active);
+  return `<div class="row"><div class="section">Personale</div><button class="btn" onclick="editPerson()">+ Aggiungi</button></div><section class="card">${activePeople.length?activePeople.map(p=>`<div class="person"><div class="avatar">${esc((p.name||"?")[0])}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="small">${esc(p.role||"Risorsa")} · ingresso ${esc(p.in||"—")}${p.out?" · uscita "+esc(p.out):""}</div>${p.email?`<div class="small">✉ ${esc(p.email)}</div>`:""}${p.inviteStatus?`<div class="invite ${p.inviteStatus==="Invito inviato"?"ok":p.inviteStatus==="Invio in corso…"?"pending":"err"}">${esc(p.inviteStatus)}</div>`:""}${p.inviteError?`<div class="small" style="color:#c42e3f">${esc(p.inviteError)}</div>`:""}</div><span class="pill">Attiva</span><button class="btn gray" onclick="editPerson(${p.id})">Modifica</button>${p.email?`<button class="btn green" onclick="sendInvite(${p.id})">${p.inviteStatus==="Invito inviato"?"Reinvia invito":"Invia invito"}</button>`:""}</div>`).join(""):`<div class="empty">Nessuna risorsa attiva.</div>`}</section>`
+}
+function editPerson(id,focusEmail=false){let p=S.people.find(x=>x.id===id)||{id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};openModal(id?"Modifica risorsa":"Nuova risorsa",`<label>Nome e cognome</label><input id="pn" class="input" value="${esc(p.name)}"><label>Ruolo</label><input id="pr" class="input" value="${esc(p.role)}"><label>Data ingresso</label><input id="pi" class="input" value="${esc(p.in)}" placeholder="gg/mm/aaaa"><label>Data uscita</label><input id="po" class="input" value="${esc(p.out)}"><label>Email</label><input id="pe" class="input" type="email" autocomplete="email" value="${esc(p.email||"")}" placeholder="email della risorsa"><div class="row" style="margin:8px 0 16px"><span>Risorsa attiva</span><input id="pa" type="checkbox" ${p.active?"checked":""}></div><button class="btn" style="width:100%" onclick="savePerson(${p.id})">Salva risorsa</button>${p.email&&id?`<button class="btn green" style="width:100%;margin-top:8px" onclick="savePerson(${p.id},true)">Salva e invia invito</button>`:""}${p.inviteStatus?`<div class="small" style="margin-top:10px">Stato invito: ${esc(p.inviteStatus)}</div>`:""}`);if(focusEmail)setTimeout(()=>document.getElementById("pe")?.focus(),100)}
+async function savePerson(id,sendAfterSave=false){
+  let p=S.people.find(x=>x.id===id);const isNew=!p;
+  if(!p){p={id:Date.now(),name:"",role:"",in:"",out:"",active:true,email:"",inviteStatus:"",inviteError:""};S.people.push(p)}
+  p.name=document.getElementById("pn").value.trim();p.role=document.getElementById("pr").value.trim();p.in=document.getElementById("pi").value.trim();p.out=document.getElementById("po").value.trim();p.email=document.getElementById("pe").value.trim();p.active=document.getElementById("pa").checked;
+  if(!p.name)return alert("Inserisci il nome.");if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return alert("Controlla l'indirizzo email.");
+  if(!p.active&&!isNew){if(!confirm("Disattivando questa risorsa verrà rimossa dal gestionale insieme a turni, attività, richieste e KPI collegati. Continuare?")){p.active=true;return;}const pid=String(p.id);try{await sb('Attivita?dipendente_id=eq.'+encodeURIComponent(pid),{method:'DELETE',prefer:'return=minimal'});await sb('Dipendenti?id=eq.'+encodeURIComponent(pid),{method:'DELETE',prefer:'return=minimal'});}catch(e){return alert('Impossibile rimuovere la risorsa online.\n\n'+(e.message||e));}S.people=S.people.filter(x=>String(x.id)!==pid);S.shifts=(S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)!==pid);S.tasks=(S.tasks||[]).filter(t=>String(t.personId??t.dipendente_id)!==pid&&String(t.person)!==String(p.name));S.requests=(S.requests||[]).filter(r=>String(r.personId??r.dipendente_id)!==pid);if(S.kpi?.daily)Object.keys(S.kpi.daily).forEach(k=>{if(String(S.kpi.daily[k]?.personId)===pid)delete S.kpi.daily[k]});if(S.kpi?.peopleByPeriod)delete S.kpi.peopleByPeriod[p.id];save();closeModal();await loadPeople();await loadTasks();return;}
+  try{const payload={id:Number(p.id),nome:p.name,ruolo:p.role||"",data_ingresso:p.in||null,data_uscita:p.out||null,attivo:p.active,email:p.email||null,invite_status:p.inviteStatus||null,invite_error:p.inviteError||null};await sb('Dipendenti?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify(payload)});save();closeModal();await loadPeople();if(sendAfterSave)await sendInvite(p.id);}catch(e){alert('Impossibile salvare la risorsa online.\n\n'+(e.message||e));}
+}
 
+function planningToday(){ return dateLocal(new Date()); }
+function planningStartOfWeek(iso){
+  let d=new Date((iso||planningToday())+"T12:00:00");
+  let day=d.getDay()||7;
+  d.setDate(d.getDate()-day+1);
+  return dateLocal(d);
+}
+function planningAddDays(iso,n){
+  let d=new Date(iso+"T12:00:00");
+  d.setDate(d.getDate()+n);
+  return dateLocal(d);
+}
+function planningWeekDates(baseDate){
+  const s=planningStartOfWeek(baseDate||S.planningWeek||planningToday());
+  return Array.from({length:7},(_,i)=>planningAddDays(s,i));
+}
+function planningWeekLabel(baseDate){
+  const ds=planningWeekDates(baseDate);
+  const a=new Date(ds[0]+"T12:00:00"), b=new Date(ds[6]+"T12:00:00");
+  const f=new Intl.DateTimeFormat("it-IT",{day:"2-digit",month:"short"});
+  return `${f.format(a)} – ${f.format(b)}`;
+}
+function planningShiftWeek(delta){
+  S.planningWeek=planningAddDays(planningStartOfWeek(S.planningWeek||planningToday()),delta*7);
+  save();
+  render();
+}
+function planningPersonName(id){
+  const p=S.people.find(x=>String(x.id)===String(id));
+  return p?.name||"Risorsa";
+}
+function resourceShifts(){
+  const pid=myPersonId();
+  return pid ? (S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)===pid) : [];
+}
+async function loadShifts(){
+  try{
+    const rows=await sb('Planning?select=*&order=data_turno.asc');
+    const all=(rows||[]).map(r=>({
+      id:r.id,
+      personId:Number(r.dipendente_id),
+      person:planningPersonName(r.dipendente_id),
+      date:String(r.data_turno||"").slice(0,10),
+      start:r.entrata||"",
+      end:r.uscita||"",
+      breakStart:r.pausa_inizio||"",
+      breakEnd:r.pausa_fine||""
+    }));
+    const activeIds=new Set(S.people.filter(p=>p.active).map(p=>String(p.id)));
+    const activeAll=all.filter(x=>activeIds.has(String(x.personId)));
+    S.shifts=isManager()?activeAll:activeAll.filter(x=>String(x.personId)===myPersonId());
+    S.online=true;
+    save();
+    render();
+  }catch(e){
+    console.warn("Planning online non caricato",e);
+    // Non bloccare mai il login se il planning online ha un problema.
+  }
+}
+function editShift(id,day){
+  if(!isManager()) return alert("Solo il Manager può modificare il planning.");
+  const old=(S.shifts||[]).find(x=>String(x.id)===String(id));
+  const date=day||old?.date||planningToday();
+  const first=S.people.find(p=>p.active);
+  const x=old||{
+    id:null,
+    personId:first?.id||"",
+    date,
+    start:"09:00",
+    end:"17:00",
+    breakStart:"13:00",
+    breakEnd:"13:30"
+  };
+  const options=S.people.filter(p=>p.active).map(p=>
+    `<option value="${p.id}" ${String(p.id)===String(x.personId)?"selected":""}>${esc(p.name)}</option>`
+  ).join("");
+  openModal(
+    id?"Modifica turno":"Nuovo turno",
+    `<label>Risorsa</label>
+     <select id="sp" class="select">${options}</select>
+     <label>Giorno</label>
+     <input id="sd" class="input" type="date" value="${x.date}">
+     <div class="grid">
+       <div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div>
+       <div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div>
+     </div>
+     <div class="grid">
+       <div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div>
+       <div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div>
+     </div>
+     <button class="btn" style="width:100%" onclick="saveShift(${id?`'${id}'`:"null"})">Salva turno</button>
+     ${id?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteShift('${id}')">Elimina turno</button>`:""}`
+  );
+}
+async function saveShift(id){
+  if(!isManager()) return alert("Solo il Manager può modificare il planning.");
+  const pid=Number(document.getElementById("sp").value);
+  const date=document.getElementById("sd").value;
+  if(!pid||!date) return alert("Seleziona risorsa e giorno.");
+  const payload={
+    dipendente_id:pid,
+    data_turno:date,
+    entrata:document.getElementById("ss").value||null,
+    uscita:document.getElementById("se").value||null,
+    pausa_inizio:document.getElementById("bs").value||null,
+    pausa_fine:document.getElementById("be").value||null
+  };
+  try{
+    if(id && String(id)!=="null"){
+      await sb("Planning?id=eq."+encodeURIComponent(id),{
+        method:"PATCH",
+        body:JSON.stringify(payload),
+        prefer:"return=minimal"
+      });
+    }else{
+      await sb("Planning",{
+        method:"POST",
+        body:JSON.stringify(payload),
+        prefer:"return=minimal"
+      });
+    }
+    closeModal();
+    S.planningWeek=planningStartOfWeek(date);
+    save();
+    await loadShifts();
+  }catch(e){
+    alert("Impossibile salvare il turno.\n\n"+(e.message||e));
+  }
+}
+async function deleteShift(id){
+  if(!isManager()) return;
+  if(!confirm("Eliminare questo turno?")) return;
+  try{
+    await sb("Planning?id=eq."+encodeURIComponent(id),{
+      method:"DELETE",
+      prefer:"return=minimal"
+    });
+    await loadShifts();
+  }catch(e){
+    alert("Impossibile eliminare il turno.\n\n"+(e.message||e));
+  }
+}
+function managerPlanningWeek(){
+  const ds=planningWeekDates(S.planningWeek||planningToday());
+  const active=S.people.filter(p=>p.active);
+  const heads=ds.map(d=>{
+    const dt=new Date(d+"T12:00:00");
+    const name=new Intl.DateTimeFormat("it-IT",{weekday:"short"}).format(dt);
+    return `<div class="week-head ${d===planningToday()?"today":""}">
+      <b>${name}</b><span>${dt.getDate()}/${dt.getMonth()+1}</span>
+    </div>`;
+  }).join("");
+  const rows=active.map(p=>{
+    const cells=ds.map(d=>{
+      const x=(S.shifts||[]).find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);
+      return `<div class="shift-cell">
+        ${x
+          ? `<button class="shift-box" onclick="editShift('${x.id}')">
+               <b>${esc(x.start)}–${esc(x.end)}</b>
+               <small>☕ Pausa ${esc(x.breakStart||"—")}–${esc(x.breakEnd||"—")}</small>
+             </button>`
+          : `<button class="shift-empty" onclick="editShift(null,'${d}');setTimeout(()=>{const e=document.getElementById('sp');if(e)e.value='${p.id}'},0)">+ turno</button>`
+        }
+      </div>`;
+    }).join("");
+    return `<div class="person-cell"><b>${esc(p.name)}</b><small>${esc(p.role||"Risorsa")}</small></div>${cells}`;
+  }).join("");
+  return `
+    <div class="weeknav">
+      <button class="btn gray" onclick="planningShiftWeek(-1)">‹</button>
+      <div class="weektitle"><b>Planning · settimana</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div>
+      <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn gray" onclick="S.planningWeek=planningStartOfWeek(planningToday());save();render()">Oggi</button>
+      <button class="btn" onclick="editShift(null,planningToday())">+ Turno</button>
+    </div>
+    <section class="card">
+      <div class="weekly-wrap"><div class="weekly-grid">
+        <div class="week-head"><b>Risorsa</b></div>${heads}${rows}
+      </div></div>
+    </section>
+`;
+}
+function resourcePlanningWeek(){
+  const ds=planningWeekDates(S.planningWeek||planningToday());
+  const rows=resourceShifts();
+  return `
+    <div class="weeknav">
+      <button class="btn gray" onclick="planningShiftWeek(-1)">‹</button>
+      <div class="weektitle"><b>I miei turni</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div>
+      <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
+    </div>
+    <section class="resource-week">
+      ${ds.map(d=>{
+        const dt=new Date(d+"T12:00:00");
+        const day=new Intl.DateTimeFormat("it-IT",{weekday:"long"}).format(dt);
+        const x=rows.find(s=>s.date===d);
+        return `<div class="day-card ${d===planningToday()?"today":""}">
+          <div class="dayrow">
+            <div><div class="dayname">${day.charAt(0).toUpperCase()+day.slice(1)}</div>
+            <div class="date">${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}</div></div>
+            ${d===planningToday()?'<span class="pill">Oggi</span>':""}
+          </div>
+          ${x
+            ? `<div class="shiftmain">${esc(x.start)} – ${esc(x.end)}</div><div class="pause">☕ Pausa ${esc(x.breakStart||"—")} – ${esc(x.breakEnd||"—")}</div>`
+            : `<div class="rest">Riposo</div>`}
+        </div>`;
+      }).join("")}
+    </section>`;
+}
 function planning(){
   return isManager()?managerPlanningWeek():resourcePlanningWeek();
 }
@@ -351,32 +552,56 @@ function kpi(){
   S.kpi.selected=refPeriod; save();
 
   if(!isManager()){
-    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows), ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
-    const salesDiff=ref.sales?((c.sales-ref.sales)/ref.sales)*100:null;
-    const atvDiff=ref.atv?((c.atv-ref.atv)/ref.atv)*100:null;
-    const uptDiff=ref.upt?((c.upt-ref.upt)/ref.upt)*100:null;
-    const diffText=v=>v===null?"—":(v>=0?"+":"")+v.toFixed(1)+"% vs rif.";
-    const diffClass=v=>v===null?"":v>=0?"up":"down";
-
+    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows);
     return `<div class="row"><div class="section">Il mio KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
-    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Confronto con il riferimento del mese precedente: <b>${periodLabel(refPeriod)}</b>.</div></section>
-    <section class="card"><div class="grid">
-      <div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b><div class="small">Rif. ${fmt(ref.sales)}</div><div class="small ${diffClass(salesDiff)}">${diffText(salesDiff)}</div></div>
-      <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small">Rif. ${fmt(ref.atv)}</div><div class="small ${diffClass(atvDiff)}">${diffText(atvDiff)}</div></div>
-      <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small">Rif. ${ref.upt.toFixed(2)}</div><div class="small ${diffClass(uptDiff)}">${diffText(uptDiff)}</div></div>
-    </div></section>
+    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Inserisci i dati della giornata. Puoi modificare solo i tuoi KPI.</div></section>
+    <section class="card"><div class="grid"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div></section>
     <section class="card"><b>Giornate inserite</b>${rows.length?rows.map(r=>`<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(""):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>
     <section class="card notice"><b>🔔 Promemoria KPI</b><div class="small">Se sei in turno e non hai inserito il KPI entro le 22:00, riceverai una notifica sul dispositivo quando le notifiche del browser sono abilitate.</div><button class="btn gray" style="width:100%;margin-top:9px" onclick="requestKpiNotificationPermission()">Attiva notifiche KPI</button></section>`;
   }
 
   const active=S.people.filter(p=>p.active);
+
   return `<div class="row"><div class="section">KPI ragazzi</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
-  <section class="card notice"><b>📊 Riepilogo KPI mensile</b><div class="small">Qui vedi esclusivamente il riepilogo mensile delle risorse. I KPI giornalieri restano nel sistema per i calcoli ma non vengono mostrati al Manager. L'andamento del negozio è nella sezione dedicata.</div></section>
-  <section class="card"><b>🎯 Riferimenti manuali · ${periodLabel(refPeriod)}</b><div class="small" style="margin-top:6px">Puoi impostare o correggere il riferimento del mese precedente. ATV e UPT vengono calcolati automaticamente.</div>
-    ${active.map(p=>{const r=kpiReferenceFor(p.id,refPeriod);return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato riferimento</span><b>${fmt(r.sales)}</b></div><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  <section class="card notice"><b>📊 KPI mensili delle risorse</b><div class="small">Qui trovi solo il riepilogo mensile e i confronti con il riferimento. L'andamento aggregato del negozio è nella sezione <b>Andamento negozio</b>.</div></section>
+  <section class="card">
+    <div class="grid">
+      <div class="metric"><span>💰 Fatturato mese</span><b>${fmt(store.sales)}</b></div>
+      <div class="metric"><span>🧾 Scontrini</span><b>${store.receipts}</b></div>
+      <div class="metric"><span>👕 Pezzi</span><b>${store.pieces}</b></div>
+      <div class="metric"><span>ATV negozio</span><b>${fmt(store.atv)}</b></div>
+      <div class="metric"><span>UPT negozio</span><b>${store.upt.toFixed(2)}</b></div>
+    </div>
   </section>
-  <section class="card"><b>👥 Riepilogo mensile per risorsa</b><div class="small" style="margin-top:6px">Nessun KPI giornaliero viene visualizzato al Manager.</div>
-    ${active.map(p=>{const rows=kpiRowsForPerson(p.id,currentPeriod),c=calcKpi(rows),r=kpiReferenceFor(p.id,refPeriod);const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null,uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;const ac=atvDiff===null||!rows.length?"":atvDiff>=0?"up":"down",uc=uptDiff===null||!rows.length?"":uptDiff>=0?"up":"down";return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><span class="pill ${rows.length?"":"gray"}">${rows.length?"Aggiornato":"In attesa"}</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${ac}">${rows.length&&r.atv?((atvDiff>=0?"+":"")+atvDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${uc}">${rows.length&&r.upt?((uptDiff>=0?"+":"")+uptDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>Giornate</span><b>${rows.length}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  <section class="card">
+    <b>Riferimenti manuali · ${periodLabel(refPeriod)}</b>
+    <div class="small" style="margin-top:6px">Puoi continuare a impostare/correggere il riferimento del mese precedente. ATV e UPT vengono calcolati automaticamente.</div>
+    ${active.map(p=>{
+      const r=kpiReferenceFor(p.id,refPeriod);
+      return `<div class="kpi-card">
+        <div class="row"><div><b>${esc(p.name)}</b><div class="small">Riferimento: ${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div>
+        <div class="grid" style="margin-top:10px"><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div>
+      </div>`;
+    }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  </section>
+  <section class="card">
+    <b>Confronto KPI per risorsa</b>
+    <div class="small" style="margin-top:6px">Qui vedi solo il riepilogo mensile, non i singoli KPI giornalieri.</div>
+    ${active.map(p=>{
+      const rows=kpiRowsForPerson(p.id,currentPeriod), c=calcKpi(rows), r=kpiReferenceFor(p.id,refPeriod);
+      const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null, uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;
+      const atvClass=atvDiff===null||!rows.length?"":atvDiff>=0?"up":"down";
+      const uptClass=uptDiff===null||!rows.length?"":uptDiff>=0?"up":"down";
+      return `<div class="kpi-card">
+        <div class="row"><div><b>${esc(p.name)}</b></div><span class="pill ${rows.length?"":"gray"}">${rows.length?"Aggiornato":"In attesa"}</span></div>
+        <div class="grid" style="margin-top:10px">
+          <div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div>
+          <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${atvClass}">${rows.length&&r.atv?((atvDiff>=0?"+":"")+atvDiff.toFixed(1)+"% vs rif."): "—"}</div></div>
+          <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${uptClass}">${rows.length&&r.upt?((uptDiff>=0?"+":"")+uptDiff.toFixed(1)+"% vs rif."): "—"}</div></div>
+          <div class="metric"><span>Giornate</span><b>${rows.length}</b></div>
+        </div>
+      </div>`;
+    }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>`;
 }
 function kpiEntry(pid,date){
@@ -395,65 +620,36 @@ function kpiEntry(pid,date){
     <button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?"Salva modifiche":"Salva KPI"}</button>
     ${r&&!manager?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:""}`);
 }
-async function loadMalattie(){
-  try{
-    const rows=await sb('Malattie?select=*&order=data_inizio.desc');
-    const mapped=(rows||[]).map(r=>({id:r.id,personId:r.dipendente_id,protocollo:r.protocollo||'',inizio:r.data_inizio||'',fine:r.data_fine||''}));
-    S.malattie=isManager()?mapped:mapped.filter(x=>String(x.personId)===myPersonId());
-    S.online=true;save();render();
-  }catch(e){
-    console.warn('Malattie online non caricate',e);
-    S.malattie=S.malattie||[];S.online=false;save();render();
-  }
-}
 function malattie(){
+  if(!isManager())return home();
   S.malattie=S.malattie||[];
-  const manager=isManager(), me=myPerson();
-  const records=manager
-    ? [...S.malattie].sort((a,b)=>String(b.inizio||'').localeCompare(String(a.inizio||'')))
-    : S.malattie.filter(x=>String(x.personId)===myPersonId()).sort((a,b)=>String(b.inizio||'').localeCompare(String(a.inizio||'')));
-  return `<div class="row"><div class="section">⚕ Malattie</div>${!manager?`<button class="btn" onclick="malattiaEntry()">+ Inserisci malattia</button>`:''}</div>
-  <section class="card notice"><b>${manager?'Gestione malattie':'Le mie malattie'}</b><div class="small">${manager?'Visualizzi le malattie inserite dalle risorse. Le registrazioni vengono salvate online e sono visibili anche al Manager.':'Inserisci il numero di protocollo, la data di inizio e la data di fine compresa. Puoi modificare o eliminare solo le tue registrazioni.'}</div></section>
-  <section class="card">${records.length?records.map(r=>{const p=S.people.find(x=>String(x.id)===String(r.personId));const own=!manager&&String(r.personId)===myPersonId();return `<div class="kpi-card"><div class="row"><div><b>${esc(manager?(p?.name||'Risorsa'):(me?.name||'La mia malattia'))}</b><div class="small">Protocollo: ${esc(r.protocollo||'—')}</div></div><span class="pill red">Malattia</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Inizio</span><b>${esc(r.inizio||'—')}</b></div><div class="metric"><span>Fine compresa</span><b>${esc(r.fine||'—')}</b></div></div>${own?`<div class="actions" style="margin-top:10px"><button class="btn gray" onclick="malattiaEntry(${r.id})">Modifica</button><button class="btn red" onclick="deleteMalattia(${r.id})">Elimina</button></div>`:''}</div>`}).join(''):`<div class="empty">Nessuna malattia registrata.</div>`}</section>`;
+  const records=[...S.malattie].sort((a,b)=>String(b.inizio||"").localeCompare(String(a.inizio||"")));
+  return `<div class="row"><div class="section">⚕ Malattie</div><button class="btn" onclick="malattiaEntry()">+ Nuova malattia</button></div>
+  <section class="card notice"><b>Gestione malattie</b><div class="small">Registra numero di protocollo, data di inizio e data di fine compresa.</div></section>
+  <section class="card">${records.length?records.map(r=>{const p=S.people.find(x=>String(x.id)===String(r.personId));return `<div class="kpi-card"><div class="row"><div><b>${esc(p?.name||"Risorsa")}</b><div class="small">Protocollo: ${esc(r.protocollo||"—")}</div></div><span class="pill red">Malattia</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Inizio</span><b>${esc(r.inizio||"—")}</b></div><div class="metric"><span>Fine compresa</span><b>${esc(r.fine||"—")}</b></div></div><div class="actions" style="margin-top:10px"><button class="btn gray" onclick="malattiaEntry(${r.id})">Modifica</button><button class="btn red" onclick="deleteMalattia(${r.id})">Elimina</button></div></div>`}).join(""):`<div class="empty">Nessuna malattia registrata.</div>`}</section>`;
 }
 function malattiaEntry(id){
-  const manager=isManager(), me=myPerson();
-  if(manager && !id)return alert('La malattia deve essere inserita dalla risorsa.');
-  if(!me)return alert('Il tuo account non è ancora collegato a una risorsa.');
+  if(!isManager())return;
   S.malattie=S.malattie||[];
-  const r=S.malattie.find(x=>String(x.id)===String(id));
-  if(id && (!r || String(r.personId)!==myPersonId()))return alert('Puoi modificare solo le tue malattie.');
-  const data=r||{id:null,personId:me.id,protocollo:'',inizio:dateLocal(),fine:dateLocal()};
-  openModal(r?'Modifica malattia':'Inserisci malattia',`<label>Risorsa</label><input class="input" value="${esc(me.name)}" disabled><label>Numero protocollo</label><input id="malProtocollo" class="input" value="${esc(data.protocollo||'')}" placeholder="Numero protocollo"><label>Data inizio malattia</label><input id="malInizio" class="input" type="date" value="${esc(data.inizio||dateLocal())}"><label>Data fine compresa</label><input id="malFine" class="input" type="date" value="${esc(data.fine||data.inizio||dateLocal())}"><div class="small" style="margin:4px 0 10px">La data di fine è compresa nel periodo di malattia.</div><button class="btn" style="width:100%" onclick="saveMalattia(${r?`'${r.id}'`:'null'})">Salva malattia</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteMalattia('${r.id}');closeModal()">Elimina</button>`:''}`);
+  const r=S.malattie.find(x=>String(x.id)===String(id))||{id:Date.now(),personId:"",protocollo:"",inizio:dateLocal(),fine:dateLocal()};
+  const people=S.people.filter(p=>p.active);
+  openModal(id?"Modifica malattia":"Nuova malattia",`<label>Risorsa</label><select id="malPerson" class="select">${people.map(p=>`<option value="${p.id}" ${String(p.id)===String(r.personId)?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Numero protocollo</label><input id="malProtocollo" class="input" value="${esc(r.protocollo||"")}" placeholder="Numero protocollo"><label>Data inizio malattia</label><input id="malInizio" class="input" type="date" value="${esc(r.inizio||dateLocal())}"><label>Data fine compresa</label><input id="malFine" class="input" type="date" value="${esc(r.fine||r.inizio||dateLocal())}"><div class="small" style="margin:4px 0 10px">La data di fine è compresa nel periodo di malattia.</div><button class="btn" style="width:100%" onclick="saveMalattia(${r.id})">Salva malattia</button>`);
 }
-async function saveMalattia(id){
-  const me=myPerson();
-  if(!me)return alert('Il tuo account non è ancora collegato a una risorsa.');
-  const protocollo=document.getElementById('malProtocollo')?.value.trim()||'';
-  const inizio=document.getElementById('malInizio')?.value||'';
-  const fine=document.getElementById('malFine')?.value||'';
-  if(!inizio||!fine)return alert('Inserisci la data di inizio e la data di fine.');
-  if(fine<inizio)return alert('La data di fine non può essere precedente alla data di inizio.');
-  const payload={dipendente_id:Number(me.id),protocollo,data_inizio:inizio,data_fine:fine};
-  try{
-    let r;
-    if(id&&String(id)!=='null'){
-      const existing=S.malattie.find(x=>String(x.id)===String(id));
-      if(!existing||String(existing.personId)!==myPersonId())return alert('Puoi modificare solo le tue malattie.');
-      const rows=await sb('Malattie?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=representation',body:JSON.stringify(payload)});
-      r=Array.isArray(rows)?rows[0]:rows;
-    }else{
-      const rows=await sb('Malattie',{method:'POST',prefer:'return=representation',body:JSON.stringify(payload)});
-      r=Array.isArray(rows)?rows[0]:rows;
-    }
-    closeModal();await loadMalattie();
-  }catch(e){alert('Non è stato possibile salvare la malattia online.\n\n'+(e.message||e));}
+function saveMalattia(id){
+  if(!isManager())return;
+  const personId=Number(document.getElementById("malPerson")?.value||0),protocollo=document.getElementById("malProtocollo")?.value.trim()||"",inizio=document.getElementById("malInizio")?.value||"",fine=document.getElementById("malFine")?.value||"";
+  if(!personId||!inizio||!fine)return alert("Compila risorsa, data di inizio e data di fine.");
+  if(fine<inizio)return alert("La data di fine non può essere precedente alla data di inizio.");
+  S.malattie=S.malattie||[];
+  const existing=S.malattie.find(x=>String(x.id)===String(id));
+  const data={id:Number(id),personId,protocollo,inizio,fine};
+  if(existing)Object.assign(existing,data);else S.malattie.push(data);
+  save();closeModal();render();
 }
-async function deleteMalattia(id){
-  if(!confirm('Eliminare questa registrazione di malattia?'))return;
-  const r=(S.malattie||[]).find(x=>String(x.id)===String(id));
-  if(!r||String(r.personId)!==myPersonId())return alert('Puoi eliminare solo le tue malattie.');
-  try{await sb('Malattie?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadMalattie();}catch(e){alert('Impossibile eliminare la malattia.\n\n'+(e.message||e));}
+function deleteMalattia(id){
+  if(!isManager())return;
+  if(!confirm("Eliminare questa registrazione di malattia?"))return;
+  S.malattie=(S.malattie||[]).filter(x=>String(x.id)!==String(id));save();render();
 }
 function render(){let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():kpi();nav();if(t==="kpi"){let[y,m]=(S.kpi.selected||currentReferencePeriod()).split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
 
@@ -466,12 +662,12 @@ function myPersonId(){ return PROFILE?.dipendente_id == null ? null : String(PRO
 function allowedTab(t){
   return isManager()
     ? ["home","planning","people","tasks","requests","kpi","storeKpi","malattie"].includes(t)
-    : ["home","planning","tasks","requests","kpi","malattie"].includes(t);
+    : ["home","planning","tasks","requests","kpi"].includes(t);
 }
 function nav(){
   const a=isManager()
     ? [["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"],["malattie","⚕","Malattie"]]
-    : [["home","⌂","Home"],["planning","▦","I miei turni"],["tasks","✓","Le mie attività"],["requests","✉","Le mie richieste"],["kpi","▥","Il mio KPI"],["malattie","⚕","La mia malattia"]];
+    : [["home","⌂","Home"],["planning","▦","I miei turni"],["tasks","✓","Le mie attività"],["requests","✉","Le mie richieste"],["kpi","▥","Il mio KPI"]];
   document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("");
 }
 
@@ -754,45 +950,46 @@ function saveStoreTarget(){
 }
 function storeKpi(){
   if(!isManager())return kpi();
-  const currentPeriod=dateLocal().slice(0,7), rows=Object.values(S.kpi.daily||{}).filter(r=>String(r.date||"").startsWith(currentPeriod)), store=calcKpi(rows);
-  const target=Number(S.kpi.storeByPeriod?.[currentPeriod]?.target||0), progress=target?(store.sales/target)*100:0;
-  const by={}; rows.forEach(r=>by[r.date]=(by[r.date]||0)+Number(r.sales||0)); const vals=Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0])); const max=Math.max(1,...vals.map(x=>x[1]));
-  return `<div class="row"><div class="section">Andamento Negozio</div><button class="btn gray" onclick="S.tab='home';save();render()">← Home</button></div>
-  <section class="kpi-hero"><div class="row"><div><div class="kpi-hero-title">Andamento negozio · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Dati aggregati del negozio. I KPI giornalieri dei ragazzi non vengono mostrati.</div></div><button class="btn" onclick="setStoreTarget()">🎯 Target</button></div></section>
-  <section class="kpi-cards">
-    <div class="kpi-premium"><div class="label">Fatturato</div><div class="value">${fmt(store.sales)}</div><div class="ref">Progressivo mese</div></div>
-    <div class="kpi-premium"><div class="label">Target mensile</div><div class="value">${target?fmt(target):"—"}</div><div class="ref">${target?progress.toFixed(1)+"% completato":"Da impostare"}</div><div class="progress"><i style="width:${Math.min(100,progress)}%"></i></div></div>
-    <div class="kpi-premium"><div class="label">ATV negozio</div><div class="value">${fmt(store.atv)}</div><div class="ref">Valore medio scontrino</div></div>
-    <div class="kpi-premium"><div class="label">UPT negozio</div><div class="value">${store.upt.toFixed(2)}</div><div class="ref">Pezzi per scontrino</div></div>
-    <div class="kpi-premium"><div class="label">Scontrini</div><div class="value">${store.receipts}</div><div class="ref">Mese corrente</div></div>
-    <div class="kpi-premium"><div class="label">Pezzi venduti</div><div class="value">${store.pieces}</div><div class="ref">Mese corrente</div></div>
-  </section>
-  <section class="card" style="margin-top:15px"><div class="row"><div><b>Andamento giornaliero</b><div class="small">${vals.length} giornate con dati</div></div></div><div class="chart">${vals.length?vals.map(([d,v])=>`<div class="barwrap"><div class="bar current" style="height:${Math.max(3,(v/max)*100)}%"></div><span class="barlabel">${d.slice(8)}</span></div>`).join(""):`<div class="empty" style="width:100%">Nessun dato disponibile.</div>`}</div></section>
-  <section class="card"><div class="row"><div><b>Target del mese</b><div class="small">${target?`Target ${fmt(target)} · progressivo ${fmt(store.sales)}`:'Il target non è ancora stato inserito.'}</div></div><button class="btn gray" onclick="setStoreTarget()">${target?'Modifica':'Imposta'}</button></div></section>`;
+  const currentPeriod=dateLocal().slice(0,7);
+  const rows=Object.values(S.kpi.daily||{}).filter(r=>String(r.date||"").startsWith(currentPeriod));
+  const store=calcKpi(rows);
+  const target=Number(S.kpi.storeByPeriod?.[currentPeriod]?.target||0);
+  const progress=target?(store.sales/target)*100:0;
+  return `<div class="row"><div class="section">📊 Andamento negozio</div><button class="btn gray" onclick="S.tab='home';save();render()">← Home</button></div>
+  <section class="card notice"><div class="row"><div><b>Andamento negozio · ${periodLabel(currentPeriod)}</b><div class="small">Solo dati aggregati del negozio. I KPI giornalieri dei ragazzi non vengono mostrati.</div></div><button class="btn" onclick="setStoreTarget()">🎯 Target</button></div></section>
+  <section class="card"><div class="grid">
+    <div class="metric"><span>💰 Fatturato</span><b>${fmt(store.sales)}</b></div>
+    <div class="metric"><span>🎯 Target mensile</span><b>${target?fmt(target):"—"}</b></div>
+    <div class="metric"><span>📈 Raggiungimento</span><b>${target?progress.toFixed(1)+"%":"—"}</b></div>
+    <div class="metric"><span>🧾 Scontrini</span><b>${store.receipts}</b></div>
+    <div class="metric"><span>👕 Pezzi venduti</span><b>${store.pieces}</b></div>
+    <div class="metric"><span>ATV negozio</span><b>${fmt(store.atv)}</b></div>
+    <div class="metric"><span>UPT negozio</span><b>${store.upt.toFixed(2)}</b></div>
+  </div></section>
+  <section class="card"><b>Target del mese</b><div class="small" style="margin-top:6px">${target?`Target impostato: <b>${fmt(target)}</b>. Fatturato progressivo: <b>${fmt(store.sales)}</b>.`:'Il target non è ancora stato inserito. Quando te lo comunicano, premi <b>🎯 Target</b> e impostalo qui.'}</div><button class="btn gray" style="width:100%;margin-top:10px" onclick="setStoreTarget()">${target?"Modifica target":"Inserisci target mensile"}</button></section>`;
 }
 
 function kpi(){
-  const currentPeriod=dateLocal().slice(0,7), refPeriod=currentReferencePeriod(); S.kpi.selected=refPeriod; save();
+  const currentPeriod=dateLocal().slice(0,7);
+  const refPeriod=currentReferencePeriod();
+  S.kpi.selected=refPeriod; save();
   if(!isManager()){
-    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows), ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
-    const salesDiff=ref.sales?((c.sales-ref.sales)/ref.sales)*100:null, atvDiff=ref.atv?((c.atv-ref.atv)/ref.atv)*100:null, uptDiff=ref.upt?((c.upt-ref.upt)/ref.upt)*100:null;
-    const diff=v=>v===null?'—':(v>=0?'+':'')+v.toFixed(1)+'% vs rif.', cls=v=>v===null?'':v>=0?'up':'down';
-    return `<div class="row"><div class="section">I miei KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
-    <section class="kpi-hero"><div class="kpi-hero-title">I miei KPI · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Confronto con il riferimento del mese precedente · <b>${periodLabel(refPeriod)}</b></div></section>
-    <section class="kpi-cards">
-      <div class="kpi-premium"><div class="label">Fatturato personale</div><div class="value">${fmt(c.sales)}</div><div class="ref">Rif. ${fmt(ref.sales)}</div><div class="diff ${cls(salesDiff)}">${diff(salesDiff)}</div></div>
-      <div class="kpi-premium"><div class="label">ATV personale</div><div class="value">${fmt(c.atv)}</div><div class="ref">Rif. ${fmt(ref.atv)}</div><div class="diff ${cls(atvDiff)}">${diff(atvDiff)}</div></div>
-      <div class="kpi-premium"><div class="label">UPT personale</div><div class="value">${c.upt.toFixed(2)}</div><div class="ref">Rif. ${ref.upt.toFixed(2)}</div><div class="diff ${cls(uptDiff)}">${diff(uptDiff)}</div></div>
-    </section>
-    <section class="card" style="margin-top:15px"><div class="row"><b>Giornate inserite</b><span class="pill ${rows.length?'':'gray'}">${rows.length} ${rows.length===1?'giornata':'giornate'}</span></div>${rows.length?rows.map(r=>`<div class="row" style="padding:13px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(''):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>`;
+    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows);
+    return `<div class="row"><div class="section">Il mio KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
+    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Inserisci i dati della giornata. Puoi modificare solo i tuoi KPI.</div></section>
+    <section class="card"><div class="grid"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div></section>
+    <section class="card"><b>Giornate inserite</b>${rows.length?rows.map(r=>`<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(""):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>
+    <section class="card notice"><b>🔔 Promemoria KPI</b><div class="small">Se sei in turno e non hai inserito il KPI entro le 22:00, riceverai una notifica.</div><button class="btn gray" style="width:100%;margin-top:9px" onclick="requestKpiNotificationPermission()">Attiva notifiche KPI</button></section>`;
   }
   const active=S.people.filter(p=>p.active);
-  return `<div class="row"><div class="section">KPI Personali</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
-  <section class="kpi-hero"><div class="kpi-hero-title">Riepilogo KPI · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Confronto mensile per risorsa. I dati giornalieri restano nascosti.</div></section>
-  <section class="card" style="margin-top:15px"><div class="row"><div><b>Riferimenti manuali · ${periodLabel(refPeriod)}</b><div class="small">ATV e UPT vengono calcolati automaticamente.</div></div></div>
-    ${active.map(p=>{const r=kpiReferenceFor(p.id,refPeriod);return `<div class="kpi-premium" style="margin-top:12px"><div class="row"><b>${esc(p.name)}</b><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:12px"><div class="metric"><span>Fatturato riferimento</span><b>${fmt(r.sales)}</b></div><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div></div>`}).join('')||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  return `<div class="row"><div class="section">KPI ragazzi</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
+  <section class="card notice"><b>📊 Riepilogo KPI mensile</b><div class="small">Qui vedi esclusivamente il riepilogo mensile delle risorse. I KPI giornalieri restano nel sistema per i calcoli ma non vengono mostrati al Manager. L'andamento del negozio è nella sezione dedicata.</div></section>
+  <section class="card"><b>🎯 Riferimenti manuali · ${periodLabel(refPeriod)}</b><div class="small" style="margin-top:6px">Puoi impostare o correggere il riferimento del mese precedente. ATV e UPT vengono calcolati automaticamente.</div>
+    ${active.map(p=>{const r=kpiReferenceFor(p.id,refPeriod);return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato riferimento</span><b>${fmt(r.sales)}</b></div><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>
-  <section class="card"><b>Andamento per risorsa</b><div class="small" style="margin-top:5px">Solo riepilogo mensile.</div>${active.map(p=>{const rows=kpiRowsForPerson(p.id,currentPeriod),c=calcKpi(rows),r=kpiReferenceFor(p.id,refPeriod),ad=r.atv?((c.atv-r.atv)/r.atv)*100:null,ud=r.upt?((c.upt-r.upt)/r.upt)*100:null;return `<div class="kpi-premium" style="margin-top:12px"><div class="row"><b>${esc(p.name)}</b><span class="pill ${rows.length?'':'gray'}">${rows.length?'Aggiornato':'In attesa'}</span></div><div class="grid" style="margin-top:12px"><div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${ad===null?'':ad>=0?'up':'down'}">${ad===null?'—':(ad>=0?'+':'')+ad.toFixed(1)+'%'}</div></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${ud===null?'':ud>=0?'up':'down'}">${ud===null?'—':(ud>=0?'+':'')+ud.toFixed(1)+'%'}</div></div><div class="metric"><span>Giornate</span><b>${rows.length}</b></div></div></div>`}).join('')}</section>`;
+  <section class="card"><b>👥 Riepilogo mensile per risorsa</b><div class="small" style="margin-top:6px">Nessun KPI giornaliero viene visualizzato al Manager.</div>
+    ${active.map(p=>{const rows=kpiRowsForPerson(p.id,currentPeriod),c=calcKpi(rows),r=kpiReferenceFor(p.id,refPeriod);const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null,uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;const ac=atvDiff===null||!rows.length?"":atvDiff>=0?"up":"down",uc=uptDiff===null||!rows.length?"":uptDiff>=0?"up":"down";return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><span class="pill ${rows.length?"":"gray"}">${rows.length?"Aggiornato":"In attesa"}</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${ac}">${rows.length&&r.atv?((atvDiff>=0?"+":"")+atvDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${uc}">${rows.length&&r.upt?((uptDiff>=0?"+":"")+uptDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>Giornate</span><b>${rows.length}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  </section>`;
 }
 
 function kpiEntry(pid,date){
@@ -847,7 +1044,6 @@ async function bootApp(){
   await loadKpis();
   await loadHistory();
   await loadShifts();
-  await loadMalattie();
   startKpiNotificationMonitor();
 }
 async function bootAuth(){
