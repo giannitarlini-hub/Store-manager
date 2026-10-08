@@ -535,56 +535,32 @@ function kpi(){
   S.kpi.selected=refPeriod; save();
 
   if(!isManager()){
-    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows);
+    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows), ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
+    const salesDiff=ref.sales?((c.sales-ref.sales)/ref.sales)*100:null;
+    const atvDiff=ref.atv?((c.atv-ref.atv)/ref.atv)*100:null;
+    const uptDiff=ref.upt?((c.upt-ref.upt)/ref.upt)*100:null;
+    const diffText=v=>v===null?"—":(v>=0?"+":"")+v.toFixed(1)+"% vs rif.";
+    const diffClass=v=>v===null?"":v>=0?"up":"down";
+
     return `<div class="row"><div class="section">Il mio KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
-    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Inserisci i dati della giornata. Puoi modificare solo i tuoi KPI.</div></section>
-    <section class="card"><div class="grid"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div></section>
+    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Confronto con il riferimento del mese precedente: <b>${periodLabel(refPeriod)}</b>.</div></section>
+    <section class="card"><div class="grid">
+      <div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b><div class="small">Rif. ${fmt(ref.sales)}</div><div class="small ${diffClass(salesDiff)}">${diffText(salesDiff)}</div></div>
+      <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small">Rif. ${fmt(ref.atv)}</div><div class="small ${diffClass(atvDiff)}">${diffText(atvDiff)}</div></div>
+      <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small">Rif. ${ref.upt.toFixed(2)}</div><div class="small ${diffClass(uptDiff)}">${diffText(uptDiff)}</div></div>
+    </div></section>
     <section class="card"><b>Giornate inserite</b>${rows.length?rows.map(r=>`<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(""):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>
     <section class="card notice"><b>🔔 Promemoria KPI</b><div class="small">Se sei in turno e non hai inserito il KPI entro le 22:00, riceverai una notifica sul dispositivo quando le notifiche del browser sono abilitate.</div><button class="btn gray" style="width:100%;margin-top:9px" onclick="requestKpiNotificationPermission()">Attiva notifiche KPI</button></section>`;
   }
 
   const active=S.people.filter(p=>p.active);
-
   return `<div class="row"><div class="section">KPI ragazzi</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
-  <section class="card notice"><b>📊 KPI mensili delle risorse</b><div class="small">Qui trovi solo il riepilogo mensile e i confronti con il riferimento. L'andamento aggregato del negozio è nella sezione <b>Andamento negozio</b>.</div></section>
-  <section class="card">
-    <div class="grid">
-      <div class="metric"><span>💰 Fatturato mese</span><b>${fmt(store.sales)}</b></div>
-      <div class="metric"><span>🧾 Scontrini</span><b>${store.receipts}</b></div>
-      <div class="metric"><span>👕 Pezzi</span><b>${store.pieces}</b></div>
-      <div class="metric"><span>ATV negozio</span><b>${fmt(store.atv)}</b></div>
-      <div class="metric"><span>UPT negozio</span><b>${store.upt.toFixed(2)}</b></div>
-    </div>
+  <section class="card notice"><b>📊 Riepilogo KPI mensile</b><div class="small">Qui vedi esclusivamente il riepilogo mensile delle risorse. I KPI giornalieri restano nel sistema per i calcoli ma non vengono mostrati al Manager. L'andamento del negozio è nella sezione dedicata.</div></section>
+  <section class="card"><b>🎯 Riferimenti manuali · ${periodLabel(refPeriod)}</b><div class="small" style="margin-top:6px">Puoi impostare o correggere il riferimento del mese precedente. ATV e UPT vengono calcolati automaticamente.</div>
+    ${active.map(p=>{const r=kpiReferenceFor(p.id,refPeriod);return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato riferimento</span><b>${fmt(r.sales)}</b></div><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>
-  <section class="card">
-    <b>Riferimenti manuali · ${periodLabel(refPeriod)}</b>
-    <div class="small" style="margin-top:6px">Puoi continuare a impostare/correggere il riferimento del mese precedente. ATV e UPT vengono calcolati automaticamente.</div>
-    ${active.map(p=>{
-      const r=kpiReferenceFor(p.id,refPeriod);
-      return `<div class="kpi-card">
-        <div class="row"><div><b>${esc(p.name)}</b><div class="small">Riferimento: ${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div>
-        <div class="grid" style="margin-top:10px"><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div>
-      </div>`;
-    }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
-  </section>
-  <section class="card">
-    <b>Confronto KPI per risorsa</b>
-    <div class="small" style="margin-top:6px">Qui vedi solo il riepilogo mensile, non i singoli KPI giornalieri.</div>
-    ${active.map(p=>{
-      const rows=kpiRowsForPerson(p.id,currentPeriod), c=calcKpi(rows), r=kpiReferenceFor(p.id,refPeriod);
-      const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null, uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;
-      const atvClass=atvDiff===null||!rows.length?"":atvDiff>=0?"up":"down";
-      const uptClass=uptDiff===null||!rows.length?"":uptDiff>=0?"up":"down";
-      return `<div class="kpi-card">
-        <div class="row"><div><b>${esc(p.name)}</b></div><span class="pill ${rows.length?"":"gray"}">${rows.length?"Aggiornato":"In attesa"}</span></div>
-        <div class="grid" style="margin-top:10px">
-          <div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div>
-          <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${atvClass}">${rows.length&&r.atv?((atvDiff>=0?"+":"")+atvDiff.toFixed(1)+"% vs rif."): "—"}</div></div>
-          <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${uptClass}">${rows.length&&r.upt?((uptDiff>=0?"+":"")+uptDiff.toFixed(1)+"% vs rif."): "—"}</div></div>
-          <div class="metric"><span>Giornate</span><b>${rows.length}</b></div>
-        </div>
-      </div>`;
-    }).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  <section class="card"><b>👥 Riepilogo mensile per risorsa</b><div class="small" style="margin-top:6px">Nessun KPI giornaliero viene visualizzato al Manager.</div>
+    ${active.map(p=>{const rows=kpiRowsForPerson(p.id,currentPeriod),c=calcKpi(rows),r=kpiReferenceFor(p.id,refPeriod);const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null,uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;const ac=atvDiff===null||!rows.length?"":atvDiff>=0?"up":"down",uc=uptDiff===null||!rows.length?"":uptDiff>=0?"up":"down";return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><span class="pill ${rows.length?"":"gray"}">${rows.length?"Aggiornato":"In attesa"}</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${ac}">${rows.length&&r.atv?((atvDiff>=0?"+":"")+atvDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${uc}">${rows.length&&r.upt?((uptDiff>=0?"+":"")+uptDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>Giornate</span><b>${rows.length}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>`;
 }
 function kpiEntry(pid,date){
@@ -985,14 +961,26 @@ function kpi(){
   const currentPeriod=dateLocal().slice(0,7);
   const refPeriod=currentReferencePeriod();
   S.kpi.selected=refPeriod; save();
+
   if(!isManager()){
-    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows);
+    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows), ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
+    const salesDiff=ref.sales?((c.sales-ref.sales)/ref.sales)*100:null;
+    const atvDiff=ref.atv?((c.atv-ref.atv)/ref.atv)*100:null;
+    const uptDiff=ref.upt?((c.upt-ref.upt)/ref.upt)*100:null;
+    const diffText=v=>v===null?"—":(v>=0?"+":"")+v.toFixed(1)+"% vs rif.";
+    const diffClass=v=>v===null?"":v>=0?"up":"down";
+
     return `<div class="row"><div class="section">Il mio KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
-    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Inserisci i dati della giornata. Puoi modificare solo i tuoi KPI.</div></section>
-    <section class="card"><div class="grid"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div></section>
+    <section class="card notice"><b>👤 I miei KPI · ${periodLabel(currentPeriod)}</b><div class="small">Confronto con il riferimento del mese precedente: <b>${periodLabel(refPeriod)}</b>.</div></section>
+    <section class="card"><div class="grid">
+      <div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b><div class="small">Rif. ${fmt(ref.sales)}</div><div class="small ${diffClass(salesDiff)}">${diffText(salesDiff)}</div></div>
+      <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small">Rif. ${fmt(ref.atv)}</div><div class="small ${diffClass(atvDiff)}">${diffText(atvDiff)}</div></div>
+      <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small">Rif. ${ref.upt.toFixed(2)}</div><div class="small ${diffClass(uptDiff)}">${diffText(uptDiff)}</div></div>
+    </div></section>
     <section class="card"><b>Giornate inserite</b>${rows.length?rows.map(r=>`<div class="row" style="padding:10px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(""):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>
-    <section class="card notice"><b>🔔 Promemoria KPI</b><div class="small">Se sei in turno e non hai inserito il KPI entro le 22:00, riceverai una notifica.</div><button class="btn gray" style="width:100%;margin-top:9px" onclick="requestKpiNotificationPermission()">Attiva notifiche KPI</button></section>`;
+    <section class="card notice"><b>🔔 Promemoria KPI</b><div class="small">Se sei in turno e non hai inserito il KPI entro le 22:00, riceverai una notifica sul dispositivo quando le notifiche del browser sono abilitate.</div><button class="btn gray" style="width:100%;margin-top:9px" onclick="requestKpiNotificationPermission()">Attiva notifiche KPI</button></section>`;
   }
+
   const active=S.people.filter(p=>p.active);
   return `<div class="row"><div class="section">KPI ragazzi</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
   <section class="card notice"><b>📊 Riepilogo KPI mensile</b><div class="small">Qui vedi esclusivamente il riepilogo mensile delle risorse. I KPI giornalieri restano nel sistema per i calcoli ma non vengono mostrati al Manager. L'andamento del negozio è nella sezione dedicata.</div></section>
@@ -1003,7 +991,6 @@ function kpi(){
     ${active.map(p=>{const rows=kpiRowsForPerson(p.id,currentPeriod),c=calcKpi(rows),r=kpiReferenceFor(p.id,refPeriod);const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null,uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;const ac=atvDiff===null||!rows.length?"":atvDiff>=0?"up":"down",uc=uptDiff===null||!rows.length?"":uptDiff>=0?"up":"down";return `<div class="kpi-card"><div class="row"><div><b>${esc(p.name)}</b></div><span class="pill ${rows.length?"":"gray"}">${rows.length?"Aggiornato":"In attesa"}</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${ac}">${rows.length&&r.atv?((atvDiff>=0?"+":"")+atvDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${uc}">${rows.length&&r.upt?((uptDiff>=0?"+":"")+uptDiff.toFixed(1)+"% vs rif."):"—"}</div></div><div class="metric"><span>Giornate</span><b>${rows.length}</b></div></div></div>`}).join("")||`<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>`;
 }
-
 function kpiEntry(pid,date){
   const me=myPerson();
   if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
