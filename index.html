@@ -975,32 +975,58 @@ function requests(){
   return `<div class="row"><div class="section">Richieste giorni liberi</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div><section class="card"><div class="notice"><b>${p} ${p===1?"richiesta":"richieste"} in sospeso</b><div class="small">Le richieste vengono salvate online in Supabase.</div></div></section><section class="card">${S.requests.length?S.requests.map(r=>{let person=S.people.find(p=>p.id==r.personId);return `<div style="padding:13px 0;border-bottom:1px solid #edf0f3"><div class="row"><div><b>${esc(person?.name||"Risorsa")}</b><div class="small">${r.start}${r.end&&r.end!==r.start?" → "+r.end:""} · ${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":"red"}">${esc(r.status)}</span></div>${r.note?`<div class="small" style="margin:8px 0">Motivazione: ${esc(r.note)}</div>`:""}${r.status==="In attesa"?`<div class="actions" style="margin-top:8px"><button class="btn green" onclick="updateRequest(${r.id},'Approvata')">Approva</button><button class="btn red" onclick="updateRequest(${r.id},'Rifiutata')">Rifiuta</button></div>`:""}</div>`}).join(""):`<div class="empty">Nessuna richiesta.</div>`}</section>`;
 }
 
+async function loadStoreDailyAggregate(){
+  const start=weekStartDate(dateLocal()), end=weekEndDate(dateLocal());
+  try{
+    const rows=await sb("rpc/get_store_weekly_kpi",{
+      method:"POST",
+      prefer:"return=representation",
+      body:JSON.stringify({p_start_date:start,p_end_date:end})
+    });
+    S.kpi.storeDaily={};
+    (rows||[]).forEach(r=>{
+      const date=String(r.data||"").slice(0,10);
+      if(!date)return;
+      S.kpi.storeDaily[date]={
+        date,
+        sales:Number(r.fatturato)||0,
+        receipts:Number(r.scontrini)||0,
+        pieces:Number(r.pezzi_venduti)||0
+      };
+    });
+    return true;
+  }catch(e){
+    console.warn("Aggregato negozio non caricato",e);
+    S.kpi.storeDaily={};
+    return false;
+  }
+}
+
 async function loadKpis(){
   try{
+    // I KPI personali restano soggetti alle normali policy RLS.
+    // Il totale negozio viene invece letto da una funzione RPC SECURITY DEFINER
+    // che restituisce solo l'aggregato giornaliero, mai i dati delle singole risorse.
     let rows=await sb("KpiGiornalieri?select=*&order=data.asc");
     const activeIds=new Set(S.people.filter(p=>p.active).map(p=>String(p.id)));
     rows=(rows||[]).filter(r=>activeIds.has(String(r.dipendente_id)));
 
-    // Dati aggregati del negozio: servono per target settimanale e andamento store.
-    // I KPI giornalieri delle altre risorse NON vengono mostrati nella UI ai ragazzi.
-    S.kpi.storeDaily={};
-    rows.forEach(r=>{
-      const date=String(r.data||"");
-      if(!date)return;
-      const key=date;
-      if(!S.kpi.storeDaily[key])S.kpi.storeDaily[key]={date,sales:0,receipts:0,pieces:0};
-      S.kpi.storeDaily[key].sales+=Number(r.fatturato)||0;
-      S.kpi.storeDaily[key].receipts+=Number(r.scontrini)||0;
-      S.kpi.storeDaily[key].pieces+=Number(r.pezzi_venduti)||0;
-    });
-
-    // KPI personali: per un ragazzo manteniamo esclusivamente i suoi dati.
     S.kpi.daily={};
     const visibleRows=isManager()?rows:rows.filter(r=>String(r.dipendente_id)===myPersonId());
     visibleRows.forEach(r=>{
-      let key=String(r.dipendente_id)+"_"+r.data;
-      S.kpi.daily[key]={id:r.id,personId:r.dipendente_id,date:r.data,sales:Number(r.fatturato)||0,receipts:Number(r.scontrini)||0,pieces:Number(r.pezzi_venduti)||0,updatedAt:r.created_at||null};
+      const key=String(r.dipendente_id)+"_"+r.data;
+      S.kpi.daily[key]={
+        id:r.id,
+        personId:r.dipendente_id,
+        date:r.data,
+        sales:Number(r.fatturato)||0,
+        receipts:Number(r.scontrini)||0,
+        pieces:Number(r.pezzi_venduti)||0,
+        updatedAt:r.created_at||null
+      };
     });
+
+    await loadStoreDailyAggregate();
     S.online=true;save();render();
   }catch(e){
     console.warn("KPI online non caricati",e);
