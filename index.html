@@ -605,4 +605,639 @@ function saveTaskEdit(id){let t=S.tasks.find(x=>x.id===id);if(!t)return;t.name=d
 function toggleTask(id){let t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;save();render()}}
 function deleteTask(id){let t=S.tasks.find(x=>x.id===id);if(t&&confirm(`Eliminare "${t.name}"?`)){S.tasks=S.tasks.filter(x=>x.id!==id);save();render()}}
 function autoTasks(){let a=S.people.filter(p=>p.active).map(p=>p.name);if(!a.length)return;S.tasks.forEach((t,i)=>t.person=a[i%a.length]);save();render()}
-function requests(){let p=S.requests.filter(r=>r.status==="In attesa").length;return `<div class="row"><div class="section">Richieste giorni liberi</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div><section class="card"><div class="notice"><b>${p} ${p===1?"richiesta":"richieste"} in sospeso</b><div class="small">Le richieste vengono salvate online in Supabase.</div></div></section><section class="card">${S.requests.length?S.requests.map(r=>{l
+function requests(){let p=S.requests.filter(r=>r.status==="In attesa").length;return `<div class="row"><div class="section">Richieste giorni liberi</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div><section class="card"><div class="notice"><b>${p} ${p===1?"richiesta":"richieste"} in sospeso</b><div class="small">Le richieste vengono salvate online in Supabase.</div></div></section><section class="card">${S.requests.length?S.requests.map(r=>{let person=S.people.find(p=>p.id==r.personId);return `<div style="padding:13px 0;border-bottom:1px solid #edf0f3"><div class="row"><div><b>${esc(person?.name||"Risorsa")}</b><div class="small">${r.start}${r.end&&r.end!==r.start?" → "+r.end:""} · ${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":"red"}">${esc(r.status)}</span></div>${r.note?`<div class="small" style="margin:8px 0">Motivazione: ${esc(r.note)}</div>`:""}${r.status==="In attesa"?`<div class="actions" style="margin-top:8px"><button class="btn green" onclick="updateRequest(${r.id},'Approvata')">Approva</button><button class="btn red" onclick="updateRequest(${r.id},'Rifiutata')">Rifiuta</button></div>`:""}</div>`}).join(""):`<div class="empty">Nessuna richiesta.</div>`}</section>`}
+async function loadHistory(){try{let rows=await sb('KpiStorico?select=*&order=anno.asc,settimana.asc');S.kpi.history={};rows.forEach(r=>{S.kpi.history[String(r.anno)+'_'+String(r.settimana)]={id:r.id,year:+r.anno,week:+r.settimana,sales:+r.fatturato||0,receipts:+r.scontrini||0,pieces:+r.pezzi_venduti||0}});save();render()}catch(e){console.warn('Storico KPI non caricato',e)}}
+function histKey(y,w){return String(y)+'_'+String(w)}
+function historyRow(y,w){return S.kpi.history?.[histKey(y,w)]||null}
+function historyEntry(y,w){let r=historyRow(y,w);openModal(r?'Modifica storico KPI':'Inserisci storico KPI',`<div class="notice">Dati storici del negozio. Questi valori servono per il confronto con la stessa settimana dell'anno successivo.</div><label>Anno</label><input id="hy" class="input" type="number" min="2020" max="2100" value="${y}"><label>Settimana</label><input id="hw" class="input" type="number" min="1" max="53" value="${w}"><label>Fatturato</label><input id="hs" class="input" type="number" step="0.01" value="${r?.sales??''}"><label>Scontrini</label><input id="hr" class="input" type="number" min="0" step="1" value="${r?.receipts??''}"><label>Pezzi venduti</label><input id="hp" class="input" type="number" min="0" step="1" value="${r?.pieces??''}"><button class="btn" style="width:100%" onclick="saveHistory()">${r?'Salva modifiche':'Salva storico'}</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteHistory(${r.id});closeModal()">Elimina settimana</button>`:''}`)}
+async function saveHistory(){let year=+document.getElementById('hy').value,week=+document.getElementById('hw').value,sales=+document.getElementById('hs').value||0,receipts=+document.getElementById('hr').value||0,pieces=+document.getElementById('hp').value||0;if(!year||week<1||week>53)return alert('Anno o settimana non validi.');let payload={anno:year,settimana:week,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};try{let rows=await sb('KpiStorico?on_conflict=anno,settimana',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify(payload)});let r=Array.isArray(rows)?rows[0]:rows;S.kpi.history=S.kpi.history||{};S.kpi.history[histKey(year,week)]={id:r?.id||histKey(year,week),year,week,sales,receipts,pieces};save();closeModal();await loadHistory()}catch(e){alert('Supabase non ha accettato lo storico KPI.\n\n'+(e.message||e))}}
+async function deleteHistory(id){if(!confirm('Eliminare questo dato storico?'))return;try{await sb('KpiStorico?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadHistory()}catch(e){alert('Impossibile eliminare lo storico.\n\n'+(e.message||e))}}
+function historyCard(year,week){let r=historyRow(year,week);let c=r?calcKpi([{sales:r.sales,receipts:r.receipts,pieces:r.pieces}]):{sales:0,receipts:0,pieces:0,atv:0,upt:0};return `<section class="card"><div class="row"><div><b>🔵 Storico settimana ${week} · ${year}</b><div class="small">Solo Manager · base di confronto</div></div><button class="btn gray" onclick="historyEntry(${year},${week})">${r?'Modifica':'Inserisci'}</button></div>${r?`<div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b></div></div>`:`<div class="empty">Nessun dato storico inserito per questa settimana.</div>`}</section>`}
+function kpi(){
+  const currentPeriod=dateLocal().slice(0,7), refPeriod=currentReferencePeriod();
+  S.kpi.selected=refPeriod; save();
+
+  if(!isManager()){
+    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows), ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
+    const weekDate=dateLocal(), weekRows=weeklyStoreRows(weekDate), weekStore=calcKpi(weekRows), weekTarget=weeklyTargetFor(weekDate);
+    const weekProgress=weekTarget?(weekStore.sales/weekTarget)*100:0;
+    const weekMissing=Math.max(0,weekTarget-weekStore.sales);
+    const salesDiff=ref.sales?((c.sales-ref.sales)/ref.sales)*100:null, atvDiff=ref.atv?((c.atv-ref.atv)/ref.atv)*100:null, uptDiff=ref.upt?((c.upt-ref.upt)/ref.upt)*100:null;
+    const diff=v=>v===null?'—':(v>=0?'+':'')+v.toFixed(1)+'% vs rif.', cls=v=>v===null?'':v>=0?'up':'down';
+    return weeklyStoreCard()+`<div class="row"><div><div class="section" style="margin-bottom:2px">Il mio KPI</div><div class="small">${periodLabel(currentPeriod)} · confronto con ${periodLabel(refPeriod)}</div></div><button class="btn" onclick="kpiEntry()">+ Inserisci KPI</button></div>
+    <section class="kpi-hero" style="margin-top:12px"><div class="kpi-cards">
+      <div class="kpi-premium"><div class="label">💰 Fatturato</div><div class="value">${fmt(c.sales)}</div><div class="ref">Rif. ${fmt(ref.sales)}</div><div class="diff ${cls(salesDiff)}">${diff(salesDiff)}</div></div>
+      <div class="kpi-premium"><div class="label">🧾 Scontrini</div><div class="value">${c.receipts}</div><div class="ref">Rif. ${ref.receipts}</div></div>
+      <div class="kpi-premium"><div class="label">👕 Pezzi</div><div class="value">${c.pieces}</div><div class="ref">Rif. ${ref.pieces}</div></div>
+      <div class="kpi-premium"><div class="label">ATV</div><div class="value">${fmt(c.atv)}</div><div class="ref">Rif. ${fmt(ref.atv)}</div><div class="diff ${cls(atvDiff)}">${diff(atvDiff)}</div></div>
+      <div class="kpi-premium"><div class="label">UPT</div><div class="value">${c.upt.toFixed(2)}</div><div class="ref">Rif. ${ref.upt.toFixed(2)}</div><div class="diff ${cls(uptDiff)}">${diff(uptDiff)}</div></div>
+    </div></section>`;
+  }
+
+  /* ===== SOLO VISTA STORE MANAGER ===== */
+  const rowsCurrent=Object.values(S.kpi.daily||{}).filter(r=>String(r.date||'').startsWith(currentPeriod));
+  const rowsRef=Object.values(S.kpi.daily||{}).filter(r=>String(r.date||'').startsWith(refPeriod));
+  const store=calcKpi(rowsCurrent), refStore=calcKpi(rowsRef);
+  const d=dateLocal(), weekRows=weeklyStoreRows(d), weekStore=calcKpi(weekRows), target=weeklyTargetFor(d);
+  const progress=target?(weekStore.sales/target)*100:0, missing=Math.max(0,target-weekStore.sales), w=isoWeekInfo(d);
+  const diffPct=(a,b)=>b?((a-b)/b)*100:null;
+  const showDiff=v=>v===null?'—':(v>=0?'+':'')+v.toFixed(1)+'%';
+  const diffCls=v=>v===null?'':v>=0?'up':'down';
+  const salesDiff=diffPct(store.sales,refStore.sales), atvDiff=diffPct(store.atv,refStore.atv), uptDiff=diffPct(store.upt,refStore.upt);
+  const by={}; rowsCurrent.forEach(r=>by[r.date]=(by[r.date]||0)+Number(r.sales||0));
+  const vals=Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14), max=Math.max(1,...vals.map(x=>x[1]));
+
+  return `<div class="row"><div><div class="section" style="margin-bottom:2px">KPI Negozio</div><div class="small">Dashboard Store Manager · ${periodLabel(currentPeriod)}</div></div><button class="btn" onclick="kpiEntry()">+ I miei KPI</button></div>
+  <section class="kpi-hero" style="margin-top:12px">
+    <div class="row"><div><div class="kpi-hero-title">Andamento del negozio</div><div class="kpi-hero-sub">Confronto con ${periodLabel(refPeriod)} · dati aggregati di tutte le risorse</div></div><span class="pill">${S.people.filter(p=>p.active).length} risorse</span></div>
+    <section class="kpi-cards">
+      <div class="kpi-premium"><div class="label">💰 Fatturato</div><div class="value">${fmt(store.sales)}</div><div class="ref">Rif. ${fmt(refStore.sales)}</div><div class="diff ${diffCls(salesDiff)}">${showDiff(salesDiff)}</div></div>
+      <div class="kpi-premium"><div class="label">🧾 Scontrini</div><div class="value">${store.receipts}</div><div class="ref">Rif. ${refStore.receipts}</div><div class="diff ${diffCls(diffPct(store.receipts,refStore.receipts))}">${showDiff(diffPct(store.receipts,refStore.receipts))}</div></div>
+      <div class="kpi-premium"><div class="label">👕 Pezzi</div><div class="value">${store.pieces}</div><div class="ref">Rif. ${refStore.pieces}</div><div class="diff ${diffCls(diffPct(store.pieces,refStore.pieces))}">${showDiff(diffPct(store.pieces,refStore.pieces))}</div></div>
+      <div class="kpi-premium"><div class="label">ATV</div><div class="value">${fmt(store.atv)}</div><div class="ref">Rif. ${fmt(refStore.atv)}</div><div class="diff ${diffCls(atvDiff)}">${showDiff(atvDiff)}</div></div>
+      <div class="kpi-premium"><div class="label">UPT</div><div class="value">${store.upt.toFixed(2)}</div><div class="ref">Rif. ${refStore.upt.toFixed(2)}</div><div class="diff ${diffCls(uptDiff)}">${showDiff(uptDiff)}</div></div>
+    </section>
+  </section>
+  <section class="card" style="margin-top:15px">
+    <div class="row"><div><b>🎯 Target settimana ${w.week}</b><div class="small">${weekLabel(d)}</div></div><button class="btn gray" onclick="setWeeklyTarget()">${target?'Modifica target':'Imposta target'}</button></div>
+    <div class="grid" style="margin-top:12px"><div class="metric"><span>Fatturato settimana</span><b>${fmt(weekStore.sales)}</b></div><div class="metric"><span>Target</span><b>${target?fmt(target):'—'}</b></div></div>
+    ${target?`<div class="progress" style="margin-top:14px"><i style="width:${Math.min(100,Math.max(0,progress))}%"></i></div><div class="row" style="margin-top:8px"><b>${progress.toFixed(1)}%</b><span class="small">${weekStore.sales>=target?'🏆 Target raggiunto · +'+fmt(weekStore.sales-target):'Mancano '+fmt(missing)}</span></div>`:`<div class="notice" style="margin-top:12px">Il target settimanale non è ancora impostato.</div>`}
+  </section>
+  <section class="card" style="margin-top:15px"><div class="row"><div><b>Andamento giornaliero</b><div class="small">${vals.length} giornate con dati</div></div><button class="btn gray" onclick="S.tab='storeKpi';save();render()">Dettagli</button></div><div class="chart">${vals.length?vals.map(([date,v])=>`<div class="barwrap"><div class="bar current" style="height:${Math.max(3,(v/max)*100)}%"></div><span class="barlabel">${date.slice(8)}</span></div>`).join(''):`<div class="empty" style="width:100%">Nessun KPI giornaliero inserito.</div>`}</div></section>`;
+}
+function kpiEntry(pid,date){
+  const manager=isManager();
+  const me=myPerson();
+  if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+  if(manager) pid=me.id; else pid=me.id;
+  const d=date||dateLocal(), r=S.kpi.daily?.[String(pid)+"_"+d];
+  openModal(r?"Modifica KPI giornalieri":"Inserimento KPI giornalieri",
+    `<div class="notice"><b>${manager?"I miei KPI giornalieri":"Inserisci i dati della giornata"}</b><div class="small">ATV e UPT vengono calcolati automaticamente. Le giornate OFF senza dati non entrano nelle medie.</div></div>
+    <label>Risorsa</label><input class="input" value="${esc(me.name)}" disabled>
+    <label>Data</label><input id="keDate" class="input" type="date" value="${d}">
+    <label>Fatturato</label><input id="keSales" class="input" type="number" step="0.01" value="${r?.sales??''}" placeholder="0,00">
+    <label>Scontrini</label><input id="keReceipts" class="input" type="number" min="0" step="1" value="${r?.receipts??''}" placeholder="0">
+    <label>Pezzi venduti</label><input id="kePieces" class="input" type="number" min="0" step="1" value="${r?.pieces??''}" placeholder="0">
+    <button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?"Salva modifiche":"Salva KPI"}</button>
+    ${r&&!manager?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:""}`);
+}
+async function loadMalattie(){
+  try{
+    const rows=await sb('Malattie?select=*&order=data_inizio.desc');
+    const mapped=(rows||[]).map(r=>({id:r.id,personId:r.dipendente_id,protocollo:r.protocollo||'',inizio:r.data_inizio||'',fine:r.data_fine||''}));
+    S.malattie=isManager()?mapped:mapped.filter(x=>String(x.personId)===myPersonId());
+    S.online=true;save();render();
+  }catch(e){
+    console.warn('Malattie online non caricate',e);
+    S.malattie=S.malattie||[];S.online=false;save();render();
+  }
+}
+function malattie(){
+  S.malattie=S.malattie||[];
+  const manager=isManager(), me=myPerson();
+  const records=manager
+    ? [...S.malattie].sort((a,b)=>String(b.inizio||'').localeCompare(String(a.inizio||'')))
+    : S.malattie.filter(x=>String(x.personId)===myPersonId()).sort((a,b)=>String(b.inizio||'').localeCompare(String(a.inizio||'')));
+  return `<div class="row"><div class="section">⚕ Malattie</div>${!manager?`<button class="btn" onclick="malattiaEntry()">+ Inserisci malattia</button>`:''}</div>
+  <section class="card notice"><b>${manager?'Gestione malattie':'Le mie malattie'}</b><div class="small">${manager?'Visualizzi le malattie inserite dalle risorse. Le registrazioni vengono salvate online e sono visibili anche al Manager.':'Inserisci il numero di protocollo, la data di inizio e la data di fine compresa. Puoi modificare o eliminare solo le tue registrazioni.'}</div></section>
+  <section class="card">${records.length?records.map(r=>{const p=S.people.find(x=>String(x.id)===String(r.personId));const own=!manager&&String(r.personId)===myPersonId();return `<div class="kpi-card"><div class="row"><div><b>${esc(manager?(p?.name||'Risorsa'):(me?.name||'La mia malattia'))}</b><div class="small">Protocollo: ${esc(r.protocollo||'—')}</div></div><span class="pill red">Malattia</span></div><div class="grid" style="margin-top:10px"><div class="metric"><span>Inizio</span><b>${esc(r.inizio||'—')}</b></div><div class="metric"><span>Fine compresa</span><b>${esc(r.fine||'—')}</b></div></div>${own?`<div class="actions" style="margin-top:10px"><button class="btn gray" onclick="malattiaEntry(${r.id})">Modifica</button><button class="btn red" onclick="deleteMalattia(${r.id})">Elimina</button></div>`:''}</div>`}).join(''):`<div class="empty">Nessuna malattia registrata.</div>`}</section>`;
+}
+function malattiaEntry(id){
+  const manager=isManager(), me=myPerson();
+  if(manager && !id)return alert('La malattia deve essere inserita dalla risorsa.');
+  if(!me)return alert('Il tuo account non è ancora collegato a una risorsa.');
+  S.malattie=S.malattie||[];
+  const r=S.malattie.find(x=>String(x.id)===String(id));
+  if(id && (!r || String(r.personId)!==myPersonId()))return alert('Puoi modificare solo le tue malattie.');
+  const data=r||{id:null,personId:me.id,protocollo:'',inizio:dateLocal(),fine:dateLocal()};
+  openModal(r?'Modifica malattia':'Inserisci malattia',`<label>Risorsa</label><input class="input" value="${esc(me.name)}" disabled><label>Numero protocollo</label><input id="malProtocollo" class="input" value="${esc(data.protocollo||'')}" placeholder="Numero protocollo"><label>Data inizio malattia</label><input id="malInizio" class="input" type="date" value="${esc(data.inizio||dateLocal())}"><label>Data fine compresa</label><input id="malFine" class="input" type="date" value="${esc(data.fine||data.inizio||dateLocal())}"><div class="small" style="margin:4px 0 10px">La data di fine è compresa nel periodo di malattia.</div><button class="btn" style="width:100%" onclick="saveMalattia(${r?`'${r.id}'`:'null'})">Salva malattia</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteMalattia('${r.id}');closeModal()">Elimina</button>`:''}`);
+}
+async function saveMalattia(id){
+  const me=myPerson();
+  if(!me)return alert('Il tuo account non è ancora collegato a una risorsa.');
+  const protocollo=document.getElementById('malProtocollo')?.value.trim()||'';
+  const inizio=document.getElementById('malInizio')?.value||'';
+  const fine=document.getElementById('malFine')?.value||'';
+  if(!inizio||!fine)return alert('Inserisci la data di inizio e la data di fine.');
+  if(fine<inizio)return alert('La data di fine non può essere precedente alla data di inizio.');
+  const payload={dipendente_id:Number(me.id),protocollo,data_inizio:inizio,data_fine:fine};
+  try{
+    let r;
+    if(id&&String(id)!=='null'){
+      const existing=S.malattie.find(x=>String(x.id)===String(id));
+      if(!existing||String(existing.personId)!==myPersonId())return alert('Puoi modificare solo le tue malattie.');
+      const rows=await sb('Malattie?id=eq.'+encodeURIComponent(id),{method:'PATCH',prefer:'return=representation',body:JSON.stringify(payload)});
+      r=Array.isArray(rows)?rows[0]:rows;
+    }else{
+      const rows=await sb('Malattie',{method:'POST',prefer:'return=representation',body:JSON.stringify(payload)});
+      r=Array.isArray(rows)?rows[0]:rows;
+    }
+    closeModal();await loadMalattie();
+  }catch(e){alert('Non è stato possibile salvare la malattia online.\n\n'+(e.message||e));}
+}
+async function deleteMalattia(id){
+  if(!confirm('Eliminare questa registrazione di malattia?'))return;
+  const r=(S.malattie||[]).find(x=>String(x.id)===String(id));
+  if(!r||String(r.personId)!==myPersonId())return alert('Puoi eliminare solo le tue malattie.');
+  try{await sb('Malattie?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadMalattie();}catch(e){alert('Impossibile eliminare la malattia.\n\n'+(e.message||e));}
+}
+function render(){let t=S.tab;document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():kpi();nav();if(t==="kpi"){let[y,m]=(S.kpi.selected||currentReferencePeriod()).split("-");document.getElementById("kpiMonth").value=m;document.getElementById("kpiYear").value=y}}
+
+/* === ACCESSI E RUOLI v3 === */
+function isManager(){ return PROFILE?.ruolo === "manager"; }
+function myPerson(){
+  return S.people.find(p=>String(p.id)===String(PROFILE?.dipendente_id)) || null;
+}
+function myPersonId(){ return PROFILE?.dipendente_id == null ? null : String(PROFILE.dipendente_id); }
+function allowedTab(t){
+  return isManager()
+    ? ["home","planning","people","tasks","requests","kpi","storeKpi","malattie"].includes(t)
+    : ["home","planning","tasks","requests","kpi","malattie"].includes(t);
+}
+function nav(){
+  const a=isManager()
+    ? [["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"],["malattie","⚕","Malattie"]]
+    : [["home","⌂","Home"],["planning","▦","I miei turni"],["tasks","✓","Le mie attività"],["requests","✉","Le mie richieste"],["kpi","▥","Il mio KPI"],["malattie","⚕","La mia malattia"]];
+  document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("");
+}
+
+function resourceShifts(){
+  const pid=myPersonId();
+  return pid ? (S.shifts||[]).filter(x=>String(x.personId??x.dipendente_id)===pid) : [];
+}
+function resourceTasks(){
+  const me=myPerson();
+  return me ? S.tasks.filter(x=>String(x.person)===String(me.name)) : [];
+}
+
+function planning(){
+  if(!isManager()){
+    const ds=planningWeekDates(S.planningWeek||planningToday());
+    const rows=resourceShifts();
+    return `<div class="weeknav">
+      <button class="btn gray" onclick="planningShiftWeek(-1)">‹</button>
+      <div class="weektitle"><b>I miei turni</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div>
+      <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
+    </div>
+    <button class="btn gray" style="width:100%;margin-bottom:12px" onclick="S.planningWeek=planningStartOfWeek(planningToday());save();render()">Oggi</button>
+    <section class="resource-week">
+      ${ds.map(d=>{
+        const dt=new Date(d+"T12:00:00");
+        const day=new Intl.DateTimeFormat("it-IT",{weekday:"long"}).format(dt);
+        const x=rows.find(s=>s.date===d);
+        return `<div class="day-card ${d===planningToday()?"today":""}">
+          <div class="dayrow">
+            <div><div class="dayname">${day.charAt(0).toUpperCase()+day.slice(1)}</div>
+            <div class="date">${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}</div></div>
+            ${d===planningToday()?'<span class="pill">Oggi</span>':""}
+          </div>
+          ${x
+            ? `<div class="shiftmain">${esc(x.start)} – ${esc(x.end)}</div><div class="pause">☕ Pausa ${esc(x.breakStart||"—")} – ${esc(x.breakEnd||"—")}</div>`
+            : `<div class="rest">Riposo</div>`}
+        </div>`;
+      }).join("")}
+    </section>`;
+  }
+
+  const ds=planningWeekDates(S.planningWeek||planningToday());
+  const active=S.people.filter(p=>p.active);
+  const heads=ds.map(d=>{
+    const dt=new Date(d+"T12:00:00");
+    const name=new Intl.DateTimeFormat("it-IT",{weekday:"short"}).format(dt);
+    return `<div class="week-head ${d===planningToday()?"today":""}"><b>${name}</b><span>${dt.getDate()}/${dt.getMonth()+1}</span></div>`;
+  }).join("");
+  const rows=active.map(p=>{
+    const cells=ds.map(d=>{
+      const x=(S.shifts||[]).find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);
+      return `<div class="shift-cell">${
+        x
+          ? `<button class="shift-box" onclick="editShift('${x.id}')"><b>${esc(x.start||"")}–${esc(x.end||"")}</b><small>☕ Pausa ${esc(x.breakStart||"—")}–${esc(x.breakEnd||"—")}</small></button>`
+          : `<button class="shift-empty" onclick="editShift(null,'${d}',${p.id})">+ turno</button>`
+      }</div>`;
+    }).join("");
+    return `<div class="person-cell"><b>${esc(p.name)}</b><small>${esc(p.role||"Risorsa")}</small></div>${cells}`;
+  }).join("");
+
+  return `<div class="weeknav">
+    <button class="btn gray" onclick="planningShiftWeek(-1)">‹</button>
+    <div class="weektitle"><b>Planning · settimana</b><span>${planningWeekLabel(S.planningWeek||planningToday())}</span></div>
+    <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
+  </div>
+  <div class="row" style="margin-bottom:10px">
+    <button class="btn gray" onclick="S.planningWeek=planningStartOfWeek(planningToday());save();render()">Oggi</button>
+    <button class="btn" onclick="editShift(null,planningToday())">+ Turno</button>
+  </div>
+  <section class="card">
+    ${active.length
+      ? `<div class="weekly-wrap"><div class="weekly-grid"><div class="week-head"><b>Risorsa</b></div>${heads}${rows}</div></div>`
+      : `<div class="empty">Nessuna risorsa attiva.</div>`}
+  </section>
+`;
+}
+
+function editShift(id,day,personId){
+  if(!isManager()) return alert("Solo il Manager può modificare il planning.");
+  const old=(S.shifts||[]).find(a=>String(a.id)===String(id));
+  const date=day||old?.date||planningToday();
+  const first=S.people.find(p=>p.active);
+  const x=old||{
+    id:null, personId:personId||first?.id||"", date,
+    start:"09:00", end:"17:00", breakStart:"13:00", breakEnd:"13:30"
+  };
+  const options=S.people.filter(p=>p.active).map(p=>
+    `<option value="${p.id}" ${String(p.id)===String(x.personId??"")?"selected":""}>${esc(p.name)}</option>`
+  ).join("");
+  openModal(id?"Modifica turno":"Nuovo turno",`
+    <label>Risorsa</label><select id="sp" class="select">${options}</select>
+    <label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}">
+    <div class="grid">
+      <div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start||""}"></div>
+      <div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end||""}"></div>
+    </div>
+    <div class="grid">
+      <div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart||""}"></div>
+      <div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd||""}"></div>
+    </div>
+    <button class="btn" style="width:100%" onclick="saveShift(${id?`'${id}'`:"null"})">Salva turno</button>
+    ${id?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteShift('${id}')">Elimina turno</button>`:""}
+  `);
+}
+
+async function saveShift(id){
+  if(!isManager())return alert("Solo il Manager può modificare il planning.");
+  const pid=Number(document.getElementById("sp").value);
+  const date=document.getElementById("sd").value;
+  if(!pid||!date)return alert("Seleziona risorsa e giorno.");
+  const payload={
+    dipendente_id:pid,
+    // Mezzogiorno evita qualsiasi spostamento di giorno se la colonna Supabase è timestamp/timestamptz.
+    data_turno:date,
+    entrata:document.getElementById("ss").value||null,
+    uscita:document.getElementById("se").value||null,
+    pausa_inizio:document.getElementById("bs").value||null,
+    pausa_fine:document.getElementById("be").value||null
+  };
+  try{
+    if(id && String(id)!=="null"){
+      // Se esiste già un altro turno della stessa risorsa nello stesso giorno,
+      // lo eliminiamo per evitare doppioni che rendono invisibile una modifica.
+      await sb("Planning?id=eq."+encodeURIComponent(id),{
+        method:"PATCH",body:JSON.stringify(payload),prefer:"return=representation"
+      });
+      const dup=await sb("Planning?select=id&dipendente_id=eq."+encodeURIComponent(pid)+"&data_turno=eq."+encodeURIComponent(date)+"&id=neq."+encodeURIComponent(id));
+      if(Array.isArray(dup)&&dup.length){
+        for(const r of dup) await sb("Planning?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});
+      }
+    }else{
+      // Evita doppioni: per una risorsa può esserci un solo turno per giorno.
+      const existing=await sb("Planning?select=id&dipendente_id=eq."+encodeURIComponent(pid)+"&data_turno=eq."+encodeURIComponent(date));
+      if(Array.isArray(existing)&&existing.length){
+        for(const r of existing) await sb("Planning?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});
+      }
+      await sb("Planning",{method:"POST",body:JSON.stringify(payload),prefer:"return=representation"});
+    }
+    closeModal();
+    S.planningWeek=planningStartOfWeek(date);
+    save();
+    await loadShifts();
+  }catch(e){
+    alert("Impossibile salvare il turno.\n\n"+(e.message||e));
+  }
+}
+
+async function deleteShift(id){
+  if(!isManager())return;
+  if(!confirm("Eliminare questo turno?"))return;
+  try{
+    await sb("Planning?id=eq."+encodeURIComponent(id),{method:"DELETE",prefer:"return=minimal"});
+    await loadShifts();
+  }catch(e){
+    alert("Impossibile eliminare il turno.\n\n"+(e.message||e));
+  }
+}
+
+function tasks(){
+  if(!isManager()){
+    const rows=resourceTasks();
+    return `<div class="section">Le mie attività</div><section class="card">${rows.length?rows.map(t=>`<div class="task"><div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.date||"oggi")}</div></div><button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button><span class="pill">${t.done?"Fatto":"Assegnata"}</span></div>`).join(""):`<div class="empty">Nessuna attività assegnata.</div>`}</section>`;
+  }
+  return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div><section class="card">${S.tasks.length?S.tasks.map(t=>`<div class="task"><div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div><button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button><button class="btn gray" onclick="editTask(${t.id})">Modifica</button><button class="btn gray" onclick="deleteTask(${t.id})">Elimina</button><span class="pill">${t.done?"Fatto":"Assegnata"}</span></div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section><section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`;
+}
+function addTask(){if(!isManager())return alert("Solo il Manager può creare attività.");let a=S.people.filter(p=>p.active);if(!a.length)return alert("Prima inserisci una risorsa.");openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${today()}"><button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`);}
+async function saveNewTask(){if(!isManager())return alert("Solo il Manager può creare attività.");let n=document.getElementById("taskName").value.trim(),pid=document.getElementById("taskPerson").value;if(!n)return alert("Inserisci il nome.");let t={id:Date.now(),name:n,personId:pid?Number(pid):null,person:pid?(S.people.find(p=>String(p.id)===String(pid))?.name||""):"",date:document.getElementById("taskDate").value,done:false};try{await sb('Attivita?on_conflict=id',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify({id:t.id,nome:t.name,dipendente_id:t.personId,data_attivita:t.date||null,completata:false})});S.tasks.push(t);save();closeModal();await loadTasks();}catch(e){alert('Impossibile salvare l\'attività online.\n\n'+(e.message||e));}}
+function editTask(id){if(!isManager())return alert("Solo il Manager può modificare attività.");let t=S.tasks.find(x=>x.id===id),a=S.people.filter(p=>p.active);if(!t)return;openModal("Modifica attività",`<label>Attività</label><input id="taskName" class="input" value="${esc(t.name)}"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option value="${p.id}" ${String(p.id)===String(t.personId)?"selected":""}>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${t.date||today()}"><button class="btn" style="width:100%" onclick="saveTaskEdit(${id})">Salva modifiche</button>`);}
+async function saveTaskEdit(id){if(!isManager())return alert("Solo il Manager può modificare attività.");let t=S.tasks.find(x=>x.id===id);if(!t)return;let n=document.getElementById("taskName").value.trim(),pid=document.getElementById("taskPerson").value;if(!n)return alert("Inserisci il nome.");t.name=n;t.personId=pid?Number(pid):null;t.person=pid?(S.people.find(p=>String(p.id)===String(pid))?.name||""):"";t.date=document.getElementById("taskDate").value;try{await sb('Attivita?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({nome:t.name,dipendente_id:t.personId,data_attivita:t.date||null,completata:t.done})});save();closeModal();await loadTasks();}catch(e){alert('Impossibile modificare l\'attività online.\n\n'+(e.message||e));}}
+async function toggleTask(id){let t=S.tasks.find(x=>x.id===id);if(!t)return;if(!isManager()&&String(t.personId)!==myPersonId())return alert("Puoi gestire solo le tue attività.");let done=!t.done;try{await sb('Attivita?id=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({completata:done})});await loadTasks();}catch(e){alert('Impossibile aggiornare l\'attività online.\n\n'+(e.message||e));}}
+async function deleteTask(id){if(!isManager())return alert("Solo il Manager può eliminare attività.");let t=S.tasks.find(x=>x.id===id);if(t&&confirm(`Eliminare "${t.name}"?`)){try{await sb('Attivita?id=eq.'+encodeURIComponent(id),{method:'DELETE',prefer:'return=minimal'});await loadTasks();}catch(e){alert('Impossibile eliminare l\'attività online.\n\n'+(e.message||e));}}}
+async function autoTasks(){if(!isManager())return alert("Solo il Manager può assegnare automaticamente le attività.");let a=S.people.filter(p=>p.active);if(!a.length)return;try{for(let i=0;i<S.tasks.length;i++){const p=a[i%a.length];await sb('Attivita?id=eq.'+encodeURIComponent(S.tasks[i].id),{method:'PATCH',body:JSON.stringify({dipendente_id:p.id})});}await loadTasks();}catch(e){alert('Impossibile aggiornare le assegnazioni online.\n\n'+(e.message||e));}}
+
+async function loadRequests(){
+  try{
+    let rows=await sb("Richieste?select=*&order=created_at.desc");
+    let all=rows.map(r=>({id:r.id,personId:r.dipendente_id,type:r.tipo,start:r.data_richiesta,end:r.data_richiesta_fine,note:r.note,status:r.stato,created:r.created_at}));
+    const activeIds=new Set(S.people.filter(p=>p.active).map(p=>String(p.id)));
+    const activeAll=all.filter(r=>activeIds.has(String(r.personId)));
+    S.requests=isManager()?activeAll:activeAll.filter(r=>String(r.personId)===myPersonId());
+    S.online=true;save();render();
+  }catch(e){S.online=false;save();render();}
+}
+async function createRequest(id){
+  let p=S.people.find(x=>x.id===id);
+  if(!isManager()){p=myPerson();if(!p)return alert("Il tuo account non è ancora collegato a una risorsa.");}
+  if(!p)return alert("Seleziona una risorsa.");
+  if(!isManager()&&String(p.id)!==myPersonId())return alert("Puoi creare richieste solo per te.");
+  let start=document.getElementById("rqStart").value,end=document.getElementById("rqEnd").value,note=document.getElementById("rqNote").value.trim();
+  if(!start)return alert("Inserisci la data.");if(!end)end=start;
+  try{await sb("Richieste",{method:"POST",body:JSON.stringify({dipendente_id:p.id,tipo:"Giorno libero",data_richiesta:start,data_richiesta_fine:end,note,stato:"In attesa"})});closeModal();await loadRequests();alert("Richiesta inviata.");}
+  catch(e){alert("Supabase non ha accettato la richiesta.\n\n"+(e.message||e));}
+}
+async function updateRequest(id,status){if(!isManager())return alert("Solo il Manager può approvare o rifiutare.");try{await sb("Richieste?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({stato:status})});await loadRequests();}catch(e){alert("Impossibile aggiornare la richiesta.\n\n"+(e.message||e));}}
+function requestForm(){
+  if(!isManager()){
+    const me=myPerson();if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+    openModal("Nuova richiesta giorno libero",`<div class="notice">La richiesta sarà inviata solo per te.</div><label>Dal</label><input id="rqStart" class="input" type="date" value="${today()}"><label>Al</label><input id="rqEnd" class="input" type="date" value="${today()}"><label>Nota / motivazione</label><textarea id="rqNote" class="input" rows="3" placeholder="Facoltativa"></textarea><button class="btn" style="width:100%" onclick="createRequest(${me.id})">Invia richiesta</button>`);
+    return;
+  }
+  let a=S.people.filter(p=>p.active);openModal("Nuova richiesta giorno libero",`<label>Risorsa</label><select id="rqPerson" class="select">${a.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select><label>Dal</label><input id="rqStart" class="input" type="date" value="${today()}"><label>Al</label><input id="rqEnd" class="input" type="date" value="${today()}"><label>Nota / motivazione</label><textarea id="rqNote" class="input" rows="3" placeholder="Facoltativa"></textarea><button class="btn" style="width:100%" onclick="createRequest(+document.getElementById('rqPerson').value)">Invia richiesta</button>`);
+}
+function requests(){
+  if(!isManager()){
+    const rows=S.requests.filter(r=>String(r.personId)===myPersonId()),pending=rows.filter(r=>r.status==="In attesa").length;
+    return `<div class="row"><div class="section">Le mie richieste</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div><section class="card"><div class="notice"><b>${pending} ${pending===1?"richiesta":"richieste"} in attesa</b><div class="small">Visualizzi esclusivamente le tue richieste.</div></div></section><section class="card">${rows.length?rows.map(r=>`<div style="padding:13px 0;border-bottom:1px solid #edf0f3"><div class="row"><div><b>${r.start}${r.end&&r.end!==r.start?" → "+r.end:""}</b><div class="small">${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":"red"}">${esc(r.status)}</span></div>${r.note?`<div class="small" style="margin:8px 0">Nota: ${esc(r.note)}</div>`:""}</div>`).join(""):`<div class="empty">Nessuna richiesta.</div>`}</section>`;
+  }
+  let p=S.requests.filter(r=>r.status==="In attesa").length;
+  return `<div class="row"><div class="section">Richieste giorni liberi</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div><section class="card"><div class="notice"><b>${p} ${p===1?"richiesta":"richieste"} in sospeso</b><div class="small">Le richieste vengono salvate online in Supabase.</div></div></section><section class="card">${S.requests.length?S.requests.map(r=>{let person=S.people.find(p=>p.id==r.personId);return `<div style="padding:13px 0;border-bottom:1px solid #edf0f3"><div class="row"><div><b>${esc(person?.name||"Risorsa")}</b><div class="small">${r.start}${r.end&&r.end!==r.start?" → "+r.end:""} · ${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":"red"}">${esc(r.status)}</span></div>${r.note?`<div class="small" style="margin:8px 0">Motivazione: ${esc(r.note)}</div>`:""}${r.status==="In attesa"?`<div class="actions" style="margin-top:8px"><button class="btn green" onclick="updateRequest(${r.id},'Approvata')">Approva</button><button class="btn red" onclick="updateRequest(${r.id},'Rifiutata')">Rifiuta</button></div>`:""}</div>`}).join(""):`<div class="empty">Nessuna richiesta.</div>`}</section>`;
+}
+
+async function loadStoreDailyAggregate(){
+  const start=weekStartDate(dateLocal()), end=weekEndDate(dateLocal());
+  try{
+    const rows=await sb("rpc/get_store_weekly_kpi",{
+      method:"POST",
+      prefer:"return=representation",
+      body:JSON.stringify({p_start_date:start,p_end_date:end})
+    });
+    S.kpi.storeDaily={};
+    (rows||[]).forEach(r=>{
+      const date=String(r.data||"").slice(0,10);
+      if(!date)return;
+      S.kpi.storeDaily[date]={
+        date,
+        sales:Number(r.fatturato)||0,
+        receipts:Number(r.scontrini)||0,
+        pieces:Number(r.pezzi_venduti)||0
+      };
+    });
+    return true;
+  }catch(e){
+    console.warn("Aggregato negozio non caricato",e);
+    S.kpi.storeDaily={};
+    return false;
+  }
+}
+
+async function loadKpis(){
+  try{
+    // I KPI personali restano soggetti alle normali policy RLS.
+    // Il totale negozio viene invece letto da una funzione RPC SECURITY DEFINER
+    // che restituisce solo l'aggregato giornaliero, mai i dati delle singole risorse.
+    let rows=await sb("KpiGiornalieri?select=*&order=data.asc");
+    const activeIds=new Set(S.people.filter(p=>p.active).map(p=>String(p.id)));
+    rows=(rows||[]).filter(r=>activeIds.has(String(r.dipendente_id)));
+
+    S.kpi.daily={};
+    const visibleRows=isManager()?rows:rows.filter(r=>String(r.dipendente_id)===myPersonId());
+    visibleRows.forEach(r=>{
+      const key=String(r.dipendente_id)+"_"+r.data;
+      S.kpi.daily[key]={
+        id:r.id,
+        personId:r.dipendente_id,
+        date:r.data,
+        sales:Number(r.fatturato)||0,
+        receipts:Number(r.scontrini)||0,
+        pieces:Number(r.pezzi_venduti)||0,
+        updatedAt:r.created_at||null
+      };
+    });
+
+    await loadStoreDailyAggregate();
+    S.online=true;save();render();
+  }catch(e){
+    console.warn("KPI online non caricati",e);
+    S.kpi.storeDaily=S.kpi.storeDaily||{};
+    S.online=false;save();render();
+  }
+}
+
+async function saveDailyKpi(){
+  const me=myPerson();
+  if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+  const pid=+me.id, date=document.getElementById("keDate").value;
+  if(!date)return alert("Seleziona la data.");
+  const sales=+document.getElementById("keSales").value||0;
+  const receipts=+document.getElementById("keReceipts").value||0;
+  const pieces=+document.getElementById("kePieces").value||0;
+  const payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};
+  try{
+    const existing=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id&limit=1");
+    let r;
+    if(Array.isArray(existing)&&existing[0]?.id){
+      const updated=await sb("KpiGiornalieri?id=eq."+encodeURIComponent(existing[0].id),{method:"PATCH",prefer:"return=representation",body:JSON.stringify(payload)});
+      r=Array.isArray(updated)?updated[0]:updated;
+    }else{
+      const created=await sb("KpiGiornalieri",{method:"POST",prefer:"return=representation",body:JSON.stringify(payload)});
+      r=Array.isArray(created)?created[0]:created;
+    }
+    S.kpi.daily[String(pid)+"_"+date]={id:r?.id||String(pid)+"_"+date,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};
+    save();closeModal();await loadKpis();
+  }catch(e){alert("Non è stato possibile salvare il KPI.\n\n"+(e.message||e));}
+}
+async function deleteDailyKpi(key){
+  const r=S.kpi.daily?.[key];
+  if(!r)return;
+  if(String(r.personId)!==myPersonId())return alert("Puoi eliminare solo i tuoi KPI.");
+  if(!confirm(`Eliminare i KPI del ${r.date}?`))return;
+  try{
+    if(r.id&&String(r.id)!==key)await sb("KpiGiornalieri?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});
+    await loadKpis();
+  }catch(e){alert("Impossibile eliminare il KPI.\n\n"+(e.message||e));}
+}
+function editDailyKpi(pid,date){
+  if(String(pid)!==myPersonId())return alert("Puoi modificare solo i tuoi KPI.");
+  kpiEntry(pid,date);
+}
+async function loadWeeklyTargets(){
+  try{const rows=await sb("TargetSettimanali?select=*&order=anno.asc,settimana.asc");S.kpi.weeklyTargets={};(rows||[]).forEach(r=>S.kpi.weeklyTargets[histKey(r.anno,r.settimana)]={id:r.id,year:+r.anno,week:+r.settimana,target:Number(r.target)||0});save();render();}
+  catch(e){console.warn("Target settimanali non caricati",e);S.kpi.weeklyTargets=S.kpi.weeklyTargets||{};save()}
+}
+function weeklyTargetFor(date){const w=isoWeekInfo(date);return Number(S.kpi.weeklyTargets?.[histKey(w.year,w.week)]?.target||0)}
+function weeklyRows(date){const a=weekStartDate(date),b=weekEndDate(date);return Object.values(S.kpi.daily||{}).filter(r=>String(r.date||"")>=a&&String(r.date||"")<=b)}
+function weeklyStoreRows(date){
+  const a=weekStartDate(date),b=weekEndDate(date);
+  return Object.values(S.kpi.storeDaily||{}).filter(r=>String(r.date||"")>=a&&String(r.date||"")<=b);
+}
+async function saveWeeklyTarget(){
+  if(!isManager())return;const date=document.getElementById("targetWeekDate")?.value||dateLocal(),{year,week}=isoWeekInfo(date),target=Number(document.getElementById("weeklyTarget")?.value||0);
+  if(!target)return alert("Inserisci un target settimanale.");
+  try{const rows=await sb("TargetSettimanali?on_conflict=anno,settimana",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",body:JSON.stringify({anno:year,settimana:week,target})}),r=Array.isArray(rows)?rows[0]:rows;S.kpi.weeklyTargets=S.kpi.weeklyTargets||{};S.kpi.weeklyTargets[histKey(year,week)]={id:r?.id||histKey(year,week),year,week,target};save();closeModal();render()}
+  catch(e){alert("Non riesco a salvare il target settimanale.\n\n"+(e.message||e)+"\n\nVerifica di aver creato la tabella TargetSettimanali su Supabase.")}
+}
+function setWeeklyTarget(date){
+  if(!isManager())return alert("Solo il Manager può impostare il target.");const d=date||dateLocal(),w=isoWeekInfo(d),current=weeklyTargetFor(d);
+  openModal(`Target ${weekLabel(d)}`,`<div class="notice"><b>Target settimanale</b><div class="small">Il target copre sempre da lunedì a domenica. Il fatturato viene preso automaticamente dai KPI giornalieri delle risorse.</div></div><label>Settimana</label><input id="targetWeekDate" class="input" type="date" value="${d}"><div class="small" style="margin-top:-5px;margin-bottom:10px">${weekLabel(d)} · anno ${w.year}</div><label>Target settimana</label><input id="weeklyTarget" class="input" type="number" min="0" step="0.01" value="${current||""}" placeholder="es. 37309"><button class="btn" style="width:100%;margin-top:8px" onclick="saveWeeklyTarget()">Salva target</button>`);
+}
+async function loadHistory(){
+  if(!isManager()){S.kpi.history={};return;}
+  try{let rows=await sb("KpiStorico?select=*&order=anno.asc,settimana.asc");S.kpi.history={};rows.forEach(r=>{S.kpi.history[String(r.anno)+"_"+String(r.settimana)]={id:r.id,year:+r.anno,week:+r.settimana,sales:+r.fatturato||0,receipts:+r.scontrini||0,pieces:+r.pezzi_venduti||0}});save();render();}catch(e){console.warn("Storico KPI non caricato",e);}
+}
+function historyEntry(y,w){if(!isManager())return alert("Solo il Manager può modificare lo storico.");let r=historyRow(y,w);openModal(r?"Modifica storico KPI":"Inserisci storico KPI",`<div class="notice">Dati storici del negozio. Questi valori servono per il confronto con la stessa settimana dell'anno successivo.</div><label>Anno</label><input id="hy" class="input" type="number" min="2020" max="2100" value="${y}"><label>Settimana</label><input id="hw" class="input" type="number" min="1" max="53" value="${w}"><label>Fatturato</label><input id="hs" class="input" type="number" step="0.01" value="${r?.sales??''}"><label>Scontrini</label><input id="hr" class="input" type="number" min="0" step="1" value="${r?.receipts??''}"><label>Pezzi venduti</label><input id="hp" class="input" type="number" min="0" step="1" value="${r?.pieces??''}"><button class="btn" style="width:100%" onclick="saveHistory()">${r?'Salva modifiche':'Salva storico'}</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteHistory(${r.id});closeModal()">Elimina settimana</button>`:''}`);}
+async function saveHistory(){if(!isManager())return alert("Solo il Manager può modificare lo storico.");let year=+document.getElementById("hy").value,week=+document.getElementById("hw").value,sales=+document.getElementById("hs").value||0,receipts=+document.getElementById("hr").value||0,pieces=+document.getElementById("hp").value||0;if(!year||week<1||week>53)return alert("Anno o settimana non validi.");let payload={anno:year,settimana:week,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};try{let rows=await sb("KpiStorico?on_conflict=anno,settimana",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",body:JSON.stringify(payload)});let r=Array.isArray(rows)?rows[0]:rows;S.kpi.history=S.kpi.history||{};S.kpi.history[histKey(year,week)]={id:r?.id||histKey(year,week),year,week,sales,receipts,pieces};save();closeModal();await loadHistory();}catch(e){alert("Supabase non ha accettato lo storico KPI.\n\n"+(e.message||e));}}
+async function deleteHistory(id){if(!isManager())return alert("Solo il Manager può eliminare lo storico.");if(!confirm("Eliminare questo dato storico?"))return;try{await sb("KpiStorico?id=eq."+encodeURIComponent(id),{method:"DELETE",prefer:"return=minimal"});await loadHistory();}catch(e){alert("Impossibile eliminare lo storico.\n\n"+(e.message||e));}}
+
+function setStoreTarget(){setWeeklyTarget(dateLocal())}
+function storeKpi(){
+  if(!isManager())return kpi();const d=dateLocal(),rows=weeklyRows(d),store=calcKpi(rows),target=weeklyTargetFor(d),progress=target?(store.sales/target)*100:0,missing=Math.max(0,target-store.sales),w=isoWeekInfo(d);
+  const by={};rows.forEach(r=>by[r.date]=(by[r.date]||0)+Number(r.sales||0));const vals=Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0])),max=Math.max(1,...vals.map(x=>x[1]));
+  return `<div class="row"><div class="section">Andamento Negozio</div><button class="btn gray" onclick="S.tab='home';save();render()">← Home</button></div><section class="kpi-hero"><div class="row"><div><div class="kpi-hero-title">Target ${weekLabel(d)}</div><div class="kpi-hero-sub">Fatturato aggregato da lunedì a domenica · Week ${w.week}</div></div><button class="btn" onclick="setWeeklyTarget()">🎯 ${target?'Modifica target':'Imposta target'}</button></div></section><section class="kpi-cards"><div class="kpi-premium"><div class="label">🎯 Target settimana</div><div class="value">${target?fmt(target):"—"}</div><div class="ref">${target?'Obiettivo Week '+w.week:'Da impostare'}</div></div><div class="kpi-premium"><div class="label">💰 Fatturato</div><div class="value">${fmt(store.sales)}</div><div class="ref">Da lunedì a oggi</div></div><div class="kpi-premium"><div class="label">📈 Raggiungimento</div><div class="value">${target?progress.toFixed(1)+'%':'—'}</div><div class="progress"><i style="width:${Math.min(100,progress)}%"></i></div></div><div class="kpi-premium"><div class="label">${target&&store.sales>=target?'🏆 Sopra target':'⚡ Mancano'}</div><div class="value">${target?(store.sales>=target?'+'+fmt(store.sales-target):fmt(missing)):'—'}</div><div class="ref">${target&&store.sales>=target?'oltre il target':'per raggiungere il target'}</div></div><div class="kpi-premium"><div class="label">ATV negozio</div><div class="value">${fmt(store.atv)}</div><div class="ref">Settimana corrente</div></div><div class="kpi-premium"><div class="label">UPT negozio</div><div class="value">${store.upt.toFixed(2)}</div><div class="ref">Settimana corrente</div></div></section><section class="card" style="margin-top:15px"><div class="row"><div><b>Andamento giornaliero</b><div class="small">${vals.length} giornate con dati</div></div></div><div class="chart">${vals.length?vals.map(([date,v])=>`<div class="barwrap"><div class="bar current" style="height:${Math.max(3,(v/max)*100)}%"></div><span class="barlabel">${date.slice(8)}</span></div>`).join(""):`<div class="empty" style="width:100%">Nessun dato disponibile.</div>`}</div></section>`;
+}
+
+function kpi(){
+  const currentPeriod=dateLocal().slice(0,7), refPeriod=currentReferencePeriod(); S.kpi.selected=refPeriod; save();
+  if(!isManager()){
+    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows), ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
+    const weekDate=dateLocal(), weekRows=weeklyStoreRows(weekDate), weekStore=calcKpi(weekRows), weekTarget=weeklyTargetFor(weekDate);
+    const weekProgress=weekTarget?(weekStore.sales/weekTarget)*100:0;
+    const weekMissing=Math.max(0,weekTarget-weekStore.sales);
+
+    const salesDiff=ref.sales?((c.sales-ref.sales)/ref.sales)*100:null, atvDiff=ref.atv?((c.atv-ref.atv)/ref.atv)*100:null, uptDiff=ref.upt?((c.upt-ref.upt)/ref.upt)*100:null;
+    const diff=v=>v===null?'—':(v>=0?'+':'')+v.toFixed(1)+'% vs rif.', cls=v=>v===null?'':v>=0?'up':'down';
+    return weeklyStoreCard()+`<div class="row"><div class="section">I miei KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
+    <section class="kpi-hero"><div class="kpi-hero-title">I miei KPI · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Confronto con il riferimento del mese precedente · <b>${periodLabel(refPeriod)}</b></div></section>
+    <section class="kpi-cards">
+      <div class="kpi-premium"><div class="label">Fatturato personale</div><div class="value">${fmt(c.sales)}</div><div class="ref">Rif. ${fmt(ref.sales)}</div><div class="diff ${cls(salesDiff)}">${diff(salesDiff)}</div></div>
+      <div class="kpi-premium"><div class="label">ATV personale</div><div class="value">${fmt(c.atv)}</div><div class="ref">Rif. ${fmt(ref.atv)}</div><div class="diff ${cls(atvDiff)}">${diff(atvDiff)}</div></div>
+      <div class="kpi-premium"><div class="label">UPT personale</div><div class="value">${c.upt.toFixed(2)}</div><div class="ref">Rif. ${ref.upt.toFixed(2)}</div><div class="diff ${cls(uptDiff)}">${diff(uptDiff)}</div></div>
+    </section>
+    <section class="card" style="margin-top:15px"><div class="row"><b>Giornate inserite</b><span class="pill ${rows.length?'':'gray'}">${rows.length} ${rows.length===1?'giornata':'giornate'}</span></div>${rows.length?rows.map(r=>`<div class="row" style="padding:13px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(''):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>`;
+  }
+  const active=S.people.filter(p=>p.active);
+  return `<div class="row"><div class="section">KPI Personali</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
+  <section class="kpi-hero"><div class="kpi-hero-title">Riepilogo KPI · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Confronto mensile per risorsa. I dati giornalieri restano nascosti.</div></section>
+  <section class="card" style="margin-top:15px"><div class="row"><div><b>Riferimenti manuali · ${periodLabel(refPeriod)}</b><div class="small">ATV e UPT vengono calcolati automaticamente.</div></div></div>
+    ${active.map(p=>{const r=kpiReferenceFor(p.id,refPeriod);return `<div class="kpi-premium" style="margin-top:12px"><div class="row"><b>${esc(p.name)}</b><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica</button></div><div class="grid" style="margin-top:12px"><div class="metric"><span>Fatturato riferimento</span><b>${fmt(r.sales)}</b></div><div class="metric"><span>ATV riferimento</span><b>${fmt(r.atv)}</b></div><div class="metric"><span>UPT riferimento</span><b>${r.upt.toFixed(2)}</b></div></div></div>`}).join('')||`<div class="empty">Nessuna risorsa attiva.</div>`}
+  </section>
+  <section class="card"><b>Andamento per risorsa</b><div class="small" style="margin-top:5px">Solo riepilogo mensile.</div>${active.map(p=>{const rows=kpiRowsForPerson(p.id,currentPeriod),c=calcKpi(rows),r=kpiReferenceFor(p.id,refPeriod),ad=r.atv?((c.atv-r.atv)/r.atv)*100:null,ud=r.upt?((c.upt-r.upt)/r.upt)*100:null;return `<div class="kpi-premium" style="margin-top:12px"><div class="row"><b>${esc(p.name)}</b><span class="pill ${rows.length?'':'gray'}">${rows.length?'Aggiornato':'In attesa'}</span></div><div class="grid" style="margin-top:12px"><div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b></div><div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${ad===null?'':ad>=0?'up':'down'}">${ad===null?'—':(ad>=0?'+':'')+ad.toFixed(1)+'%'}</div></div><div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${ud===null?'':ud>=0?'up':'down'}">${ud===null?'—':(ud>=0?'+':'')+ud.toFixed(1)+'%'}</div></div><div class="metric"><span>Giornate</span><b>${rows.length}</b></div></div></div>`}).join('')}</section>`;
+}
+
+function kpiEntry(pid,date){
+  const me=myPerson();
+  if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+  pid=me.id;
+  const d=date||dateLocal(), r=S.kpi.daily?.[String(pid)+"_"+d];
+  openModal(r?"Modifica KPI giornalieri":"Inserimento KPI giornalieri",
+    `<div class="notice"><b>Inserisci i dati della giornata.</b><div class="small">ATV e UPT vengono calcolati automaticamente.</div></div>
+    <label>Risorsa</label><input class="input" value="${esc(me.name)}" disabled>
+    <label>Data</label><input id="keDate" class="input" type="date" value="${d}">
+    <label>Fatturato</label><input id="keSales" class="input" type="number" step="0.01" value="${r?.sales??''}" placeholder="0,00">
+    <label>Scontrini</label><input id="keReceipts" class="input" type="number" min="0" step="1" value="${r?.receipts??''}" placeholder="0">
+    <label>Pezzi venduti</label><input id="kePieces" class="input" type="number" min="0" step="1" value="${r?.pieces??''}" placeholder="0">
+    <button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?"Salva modifiche":"Salva KPI"}</button>
+    ${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:""}`);
+}
+function render(){
+  purgeInactivePeople();
+  if(!allowedTab(S.tab))S.tab="home";
+  let t=S.tab;
+  document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():t==="storeKpi"?storeKpi():t==="malattie"?malattie():kpi();
+  nav();
+}
+
+function showInviteError(msg){const e=document.getElementById("inviteError");e.textContent=msg;e.style.display="block"}
+function setInviteLoading(v){document.getElementById("inviteLoading").style.display=v?"block":"none";document.getElementById("inviteSave").disabled=v}
+function inviteTokens(){let h=(location.hash||"").replace(/^#/,""),q=new URLSearchParams(h);return {access_token:q.get("access_token"),refresh_token:q.get("refresh_token"),type:q.get("type")}}
+async function completeInvite(){
+  const p=document.getElementById("invitePassword").value,p2=document.getElementById("invitePassword2").value;
+  if(!p||p.length<6)return showInviteError("La password deve contenere almeno 6 caratteri.");
+  if(p!==p2)return showInviteError("Le password non coincidono.");
+  const tok=inviteTokens(); if(!tok.access_token)return showInviteError("Il link di invito non è più valido. Chiedi al Manager di reinviare l'invito.");
+  setInviteLoading(true);document.getElementById("inviteError").style.display="none";
+  try{
+    const ur=await fetch(SUPABASE_URL+"/auth/v1/user",{method:"PUT",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+tok.access_token,"Content-Type":"application/json"},body:JSON.stringify({password:p})});
+    let ud={};try{ud=await ur.json()}catch{} if(!ur.ok)throw new Error(ud.msg||ud.message||"Non è stato possibile impostare la password.");
+    AUTH={access_token:tok.access_token,refresh_token:tok.refresh_token,user:ud};localStorage.setItem("sm_auth",JSON.stringify(AUTH));
+    try{await fetch(SUPABASE_URL+"/rest/v1/profili",{method:"POST",headers:{...authHeaders(),Prefer:"return=minimal"},body:JSON.stringify({id:ud.id,ruolo:"ragazzo",dipendente_id:ud.user_metadata?.dipendente_id??null})})}catch(e){}
+    history.replaceState(null,"",location.pathname+location.search);document.getElementById("inviteGate").style.display="none";PROFILE=await fetchProfile();if(!PROFILE)PROFILE={ruolo:"ragazzo",dipendente_id:ud.user_metadata?.dipendente_id??null};bootApp();alert("Password impostata correttamente. Benvenuto in Gestionale Replay Barberino.");
+  }catch(e){showInviteError(e.message||"Errore durante l'attivazione dell'account.");}finally{setInviteLoading(false)}
+}
+async function bootApp(){
+  purgeInactivePeople();
+  if(!isManager()) S.tab="home";
+  if(!S.planningWeek) S.planningWeek=planningStartOfWeek(planningToday());
+  render();
+  if(isManager()) await migrateLegacyOnline();
+  await loadPeople();
+  await loadTasks();
+  await loadRequests();
+  await loadKpis();
+  await loadWeeklyTargets();
+  await loadHistory();
+  await loadShifts();
+  await loadMalattie();
+  startKpiNotificationMonitor();
+}
+async function bootAuth(){
+  const qs=new URLSearchParams(location.search);
+  if(qs.get("logout")){
+    try{localStorage.removeItem("sm_auth")}catch(e){}
+    AUTH=null; PROFILE=null;
+    history.replaceState(null,"",location.pathname);
+  }
+  const tok=inviteTokens();
+  if(tok.access_token&&(tok.type==="invite"||tok.type==="recovery")){document.getElementById("authGate").style.display="none";document.getElementById("inviteGate").style.display="grid";return;}
+  document.getElementById("authGate").style.display="grid";
+  if(await restoreAuth()){document.getElementById("authGate").style.display="none";bootApp();}
+}
+
+/* === KPI MANAGER: collegamento automatico alla propria risorsa === */
+async function resolveManagerPerson(){
+  if(!isManager()) return myPerson();
+  let me=myPerson();
+  if(me) return me;
+  const email=String(AUTH?.user?.email||"").trim().toLowerCase();
+  if(email) me=S.people.find(p=>p.active && String(p.email||"").trim().toLowerCase()===email)||null;
+  if(!me) me=S.people.find(p=>p.active && /manager|store manager/i.test(String(p.role||"")))||null;
+  if(me){
+    PROFILE=PROFILE||{}; PROFILE.dipendente_id=me.id;
+    try{if(AUTH?.user?.id) await sb("profili?id=eq."+encodeURIComponent(AUTH.user.id),{method:"PATCH",prefer:"return=minimal",body:JSON.stringify({dipendente_id:Number(me.id)})});}catch(e){console.warn("Collegamento profilo-manager non aggiornato online",e)}
+    return me;
+  }
+  return null;
+}
+async function managerKpiEntry(){
+  const me=await resolveManagerPerson();
+  if(!me)return alert("Non trovo la tua risorsa nel Personale. Inserisci il Manager nel Personale con la tua stessa email oppure con ruolo 'Store Manager'.");
+  openManagerKpiModal(me);
+}
+function openManagerKpiModal(me,date){
+  const pid=me.id,d=date||dateLocal(),r=S.kpi.daily?.[String(pid)+"_"+d];
+  S.kpi.entryPersonId=pid;
+  openModal(r?"Modifica i miei KPI giornalieri":"Inserisci i miei KPI giornalieri",`<div class="notice"><b>${esc(me.name)}</b><div class="small">Questi KPI vengono conteggiati anche nell'andamento totale del negozio. ATV e UPT vengono calcolati automaticamente.</div></div><label>Data</label><input id="keDate" class="input" type="date" value="${d}"><label>Fatturato</label><input id="keSales" class="input" type="number" step="0.01" value="${r?.sales??''}" placeholder="0,00"><label>Scontrini</label><input id="keReceipts" class="input" type="number" min="0" step="1" value="${r?.receipts??''}" placeholder="0"><label>Pezzi venduti</label><input id="kePieces" class="input" type="number" min="0" step="1" value="${r?.pieces??''}" placeholder="0"><div class="grid" style="margin-top:6px"><div class="metric"><span>ATV</span><b id="keAtv">0,00 €</b></div><div class="metric"><span>UPT</span><b id="keUpt">0,00</b></div></div><button class="btn" style="width:100%;margin-top:8px" onclick="saveDailyKpi()">${r?'Salva modifiche':'Salva KPI'}</button>${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:''}`);
+  updateManagerKpiPreview();
+  ["keSales","keReceipts","kePieces"].forEach(id=>document.getElementById(id)?.addEventListener("input",updateManagerKpiPreview));
+}
+function updateManagerKpiPreview(){const sales=+document.getElementById("keSales")?.value||0,receipts=+document.getElementById("keReceipts")?.value||0,pieces=+document.getElementById("kePieces")?.value||0,atv=receipts?sales/receipts:0,upt=receipts?pieces/receipts:0,a=document.getElementById("keAtv"),u=document.getElementById("keUpt");if(a)a.textContent=fmt(atv);if(u)u.textContent=upt.toFixed(2)}
+async function saveDailyKpi(){
+  const me=await resolveManagerPerson(); if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+  const pid=Number(S.kpi.entryPersonId||me.id); if(pid!==Number(me.id))return alert("Puoi inserire solo i tuoi KPI.");
+  const date=document.getElementById("keDate")?.value;if(!date)return alert("Seleziona la data.");
+  const sales=+document.getElementById("keSales")?.value||0,receipts=+document.getElementById("keReceipts")?.value||0,pieces=+document.getElementById("kePieces")?.value||0;
+  const payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};
+  try{const existing=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id&limit=1");let r;if(Array.isArray(existing)&&existing[0]?.id){const updated=await sb("KpiGiornalieri?id=eq."+encodeURIComponent(existing[0].id),{method:"PATCH",prefer:"return=representation",body:JSON.stringify(payload)});r=Array.isArray(updated)?updated[0]:updated}else{const created=await sb("KpiGiornalieri",{method:"POST",prefer:"return=representation",body:JSON.stringify(payload)});r=Array.isArray(created)?created[0]:created}S.kpi.daily[String(pid)+"_"+date]={id:r?.id||String(pid)+"_"+date,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};save();closeModal();await loadKpis()}catch(e){alert("Non riesco a salvare il KPI.\n\n"+(e.message||e))}
+}
+async function deleteDailyKpi(key){const r=S.kpi.daily?.[key];if(!r)return;const me=await resolveManagerPerson();if(!me||String(r.personId)!==String(me.id))return alert("Puoi eliminare solo i tuoi KPI.");if(!confirm(`Eliminare i KPI del ${r.date}?`))return;try{if(r.id&&String(r.id)!==key)await sb("KpiGiornalieri?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});await loadKpis()}catch(e){alert("Impossibile eliminare il KPI.\n\n"+(e.message||e))}}
+function editDailyKpi(pid,date){if(String(pid)!==String(myPersonId()))return alert("Puoi modificare solo i tuoi KPI.");kpiEntry(pid,date)}
+window.logout=logout;
+
+bootAuth();
+</script>
+</body></html>
