@@ -329,7 +329,6 @@ async function loadKpis(){
     S.online=true;save();render();
   }catch(e){console.warn('KPI online non caricati',e);S.online=false;save();render()}
 }
-async function saveDailyKpi(){let pid=+document.getElementById('kePerson').value,date=document.getElementById('keDate').value;if(!pid||!date)return alert('Seleziona risorsa e data.');let sales=+document.getElementById('keSales').value||0,receipts=+document.getElementById('keReceipts').value||0,pieces=+document.getElementById('kePieces').value||0;let payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};try{let existing=await sb('KpiGiornalieri?dipendente_id=eq.'+encodeURIComponent(pid)+'&data=eq.'+encodeURIComponent(date)+'&select=id&limit=1',{method:'GET',prefer:'return=representation'});let rows,r;if(Array.isArray(existing)&&existing[0]?.id){r=(await sb('KpiGiornalieri?id=eq.'+encodeURIComponent(existing[0].id),{method:'PATCH',prefer:'return=representation',body:JSON.stringify(payload)}));}else{r=(await sb('KpiGiornalieri',{method:'POST',prefer:'return=representation',body:JSON.stringify(payload)}));}r=Array.isArray(r)?r[0]:r;let key=pid+'_'+date;S.kpi.daily[key]={id:r?.id||key,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};save();closeModal();await loadKpis()}catch(e){alert('Non riesco a salvare il KPI. Controlla la connessione e i permessi dell’account.\n\n'+(e.message||e))}}
 async function deleteDailyKpi(key){let r=S.kpi.daily?.[key];if(!r)return;if(!confirm(`Eliminare i KPI del ${r.date}?`))return;try{if(r.id&&String(r.id)!==key)await sb('KpiGiornalieri?id=eq.'+encodeURIComponent(r.id),{method:'DELETE',prefer:'return=minimal'});delete S.kpi.daily[key];save();await loadKpis()}catch(e){alert('Impossibile eliminare il KPI.\n\n'+(e.message||e))}}
 function editDailyKpi(pid,date){kpiEntry(pid,date)}
 async function createRequest(id){let p=S.people.find(x=>x.id===id);if(!p){alert("Seleziona una risorsa.");return}let start=document.getElementById("rqStart").value,end=document.getElementById("rqEnd").value,note=document.getElementById("rqNote").value.trim();if(!start){alert("Inserisci la data.");return}if(!end)end=start;try{await sb("Richieste",{method:"POST",body:JSON.stringify({dipendente_id:p.id,tipo:"Giorno libero",data_richiesta:start,data_richiesta_fine:end,note,stato:"In attesa"})});closeModal();await loadRequests();alert("Richiesta inviata.")}catch(e){alert("Supabase non ha accettato la richiesta.\n\n"+(e.message||e))}}
@@ -1051,29 +1050,6 @@ async function loadKpis(){
   }
 }
 
-async function saveDailyKpi(){
-  const me=myPerson();
-  if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
-  const pid=+me.id, date=document.getElementById("keDate").value;
-  if(!date)return alert("Seleziona la data.");
-  const sales=+document.getElementById("keSales").value||0;
-  const receipts=+document.getElementById("keReceipts").value||0;
-  const pieces=+document.getElementById("kePieces").value||0;
-  const payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};
-  try{
-    const existing=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id&limit=1");
-    let r;
-    if(Array.isArray(existing)&&existing[0]?.id){
-      const updated=await sb("KpiGiornalieri?id=eq."+encodeURIComponent(existing[0].id),{method:"PATCH",prefer:"return=representation",body:JSON.stringify(payload)});
-      r=Array.isArray(updated)?updated[0]:updated;
-    }else{
-      const created=await sb("KpiGiornalieri",{method:"POST",prefer:"return=representation",body:JSON.stringify(payload)});
-      r=Array.isArray(created)?created[0]:created;
-    }
-    S.kpi.daily[String(pid)+"_"+date]={id:r?.id||String(pid)+"_"+date,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};
-    save();closeModal();await loadKpis();
-  }catch(e){alert("Non è stato possibile salvare il KPI.\n\n"+(e.message||e));}
-}
 async function deleteDailyKpi(key){
   const r=S.kpi.daily?.[key];
   if(!r)return;
@@ -1302,12 +1278,66 @@ function openManagerKpiModal(me,date){
 }
 function updateManagerKpiPreview(){const sales=+document.getElementById("keSales")?.value||0,receipts=+document.getElementById("keReceipts")?.value||0,pieces=+document.getElementById("kePieces")?.value||0,atv=receipts?sales/receipts:0,upt=receipts?pieces/receipts:0,a=document.getElementById("keAtv"),u=document.getElementById("keUpt");if(a)a.textContent=fmt(atv);if(u)u.textContent=upt.toFixed(2)}
 async function saveDailyKpi(){
-  const me=await resolveManagerPerson(); if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
-  const pid=Number(S.kpi.entryPersonId||me.id); if(pid!==Number(me.id))return alert("Puoi inserire solo i tuoi KPI.");
-  const date=document.getElementById("keDate")?.value;if(!date)return alert("Seleziona la data.");
-  const sales=+document.getElementById("keSales")?.value||0,receipts=+document.getElementById("keReceipts")?.value||0,pieces=+document.getElementById("kePieces")?.value||0;
+  const me=await resolveManagerPerson();
+  if(!me)return alert("Il tuo account non è ancora collegato a una risorsa.");
+
+  // I collaboratori salvano sempre sulla propria risorsa; il valore manageriale
+  // viene considerato soltanto nella schermata del Manager.
+  const pid=isManager()?Number(S.kpi.entryPersonId||me.id):Number(me.id);
+  if(pid!==Number(me.id))return alert("Puoi inserire solo i tuoi KPI.");
+
+  const date=document.getElementById("keDate")?.value;
+  if(!date)return alert("Seleziona la data.");
+  const sales=Number(document.getElementById("keSales")?.value)||0;
+  const receipts=Number(document.getElementById("keReceipts")?.value)||0;
+  const pieces=Number(document.getElementById("kePieces")?.value)||0;
   const payload={dipendente_id:pid,data:date,fatturato:sales,scontrini:receipts,pezzi_venduti:pieces};
-  try{const existing=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id&limit=1");let r;if(Array.isArray(existing)&&existing[0]?.id){const updated=await sb("KpiGiornalieri?id=eq."+encodeURIComponent(existing[0].id),{method:"PATCH",prefer:"return=representation",body:JSON.stringify(payload)});r=Array.isArray(updated)?updated[0]:updated}else{const created=await sb("KpiGiornalieri",{method:"POST",prefer:"return=representation",body:JSON.stringify(payload)});r=Array.isArray(created)?created[0]:created}S.kpi.daily[String(pid)+"_"+date]={id:r?.id||String(pid)+"_"+date,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};save();closeModal();await loadKpis()}catch(e){alert("Non riesco a salvare il KPI.\n\n"+(e.message||e))}
+  const key=String(pid)+"_"+date;
+
+  const applySavedKpi=async id=>{
+    S.kpi.daily[key]={id:id||key,personId:pid,date,sales,receipts,pieces,updatedAt:new Date().toISOString()};
+    save();
+    closeModal();
+    await loadKpis();
+  };
+
+  try{
+    const existing=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id&limit=1");
+    let result;
+    if(Array.isArray(existing)&&existing[0]?.id){
+      result=await sb("KpiGiornalieri?id=eq."+encodeURIComponent(existing[0].id),{method:"PATCH",prefer:"return=representation",body:JSON.stringify(payload)});
+    }else{
+      result=await sb("KpiGiornalieri",{method:"POST",prefer:"return=representation",body:JSON.stringify(payload)});
+    }
+    const row=Array.isArray(result)?result[0]:result;
+    if(row?.id){
+      await applySavedKpi(row.id);
+      return;
+    }
+
+    // Se Supabase non restituisce la riga, controlliamo che i valori siano davvero presenti.
+    const check=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id,fatturato,scontrini,pezzi_venduti&limit=1");
+    const saved=Array.isArray(check)?check[0]:null;
+    if(saved&&Number(saved.fatturato)===sales&&Number(saved.scontrini)===receipts&&Number(saved.pezzi_venduti)===pieces){
+      await applySavedKpi(saved.id);
+      return;
+    }
+    throw new Error("Il salvataggio non è stato confermato dal database.");
+  }catch(e){
+    // Una richiesta può fallire nella risposta anche se il database ha già salvato.
+    // Verifichiamo prima di mostrare un errore falso all'utente.
+    try{
+      const check=await sb("KpiGiornalieri?dipendente_id=eq."+encodeURIComponent(pid)+"&data=eq."+encodeURIComponent(date)+"&select=id,fatturato,scontrini,pezzi_venduti&limit=1");
+      const saved=Array.isArray(check)?check[0]:null;
+      if(saved&&Number(saved.fatturato)===sales&&Number(saved.scontrini)===receipts&&Number(saved.pezzi_venduti)===pieces){
+        await applySavedKpi(saved.id);
+        return;
+      }
+    }catch(verifyError){
+      console.warn("Verifica del salvataggio KPI non riuscita",verifyError);
+    }
+    alert("Non riesco a confermare il salvataggio del KPI.\n\n"+(e.message||e));
+  }
 }
 async function deleteDailyKpi(key){const r=S.kpi.daily?.[key];if(!r)return;const me=await resolveManagerPerson();if(!me||String(r.personId)!==String(me.id))return alert("Puoi eliminare solo i tuoi KPI.");if(!confirm(`Eliminare i KPI del ${r.date}?`))return;try{if(r.id&&String(r.id)!==key)await sb("KpiGiornalieri?id=eq."+encodeURIComponent(r.id),{method:"DELETE",prefer:"return=minimal"});await loadKpis()}catch(e){alert("Impossibile eliminare il KPI.\n\n"+(e.message||e))}}
 function editDailyKpi(pid,date){if(String(pid)!==String(myPersonId()))return alert("Puoi modificare solo i tuoi KPI.");kpiEntry(pid,date)}
