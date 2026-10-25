@@ -1099,6 +1099,38 @@ function storeKpi(){
   return `<div class="row"><div class="section">Andamento Negozio</div><button class="btn gray" onclick="S.tab='home';save();render()">← Home</button></div><section class="kpi-hero"><div class="row"><div><div class="kpi-hero-title">Target ${weekLabel(d)}</div><div class="kpi-hero-sub">Fatturato aggregato da lunedì a domenica · Week ${w.week}</div></div><button class="btn" onclick="setWeeklyTarget()">🎯 ${target?'Modifica target':'Imposta target'}</button></div></section><section class="kpi-cards"><div class="kpi-premium"><div class="label">🎯 Target settimana</div><div class="value">${target?fmt(target):"—"}</div><div class="ref">${target?'Obiettivo Week '+w.week:'Da impostare'}</div></div><div class="kpi-premium"><div class="label">💰 Fatturato</div><div class="value">${fmt(store.sales)}</div><div class="ref">Da lunedì a oggi</div></div><div class="kpi-premium"><div class="label">📈 Raggiungimento</div><div class="value">${target?progress.toFixed(1)+'%':'—'}</div><div class="progress"><i style="width:${Math.min(100,progress)}%"></i></div></div><div class="kpi-premium"><div class="label">${target&&store.sales>=target?'🏆 Sopra target':'⚡ Mancano'}</div><div class="value">${target?(store.sales>=target?'+'+fmt(store.sales-target):fmt(missing)):'—'}</div><div class="ref">${target&&store.sales>=target?'oltre il target':'per raggiungere il target'}</div></div><div class="kpi-premium"><div class="label">ATV negozio</div><div class="value">${fmt(store.atv)}</div><div class="ref">Settimana corrente</div></div><div class="kpi-premium"><div class="label">UPT negozio</div><div class="value">${store.upt.toFixed(2)}</div><div class="ref">Settimana corrente</div></div></section><section class="card" style="margin-top:15px"><div class="row"><div><b>Andamento giornaliero</b><div class="small">${vals.length} giornate con dati</div></div></div><div class="chart">${vals.length?vals.map(([date,v])=>`<div class="barwrap"><div class="bar current" style="height:${Math.max(3,(v/max)*100)}%"></div><span class="barlabel">${date.slice(8)}</span></div>`).join(""):`<div class="empty" style="width:100%">Nessun dato disponibile.</div>`}</div></section>`;
 }
 
+function managerKpiComplianceCard(){
+  if(!isManager()) return "";
+  const d=dateLocal(), now=new Date(), cutoffPassed=now.getHours()>=22;
+  const scheduledIds=new Set((S.shifts||[])
+    .filter(s=>String(s.date||s.data_turno||"").slice(0,10)===d && !!(s.start||s.entrata||s.end||s.uscita))
+    .map(s=>String(s.personId??s.dipendente_id)));
+  const scheduled=S.people.filter(p=>p.active && scheduledIds.has(String(p.id)));
+  const inserted=p=>Object.values(S.kpi.daily||{}).some(r=>String(r.personId)===String(p.id)&&String(r.date||"").slice(0,10)===d);
+  const done=scheduled.filter(inserted).length, missing=scheduled.length-done;
+  const status=p=>inserted(p)
+    ? '<span class="pill">Inseriti</span>'
+    : `<span class="pill ${cutoffPassed?'red':'yellow'}">${cutoffPassed?'Non inseriti':'In attesa'}</span>`;
+  return `<section class="card" id="kpiComplianceCard">
+    <div class="row" style="align-items:flex-start"><div><b>Controllo inserimento KPI</b><div class="small">Risorse in turno oggi · scadenza 22:00</div></div><button class="btn gray" onclick="refreshKpiCompliance()">Aggiorna</button></div>
+    <div class="grid" style="margin-top:14px">
+      <div class="metric"><span>KPI inseriti</span><b>${done}</b></div>
+      <div class="metric"><span>${cutoffPassed?'Non inseriti':'Ancora da inserire'}</span><b>${missing}</b></div>
+    </div>
+    ${scheduled.length?scheduled.map(p=>`<div class="person"><div class="avatar">${esc((p.name||'?')[0])}</div><div style="flex:1;min-width:0"><b>${esc(p.name)}</b><div class="small">${inserted(p)?'KPI giornalieri salvati':cutoffPassed?'KPI non presenti entro le 22:00':'KPI non ancora presenti'}</div></div>${status(p)}</div>`).join(''):`<div class="empty">Nessuna risorsa risulta in turno oggi nel Planning.</div>`}
+    <div class="small" style="margin-top:10px">${cutoffPassed?'Controllo dopo le 22:00: le risorse in turno senza KPI salvati risultano non inserite.':'Prima delle 22:00, chi non ha ancora inserito i KPI è indicato come “In attesa”.'}</div>
+  </section>`;
+}
+async function refreshKpiCompliance(){
+  if(!isManager()) return;
+  try{
+    await loadKpis();
+    await loadShifts();
+  }catch(e){
+    alert('Non è stato possibile aggiornare il controllo KPI.\n\n'+(e.message||e));
+  }
+}
+
 function kpi(){
   const currentPeriod=dateLocal().slice(0,7), refPeriod=currentReferencePeriod(); S.kpi.selected=refPeriod; save();
   if(!isManager()){
@@ -1127,6 +1159,7 @@ function kpi(){
     <div class="kpi-hero-title">KPI ragazzi · ${periodLabel(currentPeriod)}</div>
     <div class="kpi-hero-sub">Riepilogo mensile individuale · confronto con il riferimento di ${periodLabel(refPeriod)}</div>
   </section>
+  ${managerKpiComplianceCard()}
   <section class="card notice">
     <b>👥 Andamento del team</b>
     <div class="small">Ogni scheda mostra solo il riepilogo del singolo ragazzo. I dati giornalieri non vengono mostrati qui. Il riferimento manuale resta disponibile nel dettaglio.</div>
