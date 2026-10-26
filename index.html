@@ -310,21 +310,32 @@ function dateLocal(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth(
 function kpiPeriodFromDate(d){return d.slice(0,7)}
 function weekNumber(d){let x=new Date(d+"T12:00:00"),day=x.getDay()||7;x.setDate(x.getDate()+4-day);let y=new Date(x.getFullYear(),0,1);return Math.ceil((((x-y)/86400000)+1)/7)}
 function sameWeekLastYear(d){let x=new Date(d+"T12:00:00");x.setFullYear(x.getFullYear()-1);return dateLocal(x)}
-function kpiRowsForPerson(pid,period){let rows=Object.values(S.kpi.daily||{}).filter(r=>String(r.personId)===String(pid)&&r.date.startsWith(period));return rows.sort((a,b)=>a.date.localeCompare(b.date))}
+function kpiRowsForPerson(pid,period){
+  const prefix=String(period||'').slice(0,7);
+  return Object.values(S.kpi.daily||{})
+    .filter(r=>String(r.personId)===String(pid)&&String(r.date||'').slice(0,7)===prefix)
+    .sort((a,b)=>String(a.date||'').slice(0,10).localeCompare(String(b.date||'').slice(0,10)));
+}
 function kpiTrafficComparison(pid){
   const todayDate=dateLocal(), currentPeriod=todayDate.slice(0,7), previousPeriod=currentReferencePeriod(), cutoff=Number(todayDate.slice(8));
-  const currentRows=kpiRowsForPerson(pid,currentPeriod).filter(r=>String(r.date)<=todayDate);
-  const previousRows=kpiRowsForPerson(pid,previousPeriod).filter(r=>Number(String(r.date).slice(8))<=cutoff);
-  const current=calcKpi(currentRows), previous=calcKpi(previousRows);
+  const currentRows=kpiRowsForPerson(pid,currentPeriod).filter(r=>String(r.date||'').slice(0,10)<=todayDate);
+  const previousRows=kpiRowsForPerson(pid,previousPeriod).filter(r=>Number(String(r.date||'').slice(8,10))<=cutoff);
+  const current=calcKpi(currentRows);
+  // Prima usa i giornalieri del mese precedente; se non sono caricati, usa il riferimento
+  // mensile salvato. Evita falsi "Dati insufficienti" quando il riferimento è disponibile.
+  const savedReference=kpiReferenceFor(pid,previousPeriod);
+  const hasSavedReference=Number(savedReference.sales)>0||Number(savedReference.receipts)>0||Number(savedReference.pieces)>0;
+  const useSavedReference=previousRows.length===0&&hasSavedReference;
+  const previous=useSavedReference?savedReference:calcKpi(previousRows);
+  const previousCount=previousRows.length||(useSavedReference?1:0);
   const currentSalesPerDay=currentRows.length?current.sales/currentRows.length:0;
   const previousSalesPerDay=previousRows.length?previous.sales/previousRows.length:0;
   const pct=(a,b)=>b>0?((a-b)/b)*100:null;
-  // Fatturato: confronto progressivo del mese fino allo stesso numero del giorno,
-  // non media giornaliera e non abbinamento per giorno della settimana.
-  const salesDiff=currentRows.length&&previousRows.length?pct(current.sales,previous.sales):null;
+  // Progressivo fino alla stessa data del mese, senza abbinare i giorni della settimana.
+  const salesDiff=currentRows.length&&previousCount?pct(current.sales,previous.sales):null;
   const atvDiff=current.receipts>0&&previous.receipts>0?pct(current.atv,previous.atv):null;
   const uptDiff=current.receipts>0&&previous.receipts>0?pct(current.upt,previous.upt):null;
-  return {current,previous,currentDays:currentRows.length,previousDays:previousRows.length,
+  return {current,previous,currentDays:currentRows.length,previousDays:previousCount,
     salesDiff,atvDiff,uptDiff,
     salesNow:currentSalesPerDay,salesBefore:previousSalesPerDay,period:currentPeriod,previousPeriod};
 }
