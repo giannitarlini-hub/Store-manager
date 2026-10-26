@@ -300,9 +300,55 @@ function weekNumber(d){let x=new Date(d+"T12:00:00"),day=x.getDay()||7;x.setDate
 function sameWeekLastYear(d){let x=new Date(d+"T12:00:00");x.setFullYear(x.getFullYear()-1);return dateLocal(x)}
 function kpiRowsForPerson(pid,period){
   const prefix=String(period||'').slice(0,7);
-  return Object.values(S.kpi.daily||{})
-    .filter(r=>String(r.personId)===String(pid)&&String(r.date||'').slice(0,7)===prefix)
-    .sort((a,b)=>String(a.date||'').slice(0,10).localeCompare(String(b.date||'').slice(0,10)));
+  const actual=Object.values(S.kpi.daily||{})
+    .filter(r=>String(r.personId)===String(pid)&&String(r.date||'').slice(0,7)===prefix);
+  // I dati reali salvati online hanno priorità. Le righe manuali aggiunte dallo Store Manager
+  // servono solo per le giornate mancanti e restano locali a questo browser.
+  const actualDates=new Set(actual.map(r=>String(r.date||'').slice(0,10)));
+  const manual=Object.values(S.kpi.manualDaily||{})
+    .filter(r=>String(r.personId)===String(pid)&&String(r.date||'').slice(0,7)===prefix&&!actualDates.has(String(r.date||'').slice(0,10)));
+  return [...actual,...manual].sort((a,b)=>String(a.date||'').slice(0,10).localeCompare(String(b.date||'').slice(0,10)));
+}
+function managerDailyKpiEntry(pid,period){
+  if(!isManager())return alert('Solo lo Store Manager può integrare i KPI giornalieri mancanti.');
+  const p=S.people.find(x=>String(x.id)===String(pid)); if(!p)return;
+  const raw=String(period||dateLocal());
+  const month=/^\d{4}-\d{2}/.test(raw)?raw.slice(0,7):dateLocal().slice(0,7);
+  const [yy,mm]=month.split('-').map(Number), days=new Date(yy,mm,0).getDate();
+  const rows=Array.from({length:days},(_,i)=>{
+    const date=month+'-'+String(i+1).padStart(2,'0'), key=String(pid)+'_'+date;
+    const actual=S.kpi.daily?.[key], manual=S.kpi.manualDaily?.[key], r=actual||manual||{};
+    const saved=!!actual||!!manual;
+    const status=actual?'Inserito dalla risorsa':manual?'Integrato da te':'Mancante';
+    return `<div class="kpi-day-row" style="border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:10px;margin:8px 0;background:${actual?'rgba(22,163,74,.05)':manual?'rgba(234,179,8,.07)':'transparent'}">
+      <div class="row" style="align-items:center;justify-content:space-between;gap:8px"><b>${date.split('-').reverse().join('/')}</b><span class="pill ${actual?'green':manual?'yellow':'gray'}">${status}</span></div>
+      <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px">
+        <div><label style="font-size:12px">Fatturato €</label><input class="input" id="mkSales_${date}" type="number" min="0" step="0.01" value="${r.sales??''}" placeholder="0,00" ${actual?'disabled':''}></div>
+        <div><label style="font-size:12px">Scontrini</label><input class="input" id="mkReceipts_${date}" type="number" min="0" step="1" value="${r.receipts??''}" placeholder="0" ${actual?'disabled':''}></div>
+        <div><label style="font-size:12px">Pezzi</label><input class="input" id="mkPieces_${date}" type="number" min="0" step="1" value="${r.pieces??''}" placeholder="0" ${actual?'disabled':''}></div>
+      </div>
+      <div class="row" style="align-items:center;justify-content:space-between;margin-top:8px"><span class="small">${actual?'Dati online: non modificabili qui':manual?'Puoi correggere i dati manuali':'Inserisci solo se la risorsa ha lavorato e manca il KPI'}</span><button class="btn ${saved?'gray':'green'}" ${actual?'disabled':''} onclick="saveManagerDailyKpi(${pid},'${date}')">${manual?'Aggiorna':'Salva giornata'}</button></div>
+    </div>`;
+  }).join('');
+  openModal('KPI giornalieri · '+esc(p.name),
+    `<div class="notice"><b>${esc(p.name)} · ${month}</b><div class="small">Tutte le giornate del mese. Le righe verdi sono state inserite online dalla risorsa; le gialle sono integrazioni manuali; le grigie sono da verificare. Le giornate online non sono modificabili da qui.</div></div>
+    <div style="max-height:65vh;overflow:auto;padding:2px 3px">${rows}</div>
+    <button class="btn gray" style="width:100%;margin-top:10px" onclick="kpiPersonDetail(${pid})">← Torna al dettaglio KPI</button>`);
+}
+function saveManagerDailyKpi(pid,date){
+  if(!isManager())return alert('Solo lo Store Manager può integrare i KPI giornalieri mancanti.');
+  const key=String(pid)+'_'+date;
+  if(S.kpi.daily?.[key])return alert('La risorsa ha già inserito i KPI online per questa data.');
+  const salesRaw=document.getElementById('mkSales_'+date)?.value;
+  const receiptsRaw=document.getElementById('mkReceipts_'+date)?.value;
+  const piecesRaw=document.getElementById('mkPieces_'+date)?.value;
+  if(salesRaw===''||receiptsRaw===''||piecesRaw==='')return alert('Compila fatturato, scontrini e pezzi prima di salvare.');
+  const sales=Number(salesRaw),receipts=Number(receiptsRaw),pieces=Number(piecesRaw);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(sales)||sales<0||!Number.isInteger(receipts)||receipts<0||!Number.isInteger(pieces)||pieces<0)return alert('Controlla fatturato, scontrini e pezzi.');
+  S.kpi.manualDaily=S.kpi.manualDaily||{};
+  S.kpi.manualDaily[key]={personId:pid,date,sales,receipts,pieces,manual:true,updatedAt:new Date().toISOString()};
+  save();
+  managerDailyKpiEntry(pid,date.slice(0,7));
 }
 function kpiTrafficComparison(pid){
   const todayDate=dateLocal(), currentPeriod=todayDate.slice(0,7), previousPeriod=currentReferencePeriod(), cutoff=Number(todayDate.slice(8));
@@ -1398,6 +1444,7 @@ function kpiPersonDetail(pid){
   openModal(`KPI · ${esc(p.name)}`,`
     <div class="notice"><b>${esc(p.name)}</b><div class="small">${periodLabel(currentPeriod)} · confronto progressivo con ${periodLabel(refPeriod)} fino allo stesso giorno del mese</div></div>
     <button class="btn" style="width:100%;margin-top:10px" onclick="showKpiComparisonValues(${p.id})">🔎 Mostra valori usati nel confronto</button>
+    <button class="btn gray" style="width:100%;margin-top:8px" onclick="managerDailyKpiEntry(${p.id},'${refPeriod}')">✍️ Integra fatturato, scontrini e pezzi per singola giornata</button>
     <div class="grid" style="margin-top:12px">
       <div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b><div class="small">Media/giornata: ${comp.currentDays?fmt(comp.salesNow):'—'}</div><div class="small ${cls(comp.salesDiff)}">${diff(comp.salesDiff)} media giornaliera</div></div>
       <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${cls(comp.atvDiff)}">${diff(comp.atvDiff)} vs periodo precedente</div></div>
@@ -1422,7 +1469,7 @@ function showKpiComparisonValues(pid){
   const fmtPct=v=>v===null?'Non disponibile':`${v>0?'+':''}${v.toFixed(1)}%`;
   const rowsTable=(label,data,count,avg,isCurrent)=>`<section class="card" style="margin-top:10px"><b>${label}</b><div class="small">Periodo: ${isCurrent?currentPeriod:previousPeriod} · dal giorno 1 al ${isCurrent?today:previousPeriod+'-'+String(cutoff).padStart(2,'0')} (limite giorno ${cutoff})</div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato totale</span><b>${fmt(data.sales)}</b></div><div class="metric"><span>Giornate con KPI</span><b>${count}</b></div><div class="metric"><span>Media fatturato/giornata</span><b>${count?fmt(avg):'—'}</b></div><div class="metric"><span>Scontrini totali</span><b>${data.receipts}</b></div><div class="metric"><span>Pezzi totali</span><b>${data.pieces}</b></div><div class="metric"><span>ATV / UPT</span><b>${fmt(data.atv)} / ${data.upt.toFixed(2)}</b></div></div><div class="small" style="margin-top:8px">Date effettivamente incluse: ${count?dataDates(isCurrent?currentRows:previousRows):'nessuna giornata trovata'}</div></section>`;
   openModal(`Valori confronto · ${esc(p.name)}`,`
-    <div class="notice"><b>Valori effettivamente usati dal semaforo</b><div class="small">Sono esclusi i giorni senza KPI registrati. Il fatturato confronta la media per giornata registrata; ATV e UPT confrontano i totali aggregati. Il limite è il giorno ${cutoff} di ciascun mese.</div></div>
+    <div class="notice"><b>Valori effettivamente usati dal semaforo</b><div class="small">Sono esclusi i giorni senza KPI registrati. Il fatturato confronta la media per giornata registrata; ATV e UPT confrontano i totali aggregati. Il limite è il giorno ${cutoff} di ciascun mese. Le giornate integrate manualmente sono locali a questo browser e vengono usate solo se non esiste già un dato online per quella data.</div></div>
     ${rowsTable('Mese corrente · '+periodLabel(currentPeriod),cur,currentRows.length,curAvg,true)}
     ${useManual?`<section class=\"card\" style=\"margin-top:10px\"><b>Fonte del mese precedente</b><div class=\"small\">Valori inseriti manualmente dallo Store Manager · ${prevCount} giornate con KPI</div></section>`:''}${rowsTable('Mese precedente · '+periodLabel(previousPeriod),prev,prevCount,prevAvg,false)}
     <section class="card" style="margin-top:10px"><b>Variazioni calcolate</b><div class="grid" style="margin-top:10px"><div class="metric"><span>Media fatturato/giornata</span><b>${fmtPct(currentRows.length&&prevCount?pct(curAvg,prevAvg):null)}</b></div><div class="metric"><span>ATV</span><b>${fmtPct(cur.receipts&&prev.receipts?pct(cur.atv,prev.atv):null)}</b></div><div class="metric"><span>UPT</span><b>${fmtPct(cur.receipts&&prev.receipts?pct(cur.upt,prev.upt):null)}</b></div></div>${(!prevCount||!prev.receipts)?'<div class="small" style="margin-top:8px;color:#b45309">Il periodo precedente non contiene abbastanza giornate o scontrini: per questo il semaforo può risultare “Dati insufficienti”.</div>':''}</section>
