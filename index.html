@@ -318,24 +318,21 @@ function kpiRowsForPerson(pid,period){
 }
 function kpiTrafficComparison(pid){
   const todayDate=dateLocal(), currentPeriod=todayDate.slice(0,7), previousPeriod=currentReferencePeriod(), cutoff=Number(todayDate.slice(8));
+  // Considera solo le giornate con KPI realmente registrati, fino allo stesso giorno del mese.
+  // Le assenze/riposi senza inserimento non diventano giornate a fatturato zero.
   const currentRows=kpiRowsForPerson(pid,currentPeriod).filter(r=>String(r.date||'').slice(0,10)<=todayDate);
   const previousRows=kpiRowsForPerson(pid,previousPeriod).filter(r=>Number(String(r.date||'').slice(8,10))<=cutoff);
-  const current=calcKpi(currentRows);
-  // Prima usa i giornalieri del mese precedente; se non sono caricati, usa il riferimento
-  // mensile salvato. Evita falsi "Dati insufficienti" quando il riferimento è disponibile.
-  const savedReference=kpiReferenceFor(pid,previousPeriod);
-  const hasSavedReference=Number(savedReference.sales)>0||Number(savedReference.receipts)>0||Number(savedReference.pieces)>0;
-  const useSavedReference=previousRows.length===0&&hasSavedReference;
-  const previous=useSavedReference?savedReference:calcKpi(previousRows);
-  const previousCount=previousRows.length||(useSavedReference?1:0);
+  const current=calcKpi(currentRows), previous=calcKpi(previousRows);
   const currentSalesPerDay=currentRows.length?current.sales/currentRows.length:0;
   const previousSalesPerDay=previousRows.length?previous.sales/previousRows.length:0;
   const pct=(a,b)=>b>0?((a-b)/b)*100:null;
-  // Progressivo fino alla stessa data del mese, senza abbinare i giorni della settimana.
-  const salesDiff=currentRows.length&&previousCount?pct(current.sales,previous.sales):null;
+  // Il semaforo fatturato confronta la media per giornata registrata, non i totali:
+  // così un numero diverso di giornate lavorate non gonfia artificialmente la crescita.
+  // I riferimenti mensili manuali non sostituiscono i giornalieri in questo confronto progressivo.
+  const salesDiff=currentRows.length&&previousRows.length?pct(currentSalesPerDay,previousSalesPerDay):null;
   const atvDiff=current.receipts>0&&previous.receipts>0?pct(current.atv,previous.atv):null;
   const uptDiff=current.receipts>0&&previous.receipts>0?pct(current.upt,previous.upt):null;
-  return {current,previous,currentDays:currentRows.length,previousDays:previousCount,
+  return {current,previous,currentDays:currentRows.length,previousDays:previousRows.length,
     salesDiff,atvDiff,uptDiff,
     salesNow:currentSalesPerDay,salesBefore:previousSalesPerDay,period:currentPeriod,previousPeriod};
 }
@@ -357,7 +354,7 @@ function kpiTrafficAdvice(comp){
   return `<div class="notice" style="margin-top:10px"><b>Spunto operativo</b><div class="small" style="margin-top:4px">${advice}</div></div>`;
 }
 function kpiTrafficLegend(){
-  return `<section class="card" style="margin-top:12px"><b>🚦 Legenda semafori KPI</b><div class="grid" style="margin-top:10px"><div class="metric"><span>🟢 Verde</span><b style="font-size:16px">In crescita</b><div class="small">Sopra il periodo di riferimento</div></div><div class="metric"><span>🟠 Arancione</span><b style="font-size:16px">Da monitorare</b><div class="small">Da 0% a −5% compreso</div></div><div class="metric"><span>🔴 Rosso</span><b style="font-size:16px">Da recuperare</b><div class="small">Calo superiore al 5%</div></div><div class="metric"><span>⚪ Grigio</span><b style="font-size:16px">Dati insufficienti</b><div class="small">Manca uno dei periodi confrontabili</div></div></div><div class="small" style="margin-top:10px">Confronto fino allo stesso giorno del mese. Il semaforo fatturato confronta il totale progressivo del mese fino allo stesso numero del giorno con il mese precedente fino a quel giorno. Non abbina i lunedì né altri giorni della settimana. ATV e UPT confrontano i valori aggregati dei due periodi; le giornate senza KPI inseriti non entrano nel conteggio.</div></section>`;
+  return `<section class="card" style="margin-top:12px"><b>🚦 Legenda semafori KPI</b><div class="grid" style="margin-top:10px"><div class="metric"><span>🟢 Verde</span><b style="font-size:16px">In crescita</b><div class="small">Sopra il periodo di riferimento</div></div><div class="metric"><span>🟠 Arancione</span><b style="font-size:16px">Da monitorare</b><div class="small">Da 0% a −5% compreso</div></div><div class="metric"><span>🔴 Rosso</span><b style="font-size:16px">Da recuperare</b><div class="small">Calo superiore al 5%</div></div><div class="metric"><span>⚪ Grigio</span><b style="font-size:16px">Dati insufficienti</b><div class="small">Manca uno dei periodi confrontabili</div></div></div><div class="small" style="margin-top:10px">Confronto fino allo stesso giorno del mese. Il semaforo fatturato confronta la media di fatturato per giornata con KPI registrati, fino alla data odierna, con la media delle giornate registrate fino allo stesso giorno del mese precedente. Non abbina i lunedì né altri giorni della settimana. ATV e UPT confrontano i valori aggregati dei giornalieri disponibili nei due periodi; le giornate senza KPI inseriti non entrano nel conteggio. I riferimenti mensili manuali non vengono usati per sostituire i giornalieri mancanti nel confronto progressivo.</div></section>`;
 }
 function calcKpi(rows){let sales=rows.reduce((a,r)=>a+(+r.sales||0),0),receipts=rows.reduce((a,r)=>a+(+r.receipts||0),0),pieces=rows.reduce((a,r)=>a+(+r.pieces||0),0);return {sales,receipts,pieces,atv:receipts?sales/receipts:0,upt:receipts?pieces/receipts:0}}
 function todayKpiRows(){return S.kpi.daily||{}}
