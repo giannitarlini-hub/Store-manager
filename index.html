@@ -256,53 +256,41 @@ function kpiReferenceFor(pid,period){
   const rows=kpiRowsForPerson(pid,period);
   return calcKpi(rows);
 }
-function referenceKpiEntry(pid){
-  if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
+function referenceKpiEntry(pid, presetPeriod){
+  if(!isManager()) return alert("Solo lo Store Manager può inserire o correggere i dati KPI mancanti.");
   const p=S.people.find(x=>String(x.id)===String(pid)); if(!p)return;
-  const period=currentReferencePeriod(), r=kpiReferenceFor(pid,period), rows=kpiRowsForPerson(pid,period);
-  openModal("Riferimento KPI · "+esc(p.name),
-    `<div class="notice"><b>Riferimento: ${periodLabel(period)}</b><div class="small">Puoi inserire il riferimento del mese precedente. Se il ragazzo ha già inserito i KPI giornalieri, i valori vengono proposti automaticamente.</div></div>
-    <label>Fatturato di riferimento</label><input id="krSales" class="input" type="number" step="0.01" value="${r.sales||''}" placeholder="0,00" oninput="updateReferencePreview()">
-    <label>Scontrini di riferimento</label><input id="krReceipts" class="input" type="number" min="0" step="1" value="${r.receipts||''}" placeholder="0" oninput="updateReferencePreview()">
-    <label>Pezzi venduti di riferimento</label><input id="krPieces" class="input" type="number" min="0" step="1" value="${r.pieces||''}" placeholder="0" oninput="updateReferencePreview()">
-    <div class="grid" style="margin-top:6px">
-      <div class="metric"><span>ATV calcolato</span><b id="krAtvView">${fmt(r.atv)}</b></div>
-      <div class="metric"><span>UPT calcolato</span><b id="krUptView">${r.upt.toFixed(2)}</b></div>
-    </div>
-    <div class="small" style="margin-top:10px">ATV = fatturato ÷ scontrini · UPT = pezzi ÷ scontrini. Non devi inserirli a mano.</div>
-    <button class="btn gray" style="width:100%;margin-top:10px" onclick="fillReferenceFromDaily(${pid})">↻ Usa i KPI giornalieri di ${periodLabel(period)}</button>
-    <button class="btn" style="width:100%;margin-top:8px" onclick="saveKpiReference(${pid})">Salva riferimento</button>`
-  );
+  const period=presetPeriod||currentReferencePeriod(), stored=(S.kpi?.peopleByPeriod?.[pid]||{})[period]||{};
+  const rows=kpiRowsForPerson(pid,period), calculated=calcKpi(rows);
+  const r=(stored.sales!==undefined||stored.receipts!==undefined||stored.pieces!==undefined)?{...calculated,...stored}:calculated;
+  const days=Number(stored.days)||rows.length||'';
+  openModal("Dati KPI mancanti · "+esc(p.name),
+    `<div class="notice"><b>Inserimento manuale riservato allo Store Manager</b><div class="small">Inserisci solo totali verificati per il mese selezionato. Questi dati sono usati come riferimento se il gestionale non trova i KPI giornalieri del mese.</div></div>
+    <label>Risorsa</label><input class="input" value="${esc(p.name)}" disabled>
+    <label>Mese dei dati mancanti</label><input id="krPeriod" class="input" type="month" value="${period}" onchange="reloadKpiManualEntry(${pid})">
+    <label>Fatturato totale fino al giorno di confronto</label><input id="krSales" class="input" type="number" min="0" step="0.01" value="${r.sales||''}" placeholder="0,00" oninput="updateReferencePreview()">
+    <label>Giornate lavorate con KPI</label><input id="krDays" class="input" type="number" min="1" step="1" value="${days}" placeholder="Es. 13">
+    <label>Scontrini totali</label><input id="krReceipts" class="input" type="number" min="0" step="1" value="${r.receipts||''}" placeholder="0" oninput="updateReferencePreview()">
+    <label>Pezzi venduti totali</label><input id="krPieces" class="input" type="number" min="0" step="1" value="${r.pieces||''}" placeholder="0" oninput="updateReferencePreview()">
+    <div class="grid" style="margin-top:6px"><div class="metric"><span>ATV calcolato</span><b id="krAtvView">${fmt(r.atv)}</b></div><div class="metric"><span>UPT calcolato</span><b id="krUptView">${Number(r.upt||0).toFixed(2)}</b></div></div>
+    <div class="small" style="margin-top:10px">ATV = fatturato ÷ scontrini · UPT = pezzi ÷ scontrini. Non inserire assenze come giornate a zero.</div>
+    <button class="btn" style="width:100%;margin-top:10px" onclick="saveKpiReference(${pid})">Salva dati mancanti</button>`);
   updateReferencePreview();
 }
+function reloadKpiManualEntry(pid){referenceKpiEntry(pid,document.getElementById('krPeriod')?.value||currentReferencePeriod())}
 function updateReferencePreview(){
   const sales=+document.getElementById("krSales")?.value||0, receipts=+document.getElementById("krReceipts")?.value||0, pieces=+document.getElementById("krPieces")?.value||0;
-  const atv=receipts?sales/receipts:0, upt=receipts?pieces/receipts:0;
   const a=document.getElementById("krAtvView"), u=document.getElementById("krUptView");
-  if(a)a.textContent=fmt(atv); if(u)u.textContent=upt.toFixed(2);
-}
-function fillReferenceFromDaily(pid){
-  const period=currentReferencePeriod(), r=calcKpi(kpiRowsForPerson(pid,period));
-  const s=document.getElementById("krSales"), rec=document.getElementById("krReceipts"), pe=document.getElementById("krPieces");
-  if(s)s.value=r.sales||""; if(rec)rec.value=r.receipts||""; if(pe)pe.value=r.pieces||"";
-  updateReferencePreview();
+  if(a)a.textContent=fmt(receipts?sales/receipts:0); if(u)u.textContent=(receipts?pieces/receipts:0).toFixed(2);
 }
 function saveKpiReference(pid){
-  if(!isManager()) return alert("Solo il Manager può impostare i riferimenti KPI.");
-  const period=currentReferencePeriod();
-  const sales=+document.getElementById("krSales").value||0;
-  const receipts=+document.getElementById("krReceipts").value||0;
-  const pieces=+document.getElementById("krPieces").value||0;
-  const atv=receipts?sales/receipts:0;
-  const upt=receipts?pieces/receipts:0;
-  S.kpi.peopleByPeriod=S.kpi.peopleByPeriod||{};
-  S.kpi.peopleByPeriod[pid]=S.kpi.peopleByPeriod[pid]||{};
-  S.kpi.peopleByPeriod[pid][period]={
-    sales,receipts,pieces,
-    atv,upt
-  };
-  S.kpi.selected=period;
-  save(); closeModal(); render();
+  if(!isManager())return alert("Solo lo Store Manager può inserire o correggere i dati KPI mancanti.");
+  const period=document.getElementById("krPeriod")?.value||currentReferencePeriod();
+  const sales=Number(document.getElementById("krSales").value), receipts=Number(document.getElementById("krReceipts").value), pieces=Number(document.getElementById("krPieces").value), days=Number(document.getElementById("krDays").value);
+  if(!/^\d{4}-\d{2}$/.test(period)||!Number.isFinite(sales)||sales<0||!Number.isInteger(receipts)||receipts<0||!Number.isInteger(pieces)||pieces<0||!Number.isInteger(days)||days<1||days>monthDays(period))return alert("Controlla mese, fatturato, scontrini, pezzi e giornate lavorate.");
+  const atv=receipts?sales/receipts:0,upt=receipts?pieces/receipts:0;
+  S.kpi.peopleByPeriod=S.kpi.peopleByPeriod||{};S.kpi.peopleByPeriod[pid]=S.kpi.peopleByPeriod[pid]||{};
+  S.kpi.peopleByPeriod[pid][period]={sales,receipts,pieces,days,atv,upt,manual:true,updatedAt:new Date().toISOString()};
+  S.kpi.selected=period;save();closeModal();render();
 }
 
 function ensureKpi(p){if(!S.kpi.storeByPeriod[p])S.kpi.storeByPeriod[p]={sales:0,receipts:0,avg:0,upt:0,conv:0};S.people.forEach(x=>{if(!S.kpi.peopleByPeriod[x.id])S.kpi.peopleByPeriod[x.id]={}})}
@@ -322,17 +310,21 @@ function kpiTrafficComparison(pid){
   // Le assenze/riposi senza inserimento non diventano giornate a fatturato zero.
   const currentRows=kpiRowsForPerson(pid,currentPeriod).filter(r=>String(r.date||'').slice(0,10)<=todayDate);
   const previousRows=kpiRowsForPerson(pid,previousPeriod).filter(r=>Number(String(r.date||'').slice(8,10))<=cutoff);
-  const current=calcKpi(currentRows), previous=calcKpi(previousRows);
+  const current=calcKpi(currentRows), dailyPrevious=calcKpi(previousRows);
+  const manualPrevious=(S.kpi?.peopleByPeriod?.[pid]||{})[previousPeriod];
+  const useManualPrevious=!previousRows.length && manualPrevious?.manual===true;
+  const previous=useManualPrevious?{sales:Number(manualPrevious.sales)||0,receipts:Number(manualPrevious.receipts)||0,pieces:Number(manualPrevious.pieces)||0,atv:Number(manualPrevious.receipts)?Number(manualPrevious.sales)/Number(manualPrevious.receipts):0,upt:Number(manualPrevious.receipts)?Number(manualPrevious.pieces)/Number(manualPrevious.receipts):0}:dailyPrevious;
+  const previousDays=useManualPrevious?(Number(manualPrevious.days)||0):previousRows.length;
   const currentSalesPerDay=currentRows.length?current.sales/currentRows.length:0;
-  const previousSalesPerDay=previousRows.length?previous.sales/previousRows.length:0;
+  const previousSalesPerDay=previousDays?previous.sales/previousDays:0;
   const pct=(a,b)=>b>0?((a-b)/b)*100:null;
   // Il semaforo fatturato confronta la media per giornata registrata, non i totali:
   // così un numero diverso di giornate lavorate non gonfia artificialmente la crescita.
   // I riferimenti mensili manuali non sostituiscono i giornalieri in questo confronto progressivo.
-  const salesDiff=currentRows.length&&previousRows.length?pct(currentSalesPerDay,previousSalesPerDay):null;
+  const salesDiff=currentRows.length&&previousDays?pct(currentSalesPerDay,previousSalesPerDay):null;
   const atvDiff=current.receipts>0&&previous.receipts>0?pct(current.atv,previous.atv):null;
   const uptDiff=current.receipts>0&&previous.receipts>0?pct(current.upt,previous.upt):null;
-  return {current,previous,currentDays:currentRows.length,previousDays:previousRows.length,
+  return {current,previous,currentDays:currentRows.length,previousDays,manualPrevious:useManualPrevious,
     salesDiff,atvDiff,uptDiff,
     salesNow:currentSalesPerDay,salesBefore:previousSalesPerDay,period:currentPeriod,previousPeriod};
 }
@@ -1423,17 +1415,19 @@ function showKpiComparisonValues(pid){
   const today=dateLocal(), cutoff=Number(today.slice(8,10)), currentPeriod=today.slice(0,7), previousPeriod=currentReferencePeriod();
   const currentRows=kpiRowsForPerson(pid,currentPeriod).filter(r=>String(r.date||'').slice(0,10)<=today);
   const previousRows=kpiRowsForPerson(pid,previousPeriod).filter(r=>Number(String(r.date||'').slice(8,10))<=cutoff);
-  const cur=calcKpi(currentRows), prev=calcKpi(previousRows);
-  const curAvg=currentRows.length?cur.sales/currentRows.length:0, prevAvg=previousRows.length?prev.sales/previousRows.length:0;
+  const cur=calcKpi(currentRows), dailyPrev=calcKpi(previousRows), manualPrev=(S.kpi?.peopleByPeriod?.[pid]||{})[previousPeriod], useManual=!previousRows.length&&manualPrev?.manual===true, prev=useManual?{sales:Number(manualPrev.sales)||0,receipts:Number(manualPrev.receipts)||0,pieces:Number(manualPrev.pieces)||0,atv:Number(manualPrev.receipts)?Number(manualPrev.sales)/Number(manualPrev.receipts):0,upt:Number(manualPrev.receipts)?Number(manualPrev.pieces)/Number(manualPrev.receipts):0}:dailyPrev;
+  const prevCount=useManual?(Number(manualPrev.days)||0):previousRows.length;
+  const curAvg=currentRows.length?cur.sales/currentRows.length:0, prevAvg=prevCount?prev.sales/prevCount:0;
   const pct=(a,b)=>b>0?((a-b)/b)*100:null;
   const fmtPct=v=>v===null?'Non disponibile':`${v>0?'+':''}${v.toFixed(1)}%`;
   const rowsTable=(label,data,count,avg,isCurrent)=>`<section class="card" style="margin-top:10px"><b>${label}</b><div class="small">Periodo: ${isCurrent?currentPeriod:previousPeriod} · dal giorno 1 al ${isCurrent?today:previousPeriod+'-'+String(cutoff).padStart(2,'0')} (limite giorno ${cutoff})</div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato totale</span><b>${fmt(data.sales)}</b></div><div class="metric"><span>Giornate con KPI</span><b>${count}</b></div><div class="metric"><span>Media fatturato/giornata</span><b>${count?fmt(avg):'—'}</b></div><div class="metric"><span>Scontrini totali</span><b>${data.receipts}</b></div><div class="metric"><span>Pezzi totali</span><b>${data.pieces}</b></div><div class="metric"><span>ATV / UPT</span><b>${fmt(data.atv)} / ${data.upt.toFixed(2)}</b></div></div><div class="small" style="margin-top:8px">Date effettivamente incluse: ${count?dataDates(isCurrent?currentRows:previousRows):'nessuna giornata trovata'}</div></section>`;
   openModal(`Valori confronto · ${esc(p.name)}`,`
     <div class="notice"><b>Valori effettivamente usati dal semaforo</b><div class="small">Sono esclusi i giorni senza KPI registrati. Il fatturato confronta la media per giornata registrata; ATV e UPT confrontano i totali aggregati. Il limite è il giorno ${cutoff} di ciascun mese.</div></div>
     ${rowsTable('Mese corrente · '+periodLabel(currentPeriod),cur,currentRows.length,curAvg,true)}
-    ${rowsTable('Mese precedente · '+periodLabel(previousPeriod),prev,previousRows.length,prevAvg,false)}
-    <section class="card" style="margin-top:10px"><b>Variazioni calcolate</b><div class="grid" style="margin-top:10px"><div class="metric"><span>Media fatturato/giornata</span><b>${fmtPct(currentRows.length&&previousRows.length?pct(curAvg,prevAvg):null)}</b></div><div class="metric"><span>ATV</span><b>${fmtPct(cur.receipts&&prev.receipts?pct(cur.atv,prev.atv):null)}</b></div><div class="metric"><span>UPT</span><b>${fmtPct(cur.receipts&&prev.receipts?pct(cur.upt,prev.upt):null)}</b></div></div>${(!previousRows.length||!prev.receipts)?'<div class="small" style="margin-top:8px;color:#b45309">Il periodo precedente non contiene abbastanza giornate o scontrini: per questo il semaforo può risultare “Dati insufficienti”.</div>':''}</section>
-    <button class="btn gray" style="width:100%;margin-top:10px" onclick="kpiPersonDetail(${p.id})">← Torna al dettaglio</button>`);
+    ${useManual?`<section class=\"card\" style=\"margin-top:10px\"><b>Fonte del mese precedente</b><div class=\"small\">Valori inseriti manualmente dallo Store Manager · ${prevCount} giornate con KPI</div></section>`:''}${rowsTable('Mese precedente · '+periodLabel(previousPeriod),prev,prevCount,prevAvg,false)}
+    <section class="card" style="margin-top:10px"><b>Variazioni calcolate</b><div class="grid" style="margin-top:10px"><div class="metric"><span>Media fatturato/giornata</span><b>${fmtPct(currentRows.length&&prevCount?pct(curAvg,prevAvg):null)}</b></div><div class="metric"><span>ATV</span><b>${fmtPct(cur.receipts&&prev.receipts?pct(cur.atv,prev.atv):null)}</b></div><div class="metric"><span>UPT</span><b>${fmtPct(cur.receipts&&prev.receipts?pct(cur.upt,prev.upt):null)}</b></div></div>${(!prevCount||!prev.receipts)?'<div class="small" style="margin-top:8px;color:#b45309">Il periodo precedente non contiene abbastanza giornate o scontrini: per questo il semaforo può risultare “Dati insufficienti”.</div>':''}</section>
+    <button class="btn" style="width:100%;margin-top:10px" onclick="referenceKpiEntry(${p.id},'${previousPeriod}')">✍️ Inserisci/correggi dati mancanti · Store Manager</button>
+    <button class="btn gray" style="width:100%;margin-top:8px" onclick="kpiPersonDetail(${p.id})">← Torna al dettaglio</button>`);
 }
 function dataDates(rows){return rows.map(r=>String(r.date||'').slice(0,10)).join(', ')}
 
