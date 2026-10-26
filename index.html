@@ -220,6 +220,38 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .shift-hours{font-size:11px;font-weight:800;color:#1769e8;margin-top:5px}
 @media(max-width:600px){.planning-summary{grid-template-columns:1fr 1fr}.coverage-config{grid-template-columns:repeat(2,minmax(0,1fr))}.planning-stat b{font-size:20px}}
 
+
+/* Planning: visualizzazione coerente e leggibile su PC e telefono */
+.planning-mobile-grid{display:none}
+.planning-mobile-person{background:#fff;border:1px solid #e5eaf0;border-radius:16px;padding:12px;margin-bottom:10px;min-width:0}
+.planning-mobile-person-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 2px 12px;border-bottom:1px solid #edf0f4}
+.planning-mobile-person-head>div{min-width:0}
+.planning-mobile-person-head b{display:block;overflow-wrap:anywhere}
+.planning-mobile-person-head small{display:block;color:#788294;margin-top:3px}
+.planning-mobile-person-head>strong{font-size:12px;white-space:nowrap;color:#1769e8}
+.planning-mobile-days{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-top:10px}
+.planning-mobile-day{min-width:0;background:#f8fafc;border:1px solid #edf0f4;border-radius:12px;padding:8px}
+.planning-mobile-day.today{border-color:#a9c2ff;background:#f3f7ff}
+.planning-mobile-date{display:flex;justify-content:space-between;gap:6px;font-size:11px;margin-bottom:7px;text-transform:capitalize}
+.planning-mobile-date span{color:#788294}
+.planning-mobile-day .shift-box,.planning-mobile-day .shift-empty{width:100%;min-width:0}
+.planning-mobile-day .shift-box{padding:9px 6px;text-align:left}
+.planning-mobile-day .shift-box b{display:block;font-size:12px;overflow-wrap:anywhere}
+.planning-mobile-day .shift-box small{display:block;font-size:10px;overflow-wrap:anywhere}
+.planning-mobile-day .shift-empty{padding:10px 4px;font-size:11px}
+.coverage-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.coverage-table{min-width:650px}
+@media(max-width:700px){
+  .planning-desktop-grid{display:none!important}
+  .planning-mobile-grid{display:block}
+  .planning-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .planning-stat:last-child{grid-column:1/-1}
+  .weektitle b{font-size:14px}
+  .weeknav{gap:8px}
+  .weeknav .btn{min-width:38px;padding:9px 12px}
+  .coverage-table{font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -789,41 +821,6 @@ async function loadShifts(){
     // Non bloccare mai il login se il planning online ha un problema.
   }
 }
-function editShift(id,day){
-  if(!isManager()) return alert("Solo il Manager può modificare il planning.");
-  const old=(S.shifts||[]).find(x=>String(x.id)===String(id));
-  const date=day||old?.date||planningToday();
-  const first=S.people.find(p=>p.active);
-  const x=old||{
-    id:null,
-    personId:first?.id||"",
-    date,
-    start:"09:00",
-    end:"17:00",
-    breakStart:"13:00",
-    breakEnd:"13:30"
-  };
-  const options=S.people.filter(p=>p.active).map(p=>
-    `<option value="${p.id}" ${String(p.id)===String(x.personId)?"selected":""}>${esc(p.name)}</option>`
-  ).join("");
-  openModal(
-    id?"Modifica turno":"Nuovo turno",
-    `<label>Risorsa</label>
-     <select id="sp" class="select">${options}</select>
-     <label>Giorno</label>
-     <input id="sd" class="input" type="date" value="${x.date}">
-     <div class="grid">
-       <div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start}"></div>
-       <div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end}"></div>
-     </div>
-     <div class="grid">
-       <div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart}"></div>
-       <div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd}"></div>
-     </div>
-     <button class="btn" style="width:100%" onclick="saveShift(${id?`'${id}'`:"null"})">Salva turno</button>
-     ${id?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteShift('${id}')">Elimina turno</button>`:""}`
-  );
-}
 async function saveShift(id){
   if(!isManager()) return alert("Solo il Manager può modificare il planning.");
   const pid=Number(document.getElementById("sp").value);
@@ -928,7 +925,7 @@ function planningCoveragePanel(ds){
       <div class="planning-stat"><span>PERSONALE ATTIVO</span><b>${S.people.filter(p=>p.active).length}</b></div>
     </div>
     ${isManager()?`<details style="margin:10px 0 14px"><summary style="font-weight:800;cursor:pointer;padding:8px 0">Imposta minimo per fascia oraria</summary><p class="small">Scegli quante persone devono essere presenti in ogni fascia. Le soglie sono salvate nelle impostazioni locali di questo dispositivo.</p><div class="coverage-config">${hours.map(h=>`<label>${hourLabel(h)}<select onchange="setCoverageMinimum(${h},this.value)">${[0,1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${coverageMinimum(h)===n?"selected":""}>${n===0?"Non impostato":n+" persone"}</option>`).join("")}</select></label>`).join("")}</div></details>`:""}
-    <div class="weekly-wrap"><table class="coverage-table"><thead><tr><th>Fascia</th>${ds.map(d=>{const dt=new Date(d+"T12:00:00");return `<th>${new Intl.DateTimeFormat("it-IT",{weekday:"short"}).format(dt)} ${dt.getDate()}</th>`}).join("")}</tr></thead><tbody>
+    <div class="coverage-scroll"><table class="coverage-table"><thead><tr><th>Fascia</th>${ds.map(d=>{const dt=new Date(d+"T12:00:00");return `<th>${new Intl.DateTimeFormat("it-IT",{weekday:"short"}).format(dt)} ${dt.getDate()}</th>`}).join("")}</tr></thead><tbody>
     ${hours.map(h=>`<tr><td>${hourLabel(h)}</td>${ds.map(d=>{const r=planningCoverageForDate(d).find(x=>x.h===h);return `<td class="${r.status==="ok"?"coverage-ok":r.status==="low"?"coverage-low":"coverage-none"}">${r.count} / ${r.min}</td>`}).join("")}</tr>`).join("")}
     </tbody></table></div><div class="small">Verde = minimo raggiunto · arancione = sotto il minimo · rosso = nessuna persona presente. Fasce analizzate: 09:00–22:00.</div>
   </section>`;
@@ -941,12 +938,25 @@ function managerPlanningWeek(){
     const name=new Intl.DateTimeFormat("it-IT",{weekday:"short"}).format(dt);
     return `<div class="week-head ${d===planningToday()?"today":""}"><b>${name}</b><span>${dt.getDate()}/${dt.getMonth()+1}</span></div>`;
   }).join("");
+  const mobileRows=active.map(p=>{
+    const days=ds.map(d=>{
+      const x=(S.shifts||[]).find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);
+      const dt=new Date(d+"T12:00:00");
+      const dayName=new Intl.DateTimeFormat("it-IT",{weekday:"short"}).format(dt);
+      return `<div class="planning-mobile-day ${d===planningToday()?"today":""}">
+        <div class="planning-mobile-date"><b>${dayName}</b><span>${dt.getDate()}/${dt.getMonth()+1}</span></div>
+        ${x?`<button class="shift-box" onclick="editShift('${x.id}')"><b>${esc(x.start)}–${esc(x.end)}</b><small>☕ ${esc(x.breakStart||"—")}–${esc(x.breakEnd||"—")}</small><div class="shift-hours">${netShiftHours(x).toLocaleString("it-IT",{maximumFractionDigits:2})} h nette</div></button>`:`<button class="shift-empty" onclick="editShift(null,'${d}','${p.id}')">+ turno</button>`}
+      </div>`;
+    }).join("");
+    const hours=ds.reduce((n,d)=>{const x=(S.shifts||[]).find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);return n+netShiftHours(x)},0);
+    return `<article class="planning-mobile-person"><div class="planning-mobile-person-head"><div><b>${esc(p.name)}</b><small>${esc(p.role||"Risorsa")}</small></div><strong>${hours.toLocaleString("it-IT",{maximumFractionDigits:2})} h nette</strong></div><div class="planning-mobile-days">${days}</div></article>`;
+  }).join("");
   const rows=active.map(p=>{
     const cells=ds.map(d=>{
       const x=(S.shifts||[]).find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);
       return `<div class="shift-cell">${x
         ? `<button class="shift-box" onclick="editShift('${x.id}')"><b>${esc(x.start)}–${esc(x.end)}</b><small>☕ ${esc(x.breakStart||"—")}–${esc(x.breakEnd||"—")}</small><div class="shift-hours">${netShiftHours(x).toLocaleString("it-IT",{maximumFractionDigits:2})} h nette</div></button>`
-        : `<button class="shift-empty" onclick="editShift(null,'${d}');setTimeout(()=>{const e=document.getElementById('sp');if(e)e.value='${p.id}'},0)">+ turno</button>`}</div>`;
+        : `<button class="shift-empty" onclick="editShift(null,'${d}','${p.id}')">+ turno</button>`}</div>`;
     }).join("");
     const hours=ds.reduce((n,d)=>{const x=(S.shifts||[]).find(s=>String(s.personId??s.dipendente_id)===String(p.id)&&s.date===d);return n+netShiftHours(x)},0);
     return `<div class="person-cell"><b>${esc(p.name)}</b><small>${esc(p.role||"Risorsa")}</small><small><strong>${hours.toLocaleString("it-IT",{maximumFractionDigits:2})} h settimana</strong></small></div>${cells}`;
@@ -957,7 +967,8 @@ function managerPlanningWeek(){
     <button class="btn gray" onclick="planningShiftWeek(1)">›</button>
   </div>
   <div class="row" style="margin-bottom:10px"><button class="btn gray" onclick="S.planningWeek=planningStartOfWeek(planningToday());save();render()">Settimana attuale</button><button class="btn" onclick="editShift(null,planningToday())">+ Turno</button></div>
-  <section class="card"><div class="weekly-wrap"><div class="weekly-grid"><div class="week-head"><b>Risorsa · ore nette</b></div>${heads}${rows}</div></div></section>
+  <section class="card planning-desktop-grid"><div class="weekly-wrap"><div class="weekly-grid"><div class="week-head"><b>Risorsa · ore nette</b></div>${heads}${rows}</div></div></section>
+  <section class="planning-mobile-grid">${mobileRows || '<div class="empty">Nessuna risorsa attiva.</div>'}</section>
   ${planningCoveragePanel(ds)}`;
 }
 function resourcePlanningWeek(){
@@ -975,15 +986,6 @@ function resourcePlanningWeek(){
     return `<div class="day-card ${d===planningToday()?"today":""}"><div class="dayrow"><div><div class="dayname">${day.charAt(0).toUpperCase()+day.slice(1)}</div><div class="date">${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}</div></div>${d===planningToday()?'<span class="pill">Oggi</span>':""}</div>
     ${x?`<div class="shiftmain">${esc(x.start)} – ${esc(x.end)}</div><div class="pause">☕ Pausa ${esc(x.breakStart||"—")} – ${esc(x.breakEnd||"—")}</div><div class="shift-hours">${netShiftHours(x).toLocaleString("it-IT",{maximumFractionDigits:2})} ore nette</div>`:`<div class="rest">Riposo</div>`}</div>`;
   }).join("")}</section>`;
-}
-function planning(){
-  const currentWeek=planningStartOfWeek(planningToday());
-  if(S.planningLastAutoWeek!==currentWeek){
-    S.planningWeek=currentWeek;
-    S.planningLastAutoWeek=currentWeek;
-    save();
-  }
-  return isManager()?managerPlanningWeek():resourcePlanningWeek();
 }
 function tasks(){return `<div class="row"><div class="section">Attività</div><button class="btn" onclick="addTask()">+ Attività</button></div><section class="card">${S.tasks.length?S.tasks.map(t=>`<div class="task"><div style="flex:1"><b>${esc(t.name)}</b><div class="small">${esc(t.person||"Da assegnare")} · ${esc(t.date||"oggi")}</div></div><button class="btn gray" onclick="toggleTask(${t.id})">${t.done?"Riapri":"Fatto"}</button><button class="btn gray" onclick="editTask(${t.id})">Modifica</button><button class="btn gray" onclick="deleteTask(${t.id})">Elimina</button><span class="pill">${t.done?"Fatto":"Assegnata"}</span></div>`).join(""):`<div class="empty">Nessuna attività.</div>`}</section><section class="card"><b>Assegnazione automatica</b><p class="small">Distribuisce le attività tra le risorse attive.</p><button class="btn" onclick="autoTasks()">Genera assegnazioni</button></section>`}
 function addTask(){let a=S.people.filter(p=>p.active);if(!a.length)return alert("Prima inserisci una risorsa.");openModal("Nuova attività",`<label>Attività</label><input id="taskName" class="input"><label>Assegna a</label><select id="taskPerson" class="select"><option value="">Da assegnare</option>${a.map(p=>`<option>${esc(p.name)}</option>`).join("")}</select><label>Data</label><input id="taskDate" class="input" type="date" value="${today()}"><button class="btn" style="width:100%" onclick="saveNewTask()">Salva attività</button>`)}
