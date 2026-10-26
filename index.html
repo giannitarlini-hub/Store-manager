@@ -95,6 +95,24 @@ html{background:#101820}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(226,27,35,.35);outline-offset:2px}
 @media(max-width:520px){.nav{gap:2px;padding-left:5px;padding-right:5px}.nav button .ico{width:31px;height:29px;font-size:19px}.nav button .nav-label{font-size:9px}.home-menu-grid{gap:10px}.home-menu-card{padding:15px;min-height:138px}}
 
+
+/* KPI team: riepilogo compatto per risorsa */
+.kpi-team-list{padding:8px 16px!important;overflow:hidden}
+.kpi-list-head,.kpi-person-row{display:grid;grid-template-columns:minmax(150px,1.5fr) minmax(105px,1fr) minmax(85px,.75fr) minmax(75px,.65fr) minmax(105px,.9fr) auto;gap:12px;align-items:center}
+.kpi-list-head{padding:8px 4px 10px;color:#87909d;font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;border-bottom:1px solid #e9edf2}
+.kpi-person-row{padding:13px 4px;border-bottom:1px solid #edf0f4;font-size:12px}
+.kpi-person-row:last-child{border-bottom:0}
+.kpi-person-name{min-width:0;display:flex;flex-direction:column;gap:4px}
+.kpi-person-name b{font-size:13px;color:#202938;overflow-wrap:anywhere}
+.kpi-person-name span,.kpi-person-value span{font-size:10px;color:#828b98;white-space:nowrap}
+.kpi-person-value{display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi-person-value b{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi-person-value span.up{color:#16864a}.kpi-person-value span.down{color:#d43c4a}
+.kpi-person-status{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:800;white-space:nowrap;color:#626d7b}
+.kpi-light{font-size:15px;line-height:1}
+.kpi-person-action .btn{font-size:11px;padding:8px 10px;border-radius:10px;white-space:nowrap}
+@media(max-width:700px){.kpi-team-list{padding:6px 10px!important}.kpi-list-head{display:none}.kpi-person-row{grid-template-columns:minmax(0,1.25fr) minmax(78px,1fr) minmax(58px,.75fr) minmax(48px,.65fr);gap:8px;padding:12px 2px}.kpi-person-name{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;gap:8px}.kpi-person-name b{font-size:13px}.kpi-person-name span{font-size:10px;text-align:right}.kpi-person-value:before{font-size:9px;color:#8a93a0;font-weight:750;text-transform:uppercase}.kpi-person-row .kpi-person-value:nth-child(2):before{content:'Fatturato'}.kpi-person-row .kpi-person-value:nth-child(3):before{content:'ATV'}.kpi-person-row .kpi-person-value:nth-child(4):before{content:'UPT'}.kpi-person-status{grid-column:1/3;grid-row:3;font-size:10px}.kpi-person-action{grid-column:3/5;grid-row:3;justify-self:end}.kpi-person-value b{font-size:12px}.kpi-person-value span{font-size:10px}.kpi-person-action .btn{padding:7px 10px}}
+
 </style>
 </head>
 <body>
@@ -301,7 +319,9 @@ function kpiTrafficComparison(pid){
   const currentSalesPerDay=currentRows.length?current.sales/currentRows.length:0;
   const previousSalesPerDay=previousRows.length?previous.sales/previousRows.length:0;
   const pct=(a,b)=>b>0?((a-b)/b)*100:null;
-  const salesDiff=currentRows.length&&previousRows.length?pct(currentSalesPerDay,previousSalesPerDay):null;
+  // Fatturato: confronto progressivo del mese fino allo stesso numero del giorno,
+  // non media giornaliera e non abbinamento per giorno della settimana.
+  const salesDiff=currentRows.length&&previousRows.length?pct(current.sales,previous.sales):null;
   const atvDiff=current.receipts>0&&previous.receipts>0?pct(current.atv,previous.atv):null;
   const uptDiff=current.receipts>0&&previous.receipts>0?pct(current.upt,previous.upt):null;
   return {current,previous,currentDays:currentRows.length,previousDays:previousRows.length,
@@ -326,7 +346,7 @@ function kpiTrafficAdvice(comp){
   return `<div class="notice" style="margin-top:10px"><b>Spunto operativo</b><div class="small" style="margin-top:4px">${advice}</div></div>`;
 }
 function kpiTrafficLegend(){
-  return `<section class="card" style="margin-top:12px"><b>🚦 Legenda semafori KPI</b><div class="grid" style="margin-top:10px"><div class="metric"><span>🟢 Verde</span><b style="font-size:16px">In crescita</b><div class="small">Sopra il periodo di riferimento</div></div><div class="metric"><span>🟠 Arancione</span><b style="font-size:16px">Da monitorare</b><div class="small">Da 0% a −5% compreso</div></div><div class="metric"><span>🔴 Rosso</span><b style="font-size:16px">Da recuperare</b><div class="small">Calo superiore al 5%</div></div><div class="metric"><span>⚪ Grigio</span><b style="font-size:16px">Dati insufficienti</b><div class="small">Manca uno dei periodi confrontabili</div></div></div><div class="small" style="margin-top:10px">Confronto fino allo stesso giorno del mese. Il semaforo fatturato usa il fatturato medio per giornata con KPI; ATV e UPT sono calcolati sui totali del periodo. Le giornate senza KPI inseriti non entrano nel confronto.</div></section>`;
+  return `<section class="card" style="margin-top:12px"><b>🚦 Legenda semafori KPI</b><div class="grid" style="margin-top:10px"><div class="metric"><span>🟢 Verde</span><b style="font-size:16px">In crescita</b><div class="small">Sopra il periodo di riferimento</div></div><div class="metric"><span>🟠 Arancione</span><b style="font-size:16px">Da monitorare</b><div class="small">Da 0% a −5% compreso</div></div><div class="metric"><span>🔴 Rosso</span><b style="font-size:16px">Da recuperare</b><div class="small">Calo superiore al 5%</div></div><div class="metric"><span>⚪ Grigio</span><b style="font-size:16px">Dati insufficienti</b><div class="small">Manca uno dei periodi confrontabili</div></div></div><div class="small" style="margin-top:10px">Confronto fino allo stesso giorno del mese. Il semaforo fatturato confronta il totale progressivo del mese fino allo stesso numero del giorno con il mese precedente fino a quel giorno. Non abbina i lunedì né altri giorni della settimana. ATV e UPT confrontano i valori aggregati dei due periodi; le giornate senza KPI inseriti non entrano nel conteggio.</div></section>`;
 }
 function calcKpi(rows){let sales=rows.reduce((a,r)=>a+(+r.sales||0),0),receipts=rows.reduce((a,r)=>a+(+r.receipts||0),0),pieces=rows.reduce((a,r)=>a+(+r.pieces||0),0);return {sales,receipts,pieces,atv:receipts?sales/receipts:0,upt:receipts?pieces/receipts:0}}
 function todayKpiRows(){return S.kpi.daily||{}}
@@ -506,7 +526,7 @@ function home(){
     <div class="dashboard-card"><div class="dashboard-label">ATV</div><div class="dashboard-value">${fmt(store.atv)}</div><div class="dashboard-diff">Valore medio scontrino</div></div>
     <div class="dashboard-card"><div class="dashboard-label">UPT</div><div class="dashboard-value">${store.upt.toFixed(2)}</div><div class="dashboard-diff">Pezzi per scontrino</div></div>
   </section>
-  ${(()=>{const comp=monthlyTurnoverComparison(currentPeriod);const pct=comp.pct===null?"—":`${comp.pct>=0?"+":""}${comp.pct.toFixed(1)}%`;return `<section class="card" style="margin-top:15px"><div class="row"><div><b>Confronto con lo stesso mese dell'anno scorso</b><div class="small">${periodLabel(currentPeriod)} · progressivo fino al giorno ${dateLocal().slice(8)}</div></div><button class="btn gray" onclick="openMonthlyHistory()">Inserisci storico</button></div><div class="grid" style="margin-top:12px"><div class="metric"><span>Fatturato attuale progressivo</span><b>${fmt(comp.currentTotal)}</b></div><div class="metric"><span>Anno scorso · stesso periodo</span><b>${comp.hasHistory?fmt(comp.historicTotal):"—"}</b></div><div class="metric"><span>Differenza</span><b class="${comp.diff>=0?"up":"down"}">${comp.hasHistory?(comp.diff>=0?"+":"")+fmt(comp.diff):"—"}</b></div><div class="metric"><span>Variazione</span><b class="${comp.pct===null?"":comp.pct>=0?"up":"down"}">${comp.hasHistory?pct:"—"}</b></div></div><div class="notice" style="margin-top:10px">${comp.hasHistory?`Confronto principale: tutti i giorni del mese fino a oggi. Storico inserito per ${comp.historyDays} giorni su ${monthDays(currentPeriod)}.`:"Inserisci i fatturati giornalieri dell'anno scorso per attivare il confronto."}</div><div style="margin-top:12px"><b>Confronto aggiuntivo per giorno della settimana</b><div class="small" style="margin-top:5px">Abbina il primo lunedì con il primo lunedì, il secondo con il secondo e così via, sempre nello stesso mese. ${comp.weekdayMatches?`Giornate storiche abbinate: ${comp.weekdayMatches}.`:"I dati abbinabili compariranno quando saranno disponibili."}</div><div class="row" style="margin-top:8px"><span class="small">Variazione sulle giornate abbinate</span><b class="${comp.weekdayPct===null?"":comp.weekdayPct>=0?"up":"down"}">${comp.weekdayPct===null?"—":(comp.weekdayPct>=0?"+":"")+comp.weekdayPct.toFixed(1)+"%"}</b></div></div></section>`})()}
+  ${(()=>{const comp=monthlyTurnoverComparison(currentPeriod);const pct=comp.pct===null?"—":`${comp.pct>=0?"+":""}${comp.pct.toFixed(1)}%`;return `<section class="card" style="margin-top:15px"><div class="row"><div><b>Confronto giorno per giorno con lo stesso mese dell'anno scorso</b><div class="small">${periodLabel(currentPeriod)} · progressivo fino al giorno ${dateLocal().slice(8)}</div></div><button class="btn gray" onclick="openMonthlyHistory()">Inserisci storico</button></div><div class="grid" style="margin-top:12px"><div class="metric"><span>Fatturato attuale progressivo</span><b>${fmt(comp.currentTotal)}</b></div><div class="metric"><span>Anno scorso · stesso periodo</span><b>${comp.hasHistory?fmt(comp.historicTotal):"—"}</b></div><div class="metric"><span>Differenza</span><b class="${comp.diff>=0?"up":"down"}">${comp.hasHistory?(comp.diff>=0?"+":"")+fmt(comp.diff):"—"}</b></div><div class="metric"><span>Variazione</span><b class="${comp.pct===null?"":comp.pct>=0?"up":"down"}">${comp.hasHistory?pct:"—"}</b></div></div><div class="notice" style="margin-top:10px">${comp.hasHistory?`Confronto per numero del giorno: dal giorno 1 fino al giorno ${dateLocal().slice(8)}, confrontando ogni data con lo stesso giorno del mese dell’anno scorso. Storico inserito per ${comp.historyDays} giorni su ${monthDays(currentPeriod)}.`:"Inserisci i fatturati giornalieri dell'anno scorso per attivare il confronto."}</div></section>`})()}
   <section class="card" style="margin-top:15px"><div class="row"><div><b>Andamento giornaliero</b><div class="small">${periodLabel(currentPeriod)} · fatturato per giorno</div></div><button class="btn gray" onclick="S.tab='storeKpi';save();render()">Dettagli</button></div><div class="chart">${(()=>{let by={};rows.forEach(r=>by[r.date]=(by[r.date]||0)+Number(r.sales||0));let vals=Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14);if(!vals.length)return `<div class="empty" style="width:100%">Nessun KPI giornaliero inserito.</div>`;const W=Math.max(420,vals.length*66),H=205,L=34,R=30,T=34,B=30,plotH=H-T-B,plotW=W-L-R,max=Math.max(1,...vals.map(x=>x[1]));const pts=vals.map(([d,v],i)=>({d,v,x:vals.length===1?W/2:L+i*plotW/(vals.length-1),y:T+(1-v/max)*plotH}));const path=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');const grids=[0,.5,1].map(t=>`<line class="chart-grid" x1="${L}" y1="${T+t*plotH}" x2="${W-R}" y2="${T+t*plotH}"/>`).join('');const dots=pts.map((p,i)=>`<g><text class="chart-value" x="${p.x}" y="${Math.max(13,p.y-13)}">${fmt(p.v).replace(/,00\s?€/,' €').replace(/\s?€/,'€')}</text><circle class="${i===pts.length-1?'chart-dot-last':'chart-dot'}" cx="${p.x}" cy="${p.y}" r="4.5"/><text class="chart-date" x="${p.x}" y="${H-8}">${p.d.slice(8)}/${p.d.slice(5,7)}</text></g>`).join('');return `<svg role="img" aria-label="Grafico a linee del fatturato giornaliero" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="min-width:${W}px">${grids}<path class="chart-line" d="${path}"/>${dots}</svg>`})()}</div><div class="small" style="margin-top:4px">Ogni punto mostra il fatturato del giorno. Scorri lateralmente se vuoi vedere tutti i valori.</div></section>
   <div class="section">Gestione</div><section class="home-menu-grid">
     <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">▥</span><b>KPI Personali</b><span>Riferimenti e andamento risorse</span></button>
@@ -1297,7 +1317,7 @@ function kpi(){
     const weekProgress=weekTarget?(weekStore.sales/weekTarget)*100:0;
     const weekMissing=Math.max(0,weekTarget-weekStore.sales);
     return weeklyStoreCard()+`<div class="row"><div class="section">I miei KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
-    <section class="kpi-hero"><div class="kpi-hero-title">I miei KPI · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Confronto con il riferimento del mese precedente · <b>${periodLabel(refPeriod)}</b></div></section>
+    <section class="kpi-hero"><div class="kpi-hero-title">I miei KPI · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Confronto progressivo con il mese precedente fino allo stesso giorno · <b>${periodLabel(refPeriod)}</b></div></section>
     <section class="kpi-cards">
       <div class="kpi-premium"><div class="label">Fatturato mese</div><div class="value">${fmt(c.sales)}</div><div class="ref">Media/giornata attuale: ${comp&&comp.currentDays?fmt(comp.salesNow):'—'} · periodo prec.: ${comp&&comp.previousDays?fmt(comp.salesBefore):'—'}</div>${trafficMarkup(comp?.salesDiff??null)}</div>
       <div class="kpi-premium"><div class="label">ATV personale</div><div class="value">${fmt(c.atv)}</div><div class="ref">ATV periodo precedente: ${comp&&comp.previousDays?fmt(comp.previous.atv):'—'}</div>${trafficMarkup(comp?.atvDiff??null)}</div>
@@ -1315,7 +1335,7 @@ function kpi(){
   return `<div class="row"><div class="section">KPI ragazzi</div><button class="btn" onclick="managerKpiEntry()">+ Inserisci i miei KPI</button></div>
   <section class="kpi-hero">
     <div class="kpi-hero-title">KPI ragazzi · ${periodLabel(currentPeriod)}</div>
-    <div class="kpi-hero-sub">Riepilogo mensile individuale · confronto con il riferimento di ${periodLabel(refPeriod)}</div>
+    <div class="kpi-hero-sub">Riepilogo mensile individuale · confronto progressivo fino allo stesso giorno con ${periodLabel(refPeriod)}</div>
   </section>
   ${managerKpiComplianceCard()}
   ${kpiTrafficLegend()}
@@ -1323,22 +1343,18 @@ function kpi(){
     <b>👥 Andamento del team</b>
     <div class="small">Ogni scheda mostra solo il riepilogo del singolo ragazzo. I dati giornalieri non vengono mostrati qui. Il riferimento manuale resta disponibile nel dettaglio.</div>
   </section>
-  <section class="card">
+  <section class="card kpi-team-list">
+    <div class="kpi-list-head"><span>Risorsa</span><span>Fatturato</span><span>ATV</span><span>UPT</span><span>Stato</span><span></span></div>
     ${active.map(p=>{
-      const rows=kpiRowsForPerson(p.id,currentPeriod).filter(r=>r.date<=dateLocal()), c=calcKpi(rows), r=kpiReferenceFor(p.id,refPeriod), comp=kpiTrafficComparison(p.id);
-      return `<div class="kpi-premium" style="margin-top:12px">
-        <div class="row">
-          <div><b>${esc(p.name)}</b><div class="small">${esc(p.role||'Risorsa')} · riferimento ${periodLabel(refPeriod)}</div></div>
-          <span class="pill ${rows.length?'':'gray'}">${rows.length?'Aggiornato':'In attesa'}</span>
-        </div>
-        <div class="grid" style="margin-top:12px">
-          <div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b><div class="small">Media/giornata: ${comp.currentDays?fmt(comp.salesNow):'—'}</div>${trafficMarkup(comp.salesDiff)}</div>
-          <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b>${trafficMarkup(comp.atvDiff)}</div>
-          <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b>${trafficMarkup(comp.uptDiff)}</div>
-          <div class="metric"><span>Giornate con KPI</span><b>${rows.length}</b><div class="small">Periodo prec.: ${comp.previousDays}</div></div>
-        </div>
-        ${kpiTrafficAdvice(comp)}
-        <div class="actions" style="margin-top:12px"><button class="btn gray" onclick="kpiPersonDetail(${p.id})">Dettaglio ›</button></div>
+      const rows=kpiRowsForPerson(p.id,currentPeriod).filter(r=>r.date<=dateLocal()), c=calcKpi(rows), comp=kpiTrafficComparison(p.id), light=trafficLight(comp.salesDiff);
+      const statusClass=light.color==='green'?'green':light.color==='yellow'?'yellow':light.color==='red'?'red':'gray';
+      return `<div class="kpi-person-row">
+        <div class="kpi-person-name"><b>${esc(p.name)}</b><span>${esc(p.role||'Risorsa')} · ${rows.length} ${rows.length===1?'giornata':'giornate'}</span></div>
+        <div class="kpi-person-value"><b>${fmt(c.sales)}</b><span class="${comp.salesDiff===null?'':comp.salesDiff>=0?'up':'down'}">${comp.salesDiff===null?'—':(comp.salesDiff>0?'+':'')+comp.salesDiff.toFixed(1)+'%'}</span></div>
+        <div class="kpi-person-value"><b>${fmt(c.atv)}</b><span class="${comp.atvDiff===null?'':comp.atvDiff>=0?'up':'down'}">${comp.atvDiff===null?'—':(comp.atvDiff>0?'+':'')+comp.atvDiff.toFixed(1)+'%'}</span></div>
+        <div class="kpi-person-value"><b>${c.upt.toFixed(2)}</b><span class="${comp.uptDiff===null?'':comp.uptDiff>=0?'up':'down'}">${comp.uptDiff===null?'—':(comp.uptDiff>0?'+':'')+comp.uptDiff.toFixed(1)+'%'}</span></div>
+        <div class="kpi-person-status" title="${light.label}"><span class="kpi-light">${light.icon}</span><span>${light.color==='green'?'Avanti':light.color==='yellow'?'Attenzione':light.color==='red'?'Indietro':'Dati da inserire'}</span></div>
+        <div class="kpi-person-action"><button class="btn gray" onclick="kpiPersonDetail(${p.id})">Dettagli <span aria-hidden="true">›</span></button></div>
       </div>`;
     }).join('')||`<div class="empty">Nessuna risorsa attiva.</div>`}
   </section>`;
