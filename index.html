@@ -117,6 +117,84 @@ const SUPABASE_URL="https://mgklvroxfowgqljehquz.supabase.co";
 const SUPABASE_KEY="sb_publishable_Jro2VCtNW_GFYE6w0hfUYw_SBNsvb8M";
 const KEY="store_manager_v5";
 let S=JSON.parse(localStorage.getItem(KEY)||"null")||{tab:"home",people:[],requests:[],tasks:[],shifts:[],malattie:[],kpi:{selected:"",storeByPeriod:{},peopleByPeriod:{},daily:{},history:{}},online:true};
+
+function ensureMonthlyHistory(){
+  S.kpi=S.kpi||{};
+  S.kpi.monthlyHistory=S.kpi.monthlyHistory||{};
+  return S.kpi.monthlyHistory;
+}
+function monthDays(period){
+  const [y,m]=period.split("-").map(Number);
+  return new Date(y,m,0).getDate();
+}
+function monthHistoryValues(period){
+  return ensureMonthlyHistory()[period]||{};
+}
+function openMonthlyHistory(){
+  if(!isManager())return alert("Solo il Manager può inserire il fatturato storico.");
+  const period=dateLocal().slice(0,7), days=monthDays(period), saved=monthHistoryValues(period);
+  const fields=Array.from({length:days},(_,i)=>{
+    const day=String(i+1).padStart(2,"0"), date=period+"-"+day;
+    return `<div style="display:grid;grid-template-columns:72px 1fr;align-items:center;gap:8px"><label style="margin:0">${day}/${period.slice(5)}</label><input class="input" style="margin:3px 0" type="number" min="0" step="0.01" id="histDay${i+1}" value="${saved[i+1]??""}" placeholder="Fatturato giorno ${i+1}"></div>`;
+  }).join("");
+  openModal("Fatturato storico · "+periodLabel(period),`<div class="notice"><b>Inserisci i fatturati giornalieri dello stesso mese dell'anno scorso.</b><div class="small">Per ${periodLabel(period)} inserisci i valori di ${period.slice(0,4)-1}. Il confronto principale userà tutti i giorni fino alla data corrente; non serve reinserirli ogni giorno.</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:12px">${fields}</div><button class="btn" style="width:100%;margin-top:12px" onclick="saveMonthlyHistory('${period}')">Salva fatturati storici</button>`);
+}
+function saveMonthlyHistory(period){
+  if(!isManager())return alert("Solo il Manager può inserire il fatturato storico.");
+  const data={};
+  for(let i=1;i<=monthDays(period);i++){
+    const el=document.getElementById("histDay"+i);
+    if(el&&el.value.trim()!==""){
+      const n=Number(el.value);
+      if(!Number.isFinite(n)||n<0)return alert("Controlla il fatturato del giorno "+i+". Inserisci un importo pari o superiore a zero.");
+      data[i]=n;
+    }
+  }
+  ensureMonthlyHistory()[period]=data;
+  save();closeModal();render();
+}
+function weekdayOrdinal(date){
+  const d=new Date(date+"T12:00:00"), weekday=d.getDay();
+  let ordinal=0;
+  for(let day=1;day<=d.getDate();day++){
+    if(new Date(d.getFullYear(),d.getMonth(),day,12).getDay()===weekday)ordinal++;
+  }
+  return {weekday,ordinal};
+}
+function matchingPriorYearDay(date){
+  const [y,m]=date.split("-").map(Number), info=weekdayOrdinal(date), py=y-1, last=new Date(py,m,0).getDate();
+  let ordinal=0;
+  for(let day=1;day<=last;day++){
+    if(new Date(py,m-1,day,12).getDay()===info.weekday){
+      ordinal++;
+      if(ordinal===info.ordinal)return `${py}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    }
+  }
+  return null;
+}
+function monthlyTurnoverComparison(period){
+  const [y,m]=period.split("-").map(Number), currentDay=dateLocal().startsWith(period)?Number(dateLocal().slice(8)):monthDays(period);
+  const currentRows=Object.values(S.kpi.storeDaily||{}).filter(r=>String(r.date||"").startsWith(period)&&Number(r.date.slice(8))<=currentDay);
+  const currentByDate={};currentRows.forEach(r=>currentByDate[r.date]=(currentByDate[r.date]||0)+(Number(r.sales)||0));
+  const currentTotal=Object.entries(currentByDate).reduce((a,[d,v])=>a+v,0);
+  const hist=monthHistoryValues(period), historicTotal=Object.entries(hist).reduce((a,[day,v])=>Number(day)<=currentDay?a+(Number(v)||0):a,0);
+  const priorByWeekday={};let weekdayCurrent=0,weekdayHistoric=0,weekdayMatches=0;
+  Object.entries(currentByDate).forEach(([date,value])=>{
+    const info=weekdayOrdinal(date), prior=matchingPriorYearDay(date);
+    if(!prior)return;
+    const priorDay=Number(prior.slice(8));
+    if(hist[priorDay]===undefined)return;
+    const key=String(info.weekday);
+    priorByWeekday[key]=priorByWeekday[key]||{current:0,previous:0,count:0};
+    priorByWeekday[key].current+=value;
+    priorByWeekday[key].previous+=Number(hist[priorDay])||0;
+    priorByWeekday[key].count++;
+  });
+  Object.values(priorByWeekday).forEach(x=>{weekdayCurrent+=x.current;weekdayHistoric+=x.previous;weekdayMatches+=x.count;});
+  const hasHistory=Object.keys(hist).length>0;
+  return {currentTotal,historicTotal,diff:currentTotal-historicTotal,pct:historicTotal?(currentTotal-historicTotal)/historicTotal*100:null,currentDays:Object.keys(currentByDate).length,historyDays:Object.keys(hist).filter(d=>Number(d)<=currentDay).length,hasHistory,weekdayCurrent,weekdayHistoric,weekdayPct:weekdayHistoric?(weekdayCurrent-weekdayHistoric)/weekdayHistoric*100:null,weekdayMatches};
+}
+
 function currentReferencePeriod(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function setCurrentReferencePeriod(){S.kpi=S.kpi||{};S.kpi.selected=currentReferencePeriod();save()}
 const save=()=>localStorage.setItem(KEY,JSON.stringify(S));
@@ -374,6 +452,7 @@ function home(){
     <div class="dashboard-card"><div class="dashboard-label">ATV</div><div class="dashboard-value">${fmt(store.atv)}</div><div class="dashboard-diff">Valore medio scontrino</div></div>
     <div class="dashboard-card"><div class="dashboard-label">UPT</div><div class="dashboard-value">${store.upt.toFixed(2)}</div><div class="dashboard-diff">Pezzi per scontrino</div></div>
   </section>
+  ${(()=>{const comp=monthlyTurnoverComparison(currentPeriod);const pct=comp.pct===null?"—":`${comp.pct>=0?"+":""}${comp.pct.toFixed(1)}%`;return `<section class="card" style="margin-top:15px"><div class="row"><div><b>Confronto con lo stesso mese dell'anno scorso</b><div class="small">${periodLabel(currentPeriod)} · progressivo fino al giorno ${dateLocal().slice(8)}</div></div><button class="btn gray" onclick="openMonthlyHistory()">Inserisci storico</button></div><div class="grid" style="margin-top:12px"><div class="metric"><span>Fatturato attuale progressivo</span><b>${fmt(comp.currentTotal)}</b></div><div class="metric"><span>Anno scorso · stesso periodo</span><b>${comp.hasHistory?fmt(comp.historicTotal):"—"}</b></div><div class="metric"><span>Differenza</span><b class="${comp.diff>=0?"up":"down"}">${comp.hasHistory?(comp.diff>=0?"+":"")+fmt(comp.diff):"—"}</b></div><div class="metric"><span>Variazione</span><b class="${comp.pct===null?"":comp.pct>=0?"up":"down"}">${comp.hasHistory?pct:"—"}</b></div></div><div class="notice" style="margin-top:10px">${comp.hasHistory?`Confronto principale: tutti i giorni del mese fino a oggi. Storico inserito per ${comp.historyDays} giorni su ${monthDays(currentPeriod)}.`:"Inserisci i fatturati giornalieri dell'anno scorso per attivare il confronto."}</div><div style="margin-top:12px"><b>Confronto aggiuntivo per giorno della settimana</b><div class="small" style="margin-top:5px">Abbina il primo lunedì con il primo lunedì, il secondo con il secondo e così via, sempre nello stesso mese. ${comp.weekdayMatches?`Giornate storiche abbinate: ${comp.weekdayMatches}.`:"I dati abbinabili compariranno quando saranno disponibili."}</div><div class="row" style="margin-top:8px"><span class="small">Variazione sulle giornate abbinate</span><b class="${comp.weekdayPct===null?"":comp.weekdayPct>=0?"up":"down"}">${comp.weekdayPct===null?"—":(comp.weekdayPct>=0?"+":"")+comp.weekdayPct.toFixed(1)+"%"}</b></div></div></section>`})()}
   <section class="card" style="margin-top:15px"><div class="row"><div><b>Andamento giornaliero</b><div class="small">${periodLabel(currentPeriod)} · fatturato per giorno</div></div><button class="btn gray" onclick="S.tab='storeKpi';save();render()">Dettagli</button></div><div class="chart">${(()=>{let by={};rows.forEach(r=>by[r.date]=(by[r.date]||0)+Number(r.sales||0));let vals=Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14);if(!vals.length)return `<div class="empty" style="width:100%">Nessun KPI giornaliero inserito.</div>`;const W=Math.max(420,vals.length*66),H=205,L=34,R=30,T=34,B=30,plotH=H-T-B,plotW=W-L-R,max=Math.max(1,...vals.map(x=>x[1]));const pts=vals.map(([d,v],i)=>({d,v,x:vals.length===1?W/2:L+i*plotW/(vals.length-1),y:T+(1-v/max)*plotH}));const path=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');const grids=[0,.5,1].map(t=>`<line class="chart-grid" x1="${L}" y1="${T+t*plotH}" x2="${W-R}" y2="${T+t*plotH}"/>`).join('');const dots=pts.map((p,i)=>`<g><text class="chart-value" x="${p.x}" y="${Math.max(13,p.y-13)}">${fmt(p.v).replace(/,00\s?€/,' €').replace(/\s?€/,'€')}</text><circle class="${i===pts.length-1?'chart-dot-last':'chart-dot'}" cx="${p.x}" cy="${p.y}" r="4.5"/><text class="chart-date" x="${p.x}" y="${H-8}">${p.d.slice(8)}/${p.d.slice(5,7)}</text></g>`).join('');return `<svg role="img" aria-label="Grafico a linee del fatturato giornaliero" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="min-width:${W}px">${grids}<path class="chart-line" d="${path}"/>${dots}</svg>`})()}</div><div class="small" style="margin-top:4px">Ogni punto mostra il fatturato del giorno. Scorri lateralmente se vuoi vedere tutti i valori.</div></section>
   <div class="section">Gestione</div><section class="home-menu-grid">
     <button class="home-menu-card" onclick="S.tab='kpi';save();render()"><span class="home-menu-ico">▥</span><b>KPI Personali</b><span>Riferimenti e andamento risorse</span></button>
@@ -791,6 +870,24 @@ function resourceTasks(){
   return me ? S.tasks.filter(x=>String(x.person)===String(me.name)) : [];
 }
 
+
+function planningTimeOptions(selected,allowBlank=false){
+  let out=allowBlank?`<option value="" ${!selected?"selected":""}>Nessuna pausa</option>`:"";
+  for(let mins=0;mins<24*60;mins+=30){
+    const t=String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+    out+=`<option value="${t}" ${t===selected?"selected":""}>${t}</option>`;
+  }
+  return out;
+}
+function updateShiftNetPreview(){
+  const start=document.getElementById("ss")?.value,end=document.getElementById("se")?.value,bs=document.getElementById("bs")?.value,be=document.getElementById("be")?.value,view=document.getElementById("shiftNetHours");
+  if(!view)return;
+  const mins=t=>{if(!t)return null;const [h,m]=t.split(":").map(Number);return h*60+m;};
+  let net=mins(end)-mins(start);
+  if(bs&&be){const pause=mins(be)-mins(bs);if(pause<0){view.textContent="Controlla la pausa";return;}net-=pause;}
+  if(net<=0){view.textContent="Controlla gli orari";return;}
+  view.textContent=`${Math.floor(net/60)} h ${String(net%60).padStart(2,"0")} min`;
+}
 function planning(){
   if(!isManager()){
     const ds=planningWeekDates(S.planningWeek||planningToday());
@@ -872,16 +969,19 @@ function editShift(id,day,personId){
     <label>Risorsa</label><select id="sp" class="select">${options}</select>
     <label>Giorno</label><input id="sd" class="input" type="date" value="${x.date}">
     <div class="grid">
-      <div><label>Entrata</label><input id="ss" class="input" type="time" value="${x.start||""}"></div>
-      <div><label>Uscita</label><input id="se" class="input" type="time" value="${x.end||""}"></div>
+      <div><label>Entrata</label><select id="ss" class="select">${planningTimeOptions(x.start||"09:00")}</select></div>
+      <div><label>Uscita</label><select id="se" class="select">${planningTimeOptions(x.end||"17:00")}</select></div>
     </div>
     <div class="grid">
-      <div><label>Inizio pausa</label><input id="bs" class="input" type="time" value="${x.breakStart||""}"></div>
-      <div><label>Fine pausa</label><input id="be" class="input" type="time" value="${x.breakEnd||""}"></div>
+      <div><label>Inizio pausa</label><select id="bs" class="select">${planningTimeOptions(x.breakStart||"13:00",true)}</select></div>
+      <div><label>Fine pausa</label><select id="be" class="select">${planningTimeOptions(x.breakEnd||"13:30",true)}</select></div>
     </div>
+    <div class="notice" style="margin-top:8px"><b>Ore nette:</b> <span id="shiftNetHours">—</span><div class="small">Tutti gli orari sono selezionabili a ore intere o mezz'ore.</div></div>
     <button class="btn" style="width:100%" onclick="saveShift(${id?`'${id}'`:"null"})">Salva turno</button>
     ${id?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteShift('${id}')">Elimina turno</button>`:""}
   `);
+  ["ss","se","bs","be"].forEach(id=>document.getElementById(id)?.addEventListener("change",updateShiftNetPreview));
+  updateShiftNetPreview();
 }
 
 async function saveShift(id){
@@ -1148,6 +1248,7 @@ function kpi(){
       <div class="kpi-premium"><div class="label">ATV personale</div><div class="value">${fmt(c.atv)}</div><div class="ref">Rif. ${fmt(ref.atv)}</div><div class="diff ${cls(atvDiff)}">${diff(atvDiff)}</div></div>
       <div class="kpi-premium"><div class="label">UPT personale</div><div class="value">${c.upt.toFixed(2)}</div><div class="ref">Rif. ${ref.upt.toFixed(2)}</div><div class="diff ${cls(uptDiff)}">${diff(uptDiff)}</div></div>
     </section>
+    ${kpiTrendCharts(rows)}
     <section class="card" style="margin-top:15px"><div class="row"><b>Giornate inserite</b><span class="pill ${rows.length?'':'gray'}">${rows.length} ${rows.length===1?'giornata':'giornate'}</span></div>${rows.length?rows.map(r=>`<div class="row" style="padding:13px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(''):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>`;
   }
   const active=S.people.filter(p=>p.active);
@@ -1187,6 +1288,21 @@ function kpi(){
   </section>`;
 }
 
+
+function kpiTrendChart(rows,key,title,formatter){
+  const vals=(rows||[]).map(r=>({date:r.date,value:key==="atv"?(Number(r.receipts)?Number(r.sales)/Number(r.receipts):0):(Number(r.receipts)?Number(r.pieces)/Number(r.receipts):0)})).filter(x=>x.value>0);
+  if(!vals.length)return `<div class="kpi-card"><b>${title}</b><div class="small" style="margin-top:6px">Non ci sono ancora dati sufficienti per il grafico.</div></div>`;
+  const W=Math.max(300,vals.length*42),H=150,L=30,R=20,T=22,B=28,plotH=H-T-B,plotW=W-L-R,max=Math.max(...vals.map(x=>x.value))*1.15;
+  const pts=vals.map((p,i)=>({ ...p,x:vals.length===1?W/2:L+i*plotW/(vals.length-1),y:T+(1-p.value/max)*plotH }));
+  const path=pts.map((p,i)=>(i?"L":"M")+p.x.toFixed(1)+" "+p.y.toFixed(1)).join(" ");
+  const grid=[0,.5,1].map(t=>`<line class="chart-grid" x1="${L}" y1="${T+t*plotH}" x2="${W-R}" y2="${T+t*plotH}"/>`).join("");
+  const dots=pts.map((p,i)=>`<g><circle class="${i===pts.length-1?"chart-dot-last":"chart-dot"}" cx="${p.x}" cy="${p.y}" r="3.5"/><text class="chart-date" x="${p.x}" y="${H-8}">${p.date.slice(8)}</text></g>`).join("");
+  return `<div class="kpi-card"><b>${title}</b><div class="small">Andamento giornaliero del mese</div><div class="chart"><svg role="img" aria-label="${title}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="min-width:${W}px">${grid}<path class="chart-line" d="${path}"/>${dots}</svg></div><div class="row"><span class="small">Media del mese</span><b>${formatter(vals.reduce((a,x)=>a+x.value,0)/vals.length)}</b></div></div>`;
+}
+function kpiTrendCharts(rows){
+  return `<div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">${kpiTrendChart(rows,"upt","UPT",v=>v.toFixed(2))}${kpiTrendChart(rows,"atv","ATV",v=>fmt(v))}</div>`;
+}
+
 function kpiPersonDetail(pid){
   if(!isManager())return;
   const p=S.people.find(x=>String(x.id)===String(pid));
@@ -1206,6 +1322,7 @@ function kpiPersonDetail(pid){
       <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${cls(uptDiff)}">${diff(uptDiff)} vs rif.</div></div>
       <div class="metric"><span>Giornate</span><b>${rows.length}</b></div>
     </div>
+    ${kpiTrendCharts(rows)}
     <section class="card" style="margin-top:12px;padding:12px">
       <div class="row"><div><b>Riferimento manuale · ${periodLabel(refPeriod)}</b><div class="small">Puoi inserire o correggere il riferimento usato per il confronto.</div></div><button class="btn gray" onclick="referenceKpiEntry(${p.id})">Modifica riferimento</button></div>
       <div class="small" style="margin-top:10px">Fatturato ${fmt(r.sales)} · ATV ${fmt(r.atv)} · UPT ${r.upt.toFixed(2)}</div>
