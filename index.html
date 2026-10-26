@@ -1393,13 +1393,13 @@ function kpiPersonDetail(pid){
   const cls=v=>v===null?'':v>=0?'up':'down';
   openModal(`KPI · ${esc(p.name)}`,`
     <div class="notice"><b>${esc(p.name)}</b><div class="small">${periodLabel(currentPeriod)} · confronto progressivo con ${periodLabel(refPeriod)} fino allo stesso giorno del mese</div></div>
+    <button class="btn" style="width:100%;margin-top:10px" onclick="showKpiComparisonValues(${p.id})">🔎 Mostra valori usati nel confronto</button>
     <div class="grid" style="margin-top:12px">
       <div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b><div class="small">Media/giornata: ${comp.currentDays?fmt(comp.salesNow):'—'}</div><div class="small ${cls(comp.salesDiff)}">${diff(comp.salesDiff)} media giornaliera</div></div>
       <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${cls(comp.atvDiff)}">${diff(comp.atvDiff)} vs periodo precedente</div></div>
       <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${cls(comp.uptDiff)}">${diff(comp.uptDiff)} vs periodo precedente</div></div>
       <div class="metric"><span>Giornate con KPI</span><b>${comp.currentDays}</b><div class="small">Periodo precedente: ${comp.previousDays}</div></div>
     </div>
-    <button class="btn" style="width:100%;margin-top:12px" onclick="showKpiComparisonValues(${p.id})">🔎 Mostra valori usati nel confronto</button>
     ${kpiTrendCharts(rows)}
     <div class="small" style="margin-top:12px">Le giornate senza KPI inseriti non vengono conteggiate come giornate a fatturato zero.</div>`);
 }
@@ -1415,9 +1415,9 @@ function showKpiComparisonValues(pid){
   const curAvg=currentRows.length?cur.sales/currentRows.length:0, prevAvg=previousRows.length?prev.sales/previousRows.length:0;
   const pct=(a,b)=>b>0?((a-b)/b)*100:null;
   const fmtPct=v=>v===null?'Non disponibile':`${v>0?'+':''}${v.toFixed(1)}%`;
-  const rowsTable=(label,data,count,avg,isCurrent)=>`<section class="card" style="margin-top:10px"><b>${label}</b><div class="small">Periodo: ${isCurrent?currentPeriod:previousPeriod} · dal giorno 1 al giorno ${cutoff}</div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato totale</span><b>${fmt(data.sales)}</b></div><div class="metric"><span>Giornate con KPI</span><b>${count}</b></div><div class="metric"><span>Media fatturato/giornata</span><b>${count?fmt(avg):'—'}</b></div><div class="metric"><span>Scontrini totali</span><b>${data.receipts}</b></div><div class="metric"><span>Pezzi totali</span><b>${data.pieces}</b></div><div class="metric"><span>ATV / UPT</span><b>${fmt(data.atv)} / ${data.upt.toFixed(2)}</b></div></div><div class="small" style="margin-top:8px">Date effettivamente incluse: ${count?dataDates(isCurrent?currentRows:previousRows):'nessuna giornata trovata'}</div></section>`;
+  const rowsTable=(label,data,count,avg,isCurrent)=>`<section class="card" style="margin-top:10px"><b>${label}</b><div class="small">Periodo: ${isCurrent?currentPeriod:previousPeriod} · dal giorno 1 al ${isCurrent?today:previousPeriod+'-'+String(cutoff).padStart(2,'0')} (limite giorno ${cutoff})</div><div class="grid" style="margin-top:10px"><div class="metric"><span>Fatturato totale</span><b>${fmt(data.sales)}</b></div><div class="metric"><span>Giornate con KPI</span><b>${count}</b></div><div class="metric"><span>Media fatturato/giornata</span><b>${count?fmt(avg):'—'}</b></div><div class="metric"><span>Scontrini totali</span><b>${data.receipts}</b></div><div class="metric"><span>Pezzi totali</span><b>${data.pieces}</b></div><div class="metric"><span>ATV / UPT</span><b>${fmt(data.atv)} / ${data.upt.toFixed(2)}</b></div></div><div class="small" style="margin-top:8px">Date effettivamente incluse: ${count?dataDates(isCurrent?currentRows:previousRows):'nessuna giornata trovata'}</div></section>`;
   openModal(`Valori confronto · ${esc(p.name)}`,`
-    <div class="notice"><b>Questi sono i dati realmente usati dal semaforo</b><div class="small">Sono esclusi i giorni senza KPI registrati. Il confronto usa solo date fino al giorno ${cutoff} di ciascun mese.</div></div>
+    <div class="notice"><b>Valori effettivamente usati dal semaforo</b><div class="small">Sono esclusi i giorni senza KPI registrati. Il fatturato confronta la media per giornata registrata; ATV e UPT confrontano i totali aggregati. Il limite è il giorno ${cutoff} di ciascun mese.</div></div>
     ${rowsTable('Mese corrente · '+periodLabel(currentPeriod),cur,currentRows.length,curAvg,true)}
     ${rowsTable('Mese precedente · '+periodLabel(previousPeriod),prev,previousRows.length,prevAvg,false)}
     <section class="card" style="margin-top:10px"><b>Variazioni calcolate</b><div class="grid" style="margin-top:10px"><div class="metric"><span>Media fatturato/giornata</span><b>${fmtPct(currentRows.length&&previousRows.length?pct(curAvg,prevAvg):null)}</b></div><div class="metric"><span>ATV</span><b>${fmtPct(cur.receipts&&prev.receipts?pct(cur.atv,prev.atv):null)}</b></div><div class="metric"><span>UPT</span><b>${fmtPct(cur.receipts&&prev.receipts?pct(cur.upt,prev.upt):null)}</b></div></div>${(!previousRows.length||!prev.receipts)?'<div class="small" style="margin-top:8px;color:#b45309">Il periodo precedente non contiene abbastanza giornate o scontrini: per questo il semaforo può risultare “Dati insufficienti”.</div>':''}</section>
