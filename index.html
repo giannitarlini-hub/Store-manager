@@ -171,6 +171,35 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   }
 }
 
+
+/* ===== FIX DEFINITIVO CONFRONTO MENSILE KPI SU TELEFONO ===== */
+#main .kpi-hero-sub { display:block !important; visibility:visible !important; overflow-wrap:anywhere; line-height:1.45; }
+#main .kpi-cards, #main .kpi-premium, #main .kpi-premium .ref, #main .kpi-premium .diff { display:block; visibility:visible; }
+#main .kpi-premium .ref { white-space:normal; overflow-wrap:anywhere; line-height:1.45; }
+#main .kpi-premium .small { white-space:normal; overflow-wrap:anywhere; }
+#main .kpi-premium .pill { display:inline-flex; align-items:center; max-width:100%; white-space:normal; }
+@media (max-width:700px) {
+  #main .kpi-cards { display:grid !important; grid-template-columns:minmax(0,1fr) !important; gap:10px !important; }
+  #main .kpi-premium { display:block !important; width:100% !important; min-width:0 !important; padding:15px !important; overflow:visible !important; }
+  #main .kpi-premium .label { display:block !important; }
+  #main .kpi-premium .value { display:block !important; font-size:28px !important; }
+  #main .kpi-premium .ref { display:block !important; font-size:12px !important; margin-top:7px !important; }
+  #main .kpi-premium .small { display:block !important; font-size:12px !important; }
+  #main .kpi-team-list { overflow:visible !important; }
+  #main .kpi-person-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important; gap:10px !important; }
+  #main .kpi-person-name { grid-column:1/-1 !important; grid-row:auto !important; }
+  #main .kpi-person-value { min-width:0 !important; background:#f7f9fb; border-radius:12px; padding:10px !important; }
+  #main .kpi-person-value:before { display:block; content:attr(data-kpi-label); margin-bottom:4px; }
+  #main .kpi-person-row .kpi-person-value:nth-child(2):before { content:'Fatturato · vs mese prec.' !important; }
+  #main .kpi-person-row .kpi-person-value:nth-child(3):before { content:'ATV · vs mese prec.' !important; }
+  #main .kpi-person-row .kpi-person-value:nth-child(4):before { content:'UPT · vs mese prec.' !important; }
+  #main .kpi-person-value b, #main .kpi-person-value span { display:block !important; white-space:normal !important; overflow-wrap:anywhere; }
+  #main .kpi-person-value span { margin-top:4px; font-weight:800; }
+  #main .kpi-person-status { grid-column:1/2 !important; grid-row:auto !important; white-space:normal !important; }
+  #main .kpi-person-action { grid-column:2/3 !important; grid-row:auto !important; justify-self:stretch !important; }
+  #main .kpi-person-action .btn { width:100%; white-space:normal !important; }
+}
+
 </style>
 </head>
 <body>
