@@ -1204,21 +1204,32 @@ async function loadStoreDailyAggregate(){
 
 async function loadKpis(){
   try{
-    // I KPI personali restano soggetti alle normali policy RLS.
-    // Il totale negozio viene invece letto da una funzione RPC SECURITY DEFINER
-    // che restituisce solo l'aggregato giornaliero, mai i dati delle singole risorse.
-    let rows=await sb("KpiGiornalieri?select=*&order=data.asc");
-    const activeIds=new Set(S.people.filter(p=>p.active).map(p=>String(p.id)));
-    rows=(rows||[]).filter(r=>activeIds.has(String(r.dipendente_id)));
+    // Recupera TUTTI i KPI storici a pagine: PostgREST può limitare ogni risposta
+    // (spesso a 1.000 righe). Senza paginazione i mesi più vecchi restano fuori
+    // e i confronti mostrano poche giornate o "Dati insufficienti".
+    // Non filtriamo per risorse attive: conserviamo anche gli storici presenti nel DB.
+    // Il riepilogo per una risorsa continua a usare solo il suo dipendente_id corrente.
+    const pageSize=1000;
+    let rows=[], offset=0, page=[];
+    do{
+      page=await sb("KpiGiornalieri?select=*&order=data.asc,id.asc",{
+        headers:{Range:`${offset}-${offset+pageSize-1}`,"Range-Unit":"items"}
+      });
+      page=Array.isArray(page)?page:[];
+      rows=rows.concat(page);
+      offset+=pageSize;
+    }while(page.length===pageSize);
 
     S.kpi.daily={};
     const visibleRows=isManager()?rows:rows.filter(r=>String(r.dipendente_id)===myPersonId());
     visibleRows.forEach(r=>{
-      const key=String(r.dipendente_id)+"_"+r.data;
+      const date=String(r.data||"").slice(0,10);
+      if(!date||r.dipendente_id==null)return;
+      const key=String(r.dipendente_id)+"_"+date;
       S.kpi.daily[key]={
         id:r.id,
         personId:r.dipendente_id,
-        date:r.data,
+        date,
         sales:Number(r.fatturato)||0,
         receipts:Number(r.scontrini)||0,
         pieces:Number(r.pezzi_venduti)||0,
@@ -1226,6 +1237,7 @@ async function loadKpis(){
       };
     });
 
+    console.info(`KPI caricati: ${rows.length} record storici`);
     await loadStoreDailyAggregate();
     S.online=true;save();render();
   }catch(e){
