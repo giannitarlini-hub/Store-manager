@@ -254,8 +254,27 @@ function monthDays(period){
 function monthHistoryValues(period){
   return ensureMonthlyHistory()[period]||{};
 }
-function openMonthlyHistory(){
+async function loadMonthlyHistoryOnline(){
+  try{
+    const rows=await sb('KpiFatturatoMensileStorico?select=periodo,dati');
+    const online={};(rows||[]).forEach(r=>{if(r.periodo&&r.dati&&typeof r.dati==='object')online[r.periodo]=r.dati;});
+    const local=ensureMonthlyHistory();
+    // Migra una sola volta lo storico già presente sul dispositivo del Manager, senza sovrascrivere dati online.
+    if(isManager()){
+      for(const [period,data] of Object.entries(local)){
+        if(!online[period]&&data&&Object.keys(data).length){
+          await sb('KpiFatturatoMensileStorico?on_conflict=periodo',{method:'POST',prefer:'resolution=ignore-duplicates,return=representation',body:JSON.stringify({periodo:period,dati:data,updated_at:new Date().toISOString()})});
+        }
+      }
+    }
+    const fresh=await sb('KpiFatturatoMensileStorico?select=periodo,dati');
+    (fresh||[]).forEach(r=>{if(r.periodo&&r.dati&&typeof r.dati==='object')local[r.periodo]=r.dati;});
+    save();return true;
+  }catch(e){console.warn('Storico mensile condiviso non disponibile',e);return false;}
+}
+async function openMonthlyHistory(){
   if(!isManager())return alert("Solo il Manager può inserire il fatturato storico.");
+  await loadMonthlyHistoryOnline();
   const period=dateLocal().slice(0,7), days=monthDays(period), saved=monthHistoryValues(period);
   const fields=Array.from({length:days},(_,i)=>{
     const day=String(i+1).padStart(2,"0"), date=period+"-"+day;
@@ -263,7 +282,7 @@ function openMonthlyHistory(){
   }).join("");
   openModal("Fatturato storico · "+periodLabel(period),`<div class="notice"><b>Inserisci i fatturati giornalieri dello stesso mese dell'anno scorso.</b><div class="small">Per ${periodLabel(period)} inserisci i valori di ${period.slice(0,4)-1}. Il confronto principale userà tutti i giorni fino alla data corrente; non serve reinserirli ogni giorno.</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:12px">${fields}</div><button class="btn" style="width:100%;margin-top:12px" onclick="saveMonthlyHistory('${period}')">Salva fatturati storici</button>`);
 }
-function saveMonthlyHistory(period){
+async function saveMonthlyHistory(period){
   if(!isManager())return alert("Solo il Manager può inserire il fatturato storico.");
   const data={};
   for(let i=1;i<=monthDays(period);i++){
@@ -275,7 +294,14 @@ function saveMonthlyHistory(period){
     }
   }
   ensureMonthlyHistory()[period]=data;
-  save();closeModal();render();
+  save();
+  try{
+    await sb('KpiFatturatoMensileStorico?on_conflict=periodo',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',body:JSON.stringify({periodo:period,dati:data,updated_at:new Date().toISOString()})});
+    closeModal();render();
+    alert('Storico salvato online. Sarà disponibile anche da telefono e computer.');
+  }catch(e){
+    alert('I dati sono rimasti salvati su questo dispositivo, ma non sono stati sincronizzati online. Controlla di aver eseguito lo SQL di configurazione su Supabase.\n\n'+(e.message||e));
+  }
 }
 function weekdayOrdinal(date){
   const d=new Date(date+"T12:00:00"), weekday=d.getDay();
@@ -1615,6 +1641,7 @@ async function bootApp(){
   await loadTasks();
   await loadRequests();
   await loadKpis();
+  await loadMonthlyHistoryOnline();
   await loadWeeklyTargets();
   await loadHistory();
   await loadShifts();
