@@ -274,6 +274,41 @@ function kpiPeriodFromDate(d){return d.slice(0,7)}
 function weekNumber(d){let x=new Date(d+"T12:00:00"),day=x.getDay()||7;x.setDate(x.getDate()+4-day);let y=new Date(x.getFullYear(),0,1);return Math.ceil((((x-y)/86400000)+1)/7)}
 function sameWeekLastYear(d){let x=new Date(d+"T12:00:00");x.setFullYear(x.getFullYear()-1);return dateLocal(x)}
 function kpiRowsForPerson(pid,period){let rows=Object.values(S.kpi.daily||{}).filter(r=>String(r.personId)===String(pid)&&r.date.startsWith(period));return rows.sort((a,b)=>a.date.localeCompare(b.date))}
+function kpiTrafficComparison(pid){
+  const todayDate=dateLocal(), currentPeriod=todayDate.slice(0,7), previousPeriod=currentReferencePeriod(), cutoff=Number(todayDate.slice(8));
+  const currentRows=kpiRowsForPerson(pid,currentPeriod).filter(r=>String(r.date)<=todayDate);
+  const previousRows=kpiRowsForPerson(pid,previousPeriod).filter(r=>Number(String(r.date).slice(8))<=cutoff);
+  const current=calcKpi(currentRows), previous=calcKpi(previousRows);
+  const currentSalesPerDay=currentRows.length?current.sales/currentRows.length:0;
+  const previousSalesPerDay=previousRows.length?previous.sales/previousRows.length:0;
+  const pct=(a,b)=>b>0?((a-b)/b)*100:null;
+  const salesDiff=currentRows.length&&previousRows.length?pct(currentSalesPerDay,previousSalesPerDay):null;
+  const atvDiff=current.receipts>0&&previous.receipts>0?pct(current.atv,previous.atv):null;
+  const uptDiff=current.receipts>0&&previous.receipts>0?pct(current.upt,previous.upt):null;
+  return {current,previous,currentDays:currentRows.length,previousDays:previousRows.length,
+    salesDiff,atvDiff,uptDiff,
+    salesNow:currentSalesPerDay,salesBefore:previousSalesPerDay,period:currentPeriod,previousPeriod};
+}
+function trafficLight(diff){
+  if(diff===null||!Number.isFinite(diff))return {color:'gray',label:'Dati insufficienti',icon:'⚪'};
+  if(diff>0)return {color:'green',label:'In crescita',icon:'🟢'};
+  if(diff>=-5)return {color:'yellow',label:'Da monitorare',icon:'🟠'};
+  return {color:'red',label:'Da recuperare',icon:'🔴'};
+}
+function trafficMarkup(diff){
+  const t=trafficLight(diff), value=diff===null?'—':`${diff>0?'+':''}${diff.toFixed(1)}%`;
+  return `<div class="small" style="margin-top:6px"><span class="pill ${t.color==='green'?'':t.color==='yellow'?'yellow':t.color==='red'?'red':'gray'}">${t.icon} ${t.label}</span> <b class="${t.color==='green'?'up':t.color==='red'?'down':''}">${value}</b></div>`;
+}
+function kpiTrafficAdvice(comp){
+  const items=[['Fatturato',comp.salesDiff],['ATV',comp.atvDiff],['UPT',comp.uptDiff]].filter(x=>x[1]!==null&&x[1]<0);
+  if(!items.length)return comp.currentDays?'<div class="small" style="margin-top:10px">Continua così: monitora i risultati a ogni inserimento serale.</div>':'<div class="small" style="margin-top:10px">Inserisci i KPI giornalieri per attivare il confronto.</div>';
+  const worst=items.sort((a,b)=>a[1]-b[1])[0][0];
+  const advice=worst==='Fatturato'?'Concentrati sulle opportunità di vendita e sul valore prodotto in ogni giornata lavorata.':worst==='ATV'?'Prova a completare la vendita con articoli coordinati o alternative di maggior valore, senza forzare la proposta.':'Lavora sugli abbinamenti: proponi un secondo articolo realmente utile e coerente con l’acquisto.';
+  return `<div class="notice" style="margin-top:10px"><b>Spunto operativo</b><div class="small" style="margin-top:4px">${advice}</div></div>`;
+}
+function kpiTrafficLegend(){
+  return `<section class="card" style="margin-top:12px"><b>🚦 Legenda semafori KPI</b><div class="grid" style="margin-top:10px"><div class="metric"><span>🟢 Verde</span><b style="font-size:16px">In crescita</b><div class="small">Sopra il periodo di riferimento</div></div><div class="metric"><span>🟠 Arancione</span><b style="font-size:16px">Da monitorare</b><div class="small">Da 0% a −5% compreso</div></div><div class="metric"><span>🔴 Rosso</span><b style="font-size:16px">Da recuperare</b><div class="small">Calo superiore al 5%</div></div><div class="metric"><span>⚪ Grigio</span><b style="font-size:16px">Dati insufficienti</b><div class="small">Manca uno dei periodi confrontabili</div></div></div><div class="small" style="margin-top:10px">Confronto fino allo stesso giorno del mese. Il semaforo fatturato usa il fatturato medio per giornata con KPI; ATV e UPT sono calcolati sui totali del periodo. Le giornate senza KPI inseriti non entrano nel confronto.</div></section>`;
+}
 function calcKpi(rows){let sales=rows.reduce((a,r)=>a+(+r.sales||0),0),receipts=rows.reduce((a,r)=>a+(+r.receipts||0),0),pieces=rows.reduce((a,r)=>a+(+r.pieces||0),0);return {sales,receipts,pieces,atv:receipts?sales/receipts:0,upt:receipts?pieces/receipts:0}}
 function todayKpiRows(){return S.kpi.daily||{}}
 function isStaffScheduledToday(pid){
@@ -1091,7 +1126,10 @@ function requests(){
 }
 
 async function loadStoreDailyAggregate(){
-  const start=weekStartDate(dateLocal()), end=weekEndDate(dateLocal());
+  // Carica tutti i giorni del mese corrente fino a oggi: serve sia al confronto
+  // con lo storico sia alle viste settimanali, che filtrano poi per intervallo.
+  const d=dateLocal();
+  const start=d.slice(0,7)+'-01', end=d;
   try{
     const rows=await sb("rpc/get_store_weekly_kpi",{
       method:"POST",
@@ -1234,20 +1272,20 @@ async function refreshKpiCompliance(){
 function kpi(){
   const currentPeriod=dateLocal().slice(0,7), refPeriod=currentReferencePeriod(); S.kpi.selected=refPeriod; save();
   if(!isManager()){
-    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod):[], c=calcKpi(rows), ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
+    const me=myPerson(), rows=me?kpiRowsForPerson(me.id,currentPeriod).filter(r=>r.date<=dateLocal()):[], c=calcKpi(rows), comp=me?kpiTrafficComparison(me.id):null;
+    const ref=me?kpiReferenceFor(me.id,refPeriod):calcKpi([]);
     const weekDate=dateLocal(), weekRows=weeklyStoreRows(weekDate), weekStore=calcKpi(weekRows), weekTarget=weeklyTargetFor(weekDate);
     const weekProgress=weekTarget?(weekStore.sales/weekTarget)*100:0;
     const weekMissing=Math.max(0,weekTarget-weekStore.sales);
-
-    const salesDiff=ref.sales?((c.sales-ref.sales)/ref.sales)*100:null, atvDiff=ref.atv?((c.atv-ref.atv)/ref.atv)*100:null, uptDiff=ref.upt?((c.upt-ref.upt)/ref.upt)*100:null;
-    const diff=v=>v===null?'—':(v>=0?'+':'')+v.toFixed(1)+'% vs rif.', cls=v=>v===null?'':v>=0?'up':'down';
     return weeklyStoreCard()+`<div class="row"><div class="section">I miei KPI</div><button class="btn" onclick="kpiEntry()">+ Inserisci dati</button></div>
     <section class="kpi-hero"><div class="kpi-hero-title">I miei KPI · ${periodLabel(currentPeriod)}</div><div class="kpi-hero-sub">Confronto con il riferimento del mese precedente · <b>${periodLabel(refPeriod)}</b></div></section>
     <section class="kpi-cards">
-      <div class="kpi-premium"><div class="label">Fatturato personale</div><div class="value">${fmt(c.sales)}</div><div class="ref">Rif. ${fmt(ref.sales)}</div><div class="diff ${cls(salesDiff)}">${diff(salesDiff)}</div></div>
-      <div class="kpi-premium"><div class="label">ATV personale</div><div class="value">${fmt(c.atv)}</div><div class="ref">Rif. ${fmt(ref.atv)}</div><div class="diff ${cls(atvDiff)}">${diff(atvDiff)}</div></div>
-      <div class="kpi-premium"><div class="label">UPT personale</div><div class="value">${c.upt.toFixed(2)}</div><div class="ref">Rif. ${ref.upt.toFixed(2)}</div><div class="diff ${cls(uptDiff)}">${diff(uptDiff)}</div></div>
+      <div class="kpi-premium"><div class="label">Fatturato mese</div><div class="value">${fmt(c.sales)}</div><div class="ref">Media/giornata attuale: ${comp&&comp.currentDays?fmt(comp.salesNow):'—'} · periodo prec.: ${comp&&comp.previousDays?fmt(comp.salesBefore):'—'}</div>${trafficMarkup(comp?.salesDiff??null)}</div>
+      <div class="kpi-premium"><div class="label">ATV personale</div><div class="value">${fmt(c.atv)}</div><div class="ref">ATV periodo precedente: ${comp&&comp.previousDays?fmt(comp.previous.atv):'—'}</div>${trafficMarkup(comp?.atvDiff??null)}</div>
+      <div class="kpi-premium"><div class="label">UPT personale</div><div class="value">${c.upt.toFixed(2)}</div><div class="ref">UPT periodo precedente: ${comp&&comp.previousDays?comp.previous.upt.toFixed(2):'—'}</div>${trafficMarkup(comp?.uptDiff??null)}</div>
     </section>
+    ${kpiTrafficLegend()}
+    <section class="card"><b>Il tuo spunto operativo</b>${kpiTrafficAdvice(comp||{currentDays:0,salesDiff:null,atvDiff:null,uptDiff:null})}</section>
     ${kpiTrendCharts(rows)}
     <section class="card" style="margin-top:15px"><div class="row"><b>Giornate inserite</b><span class="pill ${rows.length?'':'gray'}">${rows.length} ${rows.length===1?'giornata':'giornate'}</span></div>${rows.length?rows.map(r=>`<div class="row" style="padding:13px 0;border-bottom:1px solid #edf0f3"><div><b>${r.date}</b><div class="small">${fmt(r.sales)} · ${r.receipts} scontrini · ${r.pieces} pezzi</div></div><div class="actions"><button class="btn gray" onclick="editDailyKpi(${me.id},'${r.date}')">Modifica</button><button class="btn red" onclick="deleteDailyKpi('${String(me.id)}_${r.date}')">Elimina</button></div></div>`).join(''):`<div class="empty">Nessun dato inserito per questo mese.</div>`}</section>`;
   }
@@ -1261,27 +1299,26 @@ function kpi(){
     <div class="kpi-hero-sub">Riepilogo mensile individuale · confronto con il riferimento di ${periodLabel(refPeriod)}</div>
   </section>
   ${managerKpiComplianceCard()}
+  ${kpiTrafficLegend()}
   <section class="card notice">
     <b>👥 Andamento del team</b>
     <div class="small">Ogni scheda mostra solo il riepilogo del singolo ragazzo. I dati giornalieri non vengono mostrati qui. Il riferimento manuale resta disponibile nel dettaglio.</div>
   </section>
   <section class="card">
     ${active.map(p=>{
-      const rows=kpiRowsForPerson(p.id,currentPeriod), c=calcKpi(rows), r=kpiReferenceFor(p.id,refPeriod);
-      const salesDiff=r.sales?((c.sales-r.sales)/r.sales)*100:null;
-      const atvDiff=r.atv?((c.atv-r.atv)/r.atv)*100:null;
-      const uptDiff=r.upt?((c.upt-r.upt)/r.upt)*100:null;
+      const rows=kpiRowsForPerson(p.id,currentPeriod).filter(r=>r.date<=dateLocal()), c=calcKpi(rows), r=kpiReferenceFor(p.id,refPeriod), comp=kpiTrafficComparison(p.id);
       return `<div class="kpi-premium" style="margin-top:12px">
         <div class="row">
           <div><b>${esc(p.name)}</b><div class="small">${esc(p.role||'Risorsa')} · riferimento ${periodLabel(refPeriod)}</div></div>
           <span class="pill ${rows.length?'':'gray'}">${rows.length?'Aggiornato':'In attesa'}</span>
         </div>
         <div class="grid" style="margin-top:12px">
-          <div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b><div class="small ${diffClass(salesDiff)}">${diff(salesDiff)} vs rif.</div></div>
-          <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b><div class="small ${diffClass(atvDiff)}">${diff(atvDiff)} vs rif.</div></div>
-          <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b><div class="small ${diffClass(uptDiff)}">${diff(uptDiff)} vs rif.</div></div>
-          <div class="metric"><span>Giornate</span><b>${rows.length}</b></div>
+          <div class="metric"><span>Fatturato mese</span><b>${fmt(c.sales)}</b><div class="small">Media/giornata: ${comp.currentDays?fmt(comp.salesNow):'—'}</div>${trafficMarkup(comp.salesDiff)}</div>
+          <div class="metric"><span>ATV</span><b>${fmt(c.atv)}</b>${trafficMarkup(comp.atvDiff)}</div>
+          <div class="metric"><span>UPT</span><b>${c.upt.toFixed(2)}</b>${trafficMarkup(comp.uptDiff)}</div>
+          <div class="metric"><span>Giornate con KPI</span><b>${rows.length}</b><div class="small">Periodo prec.: ${comp.previousDays}</div></div>
         </div>
+        ${kpiTrafficAdvice(comp)}
         <div class="actions" style="margin-top:12px"><button class="btn gray" onclick="kpiPersonDetail(${p.id})">Dettaglio ›</button></div>
       </div>`;
     }).join('')||`<div class="empty">Nessuna risorsa attiva.</div>`}
