@@ -1645,7 +1645,8 @@ function kpiEntry(pid,date){
 /* ===== REPLAY COACH: interfaccia e collegamento sicuro al backend ===== */
 function navigate(tab){if(tab==="coach"){openCoach();return;}S.tab=tab;save();render();}
 function coachState(){
-  S.coach=S.coach||{personId:"",entries:[],feedback:[],notes:[],loading:false};
+  S.coach=S.coach||{personId:"",entries:[],feedback:[],notes:[],documents:[],loading:false};
+  if(!Array.isArray(S.coach.documents))S.coach.documents=[];
   return S.coach;
 }
 function coachPersonId(){
@@ -1696,6 +1697,8 @@ async function coachLoad(){
     try{c.notes=await sb("replay_coach_manager_notes?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=created_at.desc&limit=30")||[]}
     catch(e){c.notes=[];console.warn("Note riservate Coach non disponibili",e)}
   }else c.notes=[];
+  try{c.documents=await sb("replay_coach_documents?select=id,dipendente_id,titolo,categoria,storage_path,condiviso,created_at&dipendente_id=eq."+encodeURIComponent(pid)+"&order=created_at.desc&limit=100")||[];c.documentsError=""}
+  catch(docErr){c.documents=[];c.documentsError=docErr.message||String(docErr);console.warn("Archivio documenti Coach non configurato",docErr)}
   c.loading=false;
 }
 function coachMonthlyRows(pid, months){
@@ -1749,6 +1752,11 @@ async function coachSaveDevelopmentPlan(){
     await coachLoad();render();
   }catch(e){alert("Non riesco a salvare il piano online. Verifica di aver eseguito la migrazione SQL allegata e le policy di accesso.\n\n"+(e.message||e));}
 }
+function coachDocumentsCard(){
+  const c=coachState(),pid=coachPersonId(),p=S.people.find(x=>String(x.id)===String(pid)),name=p?.name||(myPerson()?.name)||"risorsa",docs=c.documents||[];
+  const docsHtml=docs.length?docs.map(d=>`<div class="coach-history-item"><div class="row" style="align-items:flex-start"><div style="min-width:0"><b>📄 ${esc(d.titolo)}</b><div class="small">${esc(({valutazione:"Valutazione",pdp:"PDP",colloquio:"Colloquio",formazione:"Formazione",altro:"Altro"}[d.categoria]||d.categoria))} · ${esc(coachFmtDate(d.created_at))}</div>${isManager()?`<div class="small">${d.condiviso?"Visibile alla risorsa":"Riservato Manager"}</div>`:""}</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn gray" onclick="coachOpenDocument('${esc(d.id)}')">Apri PDF</button>${isManager()?`<button class="btn red" onclick="coachDeleteDocument('${esc(d.id)}')">Elimina</button>`:""}</div></div></div>`).join(""):`<div class="coach-empty">Nessun documento caricato per ${esc(name)}.</div>`;
+  return `<section class="coach-card"><h3>Documenti della risorsa</h3><div class="coach-muted">Valutazioni, PDP, colloqui e materiali formativi. I PDF riservati sono visibili solo al Manager.</div>${isManager()?`<label>Titolo documento</label><input id="coachDocTitle" class="input" maxlength="120" placeholder="Es. Valutazione annuale 2026"><label>Categoria</label><select id="coachDocCategory" class="select"><option value="valutazione">Valutazione</option><option value="pdp">PDP – Piano di sviluppo</option><option value="colloquio">Colloquio</option><option value="formazione">Formazione</option><option value="altro">Altro</option></select><label>File PDF (massimo 15 MB)</label><input id="coachDocFile" class="input" type="file" accept="application/pdf,.pdf"><label style="display:flex;gap:8px;align-items:center;margin:8px 0 12px"><input id="coachDocShare" type="checkbox" style="width:auto;margin:0"> Condividi con il collaboratore (altrimenti resta riservato)</label><button class="btn" style="width:100%" onclick="coachUploadDocument()">＋ Carica PDF</button>`:""}<div style="margin-top:12px">${docsHtml}</div>${c.documentsError?`<div class="notice danger" style="margin-top:10px">Archivio documenti da configurare in Supabase. ${esc(c.documentsError).slice(0,220)}</div>`:""}</section>`;
+}
 function coachPage(){
   const c=coachState(), pid=coachPersonId(), p=S.people.find(x=>String(x.id)===String(pid)), name=p?.name||(myPerson()?.name)||"Team";
   const notes=c.notes||[];
@@ -1757,7 +1765,7 @@ function coachPage(){
   const notesHtml=notes.length?notes.map(n=>`<div class="coach-note"><small>${esc(String(n.priorita||"osservazione").replaceAll("_"," "))} · ${esc(coachFmtDate(n.created_at))}</small>${esc(n.nota)}<div style="text-align:right;margin-top:8px"><button class="btn gray" onclick="coachDeleteNote('${esc(n.id)}')">Elimina nota</button></div></div>`).join(""):`<div class="coach-muted">Nessuna nota privata ancora inserita.</div>`;
   if(!isManager())return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Il mio piano di sviluppo</h2><p>Qui trovi gli obiettivi, le azioni concordate e le scadenze inserite dal tuo Store Manager. La scheda è in sola lettura: non puoi modificare il piano né vedere le note riservate.</p></section>
     ${c.planLoadError?`<div class="notice danger"><b>Piano non disponibile</b><div class="small">Il piano condiviso non è ancora raggiungibile. Lo Store Manager deve completare la configurazione del piano online.</div></div>`:""}
-    ${plan&&plan.goal?`<section class="coach-card"><div class="row" style="align-items:center;justify-content:space-between"><h3>Obiettivo individuale</h3><span class="pill ${plan.due&&plan.due<dateLocal()?"yellow":"gray"}">${plan.due&&plan.due<dateLocal()?"Scadenza superata":plan.due?"Con scadenza":"Da programmare"}</span></div><div style="font-size:16px;font-weight:700;margin:10px 0">${esc(plan.goal)}</div><h4>Azioni concordate</h4><div style="white-space:pre-wrap;line-height:1.6">${esc(plan.actions||"Non specificate")}</div><div class="notice" style="margin-top:14px"><b>Scadenza / data di verifica</b><div style="margin-top:4px">${plan.due?esc(coachFmtDate(plan.due)):"Non indicata"}</div></div><h4 style="margin-top:14px">Verifica e prossimo passo</h4><div style="white-space:pre-wrap;line-height:1.6">${esc(plan.review||"La verifica sarà aggiornata dal Manager al momento del confronto.")}</div><div class="small" style="margin-top:12px">Ultimo aggiornamento: ${esc(plan.updatedAt?coachFmtDate(plan.updatedAt):"Non disponibile")}</div></section>`:`<section class="coach-card"><h3>Il tuo piano di sviluppo</h3><div class="coach-empty">Il tuo Store Manager non ha ancora pubblicato un piano individuale. Quando sarà salvato, qui vedrai obiettivo, azioni, scadenza e verifica.</div></section>`}`;
+    ${plan&&plan.goal?`<section class="coach-card"><div class="row" style="align-items:center;justify-content:space-between"><h3>Obiettivo individuale</h3><span class="pill ${plan.due&&plan.due<dateLocal()?"yellow":"gray"}">${plan.due&&plan.due<dateLocal()?"Scadenza superata":plan.due?"Con scadenza":"Da programmare"}</span></div><div style="font-size:16px;font-weight:700;margin:10px 0">${esc(plan.goal)}</div><h4>Azioni concordate</h4><div style="white-space:pre-wrap;line-height:1.6">${esc(plan.actions||"Non specificate")}</div><div class="notice" style="margin-top:14px"><b>Scadenza / data di verifica</b><div style="margin-top:4px">${plan.due?esc(coachFmtDate(plan.due)):"Non indicata"}</div></div><h4 style="margin-top:14px">Verifica e prossimo passo</h4><div style="white-space:pre-wrap;line-height:1.6">${esc(plan.review||"La verifica sarà aggiornata dal Manager al momento del confronto.")}</div><div class="small" style="margin-top:12px">Ultimo aggiornamento: ${esc(plan.updatedAt?coachFmtDate(plan.updatedAt):"Non disponibile")}</div></section>`:`<section class="coach-card"><h3>Il tuo piano di sviluppo</h3><div class="coach-empty">Il tuo Store Manager non ha ancora pubblicato un piano individuale. Quando sarà salvato, qui vedrai obiettivo, azioni, scadenza e verifica.</div></section>`}${coachDocumentsCard()}`;
   return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Replay Coach</h2><p>Analisi dell'andamento reale della risorsa e piano di sviluppo individuale. I calcoli avvengono nel gestionale, senza chiamate a servizi AI a pagamento.</p></section>
     ${c.loadError?`<div class="notice" style="margin-bottom:12px">Lo storico remoto delle note/strategie non è raggiungibile al momento. L'analisi KPI usa i dati già caricati nel gestionale.</div>`:""}
     <section class="coach-card"><h3>1. Seleziona la risorsa</h3>${options}<label>Periodo di analisi</label><select class="select" onchange="coachSetAnalysisMonths(this.value)"><option value="3" ${months===3?"selected":""}>Ultimi 3 mesi</option><option value="6" ${months===6?"selected":""}>Ultimi 6 mesi</option><option value="12" ${months===12?"selected":""}>Ultimi 12 mesi</option></select>
@@ -1771,12 +1779,54 @@ function coachPage(){
       <button class="btn" style="width:100%" onclick="coachSaveDevelopmentPlan()">Salva piano di sviluppo</button>
       ${plan.updatedAt?`<div class="small" style="margin-top:8px">Ultimo salvataggio: ${esc(coachFmtDate(plan.updatedAt))}</div>`:""}
     </section>
+    ${coachDocumentsCard()}
     <section class="coach-card"><h3>3. Note riservate Manager</h3><div class="coach-muted">Le note già esistenti restano separate dal piano di sviluppo e visibili solo al Manager.</div><label>Area</label><select class="select" id="coachNoteArea"><option value="vendita_complementare">Vendita complementare</option><option value="atv">ATV</option><option value="accoglienza">Accoglienza</option><option value="prodotto">Conoscenza prodotto</option><option value="autonomia">Autonomia</option><option value="osservazione">Osservazione</option></select><label>Nota privata</label><textarea class="input" id="coachNoteText" rows="3" maxlength="1500" placeholder="Osservazioni professionali, esempi concreti e follow-up"></textarea><button class="btn" style="width:100%" onclick="coachSaveNote()">Salva nota privata</button><div style="margin-top:14px">${notesHtml}</div></section>`;
 }
 function coachSetAnalysisMonths(value){
   const c=coachState(); c.analysisMonths=[3,6,12].includes(Number(value))?Number(value):6; save(); render();
 }
 
+function coachStoragePath(path){return String(path).split("/").map(encodeURIComponent).join("/")}
+async function coachUploadDocument(){
+  if(!isManager())return alert("Solo il Manager può caricare documenti.");
+  const pid=coachPersonId(),title=(document.getElementById("coachDocTitle")?.value||"").trim(),category=document.getElementById("coachDocCategory")?.value||"altro",file=document.getElementById("coachDocFile")?.files?.[0],share=document.getElementById("coachDocShare")?.checked===true;
+  if(!pid)return alert("Seleziona prima una risorsa.");
+  if(!title)return alert("Inserisci il titolo del documento.");
+  if(!file)return alert("Seleziona un PDF da caricare.");
+  if(file.type!=="application/pdf"&&!file.name.toLowerCase().endsWith(".pdf"))return alert("Puoi caricare solo file PDF.");
+  if(file.size>15*1024*1024)return alert("Il PDF supera il limite di 15 MB.");
+  const safeName=file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]+/g,"_").slice(-100)||"documento.pdf";
+  const path=pid+"/"+crypto.randomUUID()+"_"+safeName;
+  try{
+    const upload=await fetch(SUPABASE_URL+"/storage/v1/object/coach-documents/"+coachStoragePath(path),{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+AUTH.access_token,"Content-Type":"application/pdf","x-upsert":"false"},body:file});
+    if(!upload.ok)throw new Error(await upload.text()||"Caricamento del PDF non riuscito.");
+    try{await sb("replay_coach_documents",{method:"POST",body:JSON.stringify({dipendente_id:Number(pid),titolo:title,categoria:category,storage_path:path,condiviso:share,created_by:AUTH.user.id})})}
+    catch(metaErr){await fetch(SUPABASE_URL+"/storage/v1/object/coach-documents",{method:"DELETE",headers:{...authHeaders()},body:JSON.stringify({prefixes:[path]})}).catch(()=>{});throw new Error("PDF caricato ma registrazione non riuscita. Verifica la migrazione SQL: "+(metaErr.message||metaErr))}
+    await coachLoad();render();alert("PDF caricato correttamente.");
+  }catch(e){alert("Non sono riuscito a caricare il PDF.\n\n"+(e.message||e)+"\n\nVerifica di aver eseguito lo script SQL e creato il bucket privato coach-documents in Supabase.")}
+}
+async function coachOpenDocument(id){
+  const win=window.open("about:blank","_blank");
+  try{
+    const rows=await sb("replay_coach_documents?select=id,storage_path&id=eq."+encodeURIComponent(id)+"&limit=1");
+    if(!rows?.length)throw new Error("Documento non disponibile per questo account.");
+    const r=await fetch(SUPABASE_URL+"/storage/v1/object/sign/coach-documents/"+coachStoragePath(rows[0].storage_path),{method:"POST",headers:{...authHeaders()},body:JSON.stringify({expiresIn:60})});
+    const data=await r.json();if(!r.ok)throw new Error(data.message||data.error||"Impossibile aprire il PDF.");
+    const url=data.signedURL||data.signedUrl||data.url;if(!url)throw new Error("Link temporaneo non restituito da Supabase.");
+    const full=url.startsWith("http")?url:SUPABASE_URL+"/storage/v1"+url;
+    if(win)win.location=full;else location.href=full;
+  }catch(e){if(win)win.close();alert("Non riesco ad aprire il PDF.\n\n"+(e.message||e))}
+}
+async function coachDeleteDocument(id){
+  if(!isManager()||!confirm("Eliminare definitivamente questo PDF?"))return;
+  try{
+    const rows=await sb("replay_coach_documents?select=id,storage_path&id=eq."+encodeURIComponent(id)+"&limit=1");if(!rows?.length)return alert("Documento non trovato.");
+    const path=rows[0].storage_path;
+    const del=await fetch(SUPABASE_URL+"/storage/v1/object/coach-documents",{method:"DELETE",headers:{...authHeaders()},body:JSON.stringify({prefixes:[path]})});
+    if(!del.ok)throw new Error(await del.text()||"Eliminazione file non riuscita.");
+    await sb("replay_coach_documents?id=eq."+encodeURIComponent(id),{method:"DELETE",prefer:"return=minimal"});await coachLoad();render();
+  }catch(e){alert("Non è stato possibile eliminare il documento.\n\n"+(e.message||e))}
+}
 async function coachSelectPerson(pid){
   const c=coachState();c.personId=String(pid||"");c.loadError="";
   await coachLoad();render();
