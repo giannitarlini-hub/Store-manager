@@ -252,6 +252,33 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .coverage-table{font-size:11px}
 }
 
+
+/* ===== REPLAY COACH ===== */
+.coach-hero{background:linear-gradient(135deg,#101820,#233342);color:#fff;border-radius:24px;padding:22px;position:relative;overflow:hidden;margin-bottom:14px}
+.coach-hero:after{content:"";position:absolute;width:180px;height:180px;border:1px solid #e21b2333;border-radius:50%;right:-65px;top:-70px;box-shadow:0 0 0 28px #ffffff08,0 0 0 56px #ffffff05;pointer-events:none}
+.coach-brand{color:#f0444b;font-size:11px;font-weight:900;letter-spacing:.18em}
+.coach-hero h2{font-size:25px;letter-spacing:-.03em;margin:8px 0}
+.coach-hero p{color:#d4dce4;font-size:13px;line-height:1.5;max-width:660px;margin:0}
+.coach-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:14px;align-items:start}
+.coach-card{background:#fff;border:1px solid #e7ebf0;border-radius:20px;padding:18px;box-shadow:var(--rp-shadow);margin-bottom:13px;min-width:0}
+.coach-card h3{font-size:16px;margin:0 0 8px;letter-spacing:-.02em}
+.coach-muted{font-size:12px;color:#788292;line-height:1.5}
+.coach-advice{border:1px solid #e5eaf0;background:linear-gradient(135deg,#fff,#f8faff);border-radius:17px;padding:16px;margin-top:12px}
+.coach-advice h4{font-size:18px;line-height:1.3;margin:10px 0}
+.coach-advice p{font-size:14px;line-height:1.6;margin:8px 0;color:#273343;white-space:pre-wrap}
+.coach-tag{display:inline-flex;border-radius:999px;padding:5px 9px;background:#eef3ff;color:#2458b8;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}
+.coach-history-item{border-top:1px solid #edf0f4;padding:13px 0}
+.coach-history-item:first-child{border-top:0}
+.coach-feedback-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.coach-stat-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.coach-stat{background:#f7f9fb;border-radius:13px;padding:12px;min-width:0}
+.coach-stat span{font-size:11px;color:#788292;display:block}
+.coach-stat b{font-size:19px;display:block;margin-top:4px;overflow-wrap:anywhere}
+.coach-note{background:#fff9e9;border:1px solid #f4e6bd;border-radius:14px;padding:12px;margin:8px 0;font-size:13px;line-height:1.5}
+.coach-note small{display:block;color:#8a6b20;margin-bottom:5px}
+.coach-empty{background:#f7f9fb;border-radius:15px;padding:18px;text-align:center;color:#788292;font-size:13px;line-height:1.5}
+@media(max-width:760px){.coach-layout{grid-template-columns:minmax(0,1fr)}.coach-hero{padding:19px}.coach-hero h2{font-size:23px}.coach-card{padding:15px}.coach-feedback-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -602,7 +629,7 @@ function kpiCutoffMissing(){
 }
 function openModal(title,body){document.getElementById("sheet").innerHTML=`<div class="row"><h2 style="margin:0 0 15px">${title}</h2><button class="btn gray" onclick="closeModal()">Chiudi</button></div>${body}`;document.getElementById("modal").classList.add("open")}
 function closeModal(){document.getElementById("modal").classList.remove("open")}
-function nav(){let a=[["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"],["storeKpi","🎯","Andamento"],["malattie","⚕","Malattie"]];document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("")}
+function nav(){let a=[["home","⌂","Home"],["planning","▦","Planning"],["people","♙","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","▥","KPI"],["storeKpi","🎯","Andamento"],["malattie","⚕","Malattie"]];document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="navigate('${x[0]}')"><span class="ico">${x[1]}</span>${x[2]}</button>`).join("")}
 let AUTH=null;
 let PROFILE=null;
 const authHeaders=()=>({apikey:SUPABASE_KEY,Authorization:"Bearer "+(AUTH?.access_token||SUPABASE_KEY),"Content-Type":"application/json"});
@@ -1147,14 +1174,14 @@ function myPerson(){
 function myPersonId(){ return PROFILE?.dipendente_id == null ? null : String(PROFILE.dipendente_id); }
 function allowedTab(t){
   return isManager()
-    ? ["home","planning","people","tasks","requests","kpi","storeKpi","malattie"].includes(t)
-    : ["home","planning","tasks","requests","kpi","malattie"].includes(t);
+    ? ["home","planning","people","tasks","requests","kpi","storeKpi","malattie","coach"].includes(t)
+    : ["home","planning","tasks","requests","kpi","malattie","coach"].includes(t);
 }
 function nav(){
   const a=isManager()
-    ? [["home","⌂","Home"],["planning","📅","Planning"],["people","👥","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","📊","KPI"],["malattie","♥","Malattie"]]
-    : [["home","⌂","Home"],["planning","📅","I miei turni"],["tasks","✓","Le mie attività"],["requests","✉","Le mie richieste"],["kpi","📈","Il mio KPI"],["malattie","♥","La mia malattia"]];
-  document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="S.tab='${x[0]}';save();render()"><span class="ico">${x[1]}</span><span class="nav-label">${x[2]}</span></button>`).join("");
+    ? [["home","⌂","Home"],["planning","📅","Planning"],["people","👥","Personale"],["tasks","✓","Attività"],["requests","✉","Richieste"],["kpi","📊","KPI"],["coach","✦","Coach"],["malattie","♥","Malattie"]]
+    : [["home","⌂","Home"],["planning","📅","I miei turni"],["tasks","✓","Le mie attività"],["requests","✉","Le mie richieste"],["kpi","📈","Il mio KPI"],["coach","✦","Replay Coach"],["malattie","♥","La mia malattia"]];
+  document.getElementById("nav").innerHTML=a.map(x=>`<button class="${S.tab==x[0]?"active":""}" onclick="navigate('${x[0]}')"><span class="ico">${x[1]}</span><span class="nav-label">${x[2]}</span></button>`).join("");
 }
 
 function resourceShifts(){
@@ -1614,11 +1641,158 @@ function kpiEntry(pid,date){
     <button class="btn" style="width:100%" onclick="saveDailyKpi()">${r?"Salva modifiche":"Salva KPI"}</button>
     ${r?`<button class="btn red" style="width:100%;margin-top:8px" onclick="deleteDailyKpi('${String(pid)}_${d}');closeModal()">Elimina giornata</button>`:""}`);
 }
+
+/* ===== REPLAY COACH: interfaccia e collegamento sicuro al backend ===== */
+function navigate(tab){if(tab==="coach"){openCoach();return;}S.tab=tab;save();render();}
+function coachState(){
+  S.coach=S.coach||{personId:"",entries:[],feedback:[],notes:[],loading:false};
+  return S.coach;
+}
+function coachPersonId(){
+  const c=coachState();
+  return isManager() ? String(c.personId||S.people.find(p=>p.active)?.id||"") : String(myPersonId()||"");
+}
+function coachAreaLabel(area){
+  return ({vendita_complementare:"Vendita complementare",atv:"ATV e valore dello scontrino",accoglienza:"Accoglienza",prodotto:"Conoscenza prodotto",autonomia:"Autonomia",raccolta_dati:"Raccolta dati"}[area]||"Sviluppo vendita");
+}
+function coachStatusLabel(status){
+  return ({active:"In corso",archived:"Storico",completed:"Completato",needs_data:"Servono più dati"}[status]||"Da verificare");
+}
+function coachFmtDate(v){
+  if(!v)return "Data non disponibile";
+  const d=new Date(v);
+  return Number.isNaN(d.getTime())?String(v):new Intl.DateTimeFormat("it-IT",{day:"2-digit",month:"short",year:"numeric"}).format(d);
+}
+function coachKpiValue(v){
+  return v===null||v===undefined?"—":Number(v).toLocaleString("it-IT",{maximumFractionDigits:2});
+}
+function coachDelta(current,previous){
+  if(previous===null||previous===undefined||Number(previous)===0)return "Confronto non disponibile";
+  const pct=(Number(current)-Number(previous))/Number(previous)*100;
+  return `${pct>0?"+":""}${pct.toLocaleString("it-IT",{maximumFractionDigits:1})}% rispetto al periodo precedente`;
+}
+async function coachLoad(){
+  const c=coachState(), pid=coachPersonId();
+  if(!pid){c.entries=[];c.feedback=[];c.notes=[];return;}
+  c.loading=true;
+  try{
+    const [entries,feedback]=await Promise.all([
+      sb("replay_coach_entries?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=created_at.desc&limit=20"),
+      sb("replay_coach_feedback?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=updated_at.desc&limit=30")
+    ]);
+    c.entries=entries||[];c.feedback=feedback||[];
+    if(isManager()){
+      try{c.notes=await sb("replay_coach_manager_notes?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=created_at.desc&limit=30")||[]}
+      catch(e){c.notes=[];console.warn("Note riservate Coach non disponibili",e)}
+    }else c.notes=[];
+  }catch(e){
+    c.entries=[];c.feedback=[];c.notes=[];
+    console.warn("Replay Coach non ancora configurato",e);
+    c.loadError=e.message||String(e);
+  }finally{c.loading=false}
+}
+function coachPage(){
+  const c=coachState(), pid=coachPersonId(), p=S.people.find(x=>String(x.id)===String(pid)), name=p?.name||(myPerson()?.name)||"Team";
+  const entries=c.entries||[], feedback=c.feedback||[], notes=c.notes||[];
+  const active=entries.find(e=>e.stato==="active"||e.stato==="needs_data");
+  const activeFeedback=active?feedback.find(f=>String(f.entry_id)===String(active.id)):null;
+  const options=isManager()?`<label>Collaboratore</label><select class="select" id="coachPersonSelect" onchange="coachSelectPerson(this.value)"><option value="">Seleziona una risorsa</option>${S.people.filter(x=>x.active).map(x=>`<option value="${esc(x.id)}" ${String(x.id)===String(pid)?"selected":""}>${esc(x.name)}</option>`).join("")}</select>`:"";
+  const k=active?.snapshot?.current, prev=active?.snapshot?.previous;
+  const advice=active?`<div class="coach-advice">
+    <div class="row" style="align-items:flex-start"><span class="coach-tag">${esc(coachAreaLabel(active.area))}</span><span class="pill ${active.stato==="needs_data"?"yellow":"gray"}">${esc(coachStatusLabel(active.stato))}</span></div>
+    <h4>${esc(active.titolo)}</h4>
+    <p>${esc(active.consiglio)}</p>
+    ${active.motivo?`<div class="notice" style="margin-top:10px"><b>Perché questo passo</b><div style="font-size:13px;line-height:1.5;margin-top:4px">${esc(active.motivo)}</div></div>`:""}
+    ${active.obiettivo?`<p><b>Obiettivo:</b> ${esc(active.obiettivo)}</p>`:""}
+    <div class="small" style="margin-top:10px">Ultimo aggiornamento: ${esc(coachFmtDate(active.evaluated_at||active.created_at))}</div>
+    ${k?`<div class="coach-stat-row"><div class="coach-stat"><span>Fatturato periodo attuale</span><b>${fmt(k.sales)}</b><span>${esc(coachDelta(k.sales,prev?.sales))}</span></div><div class="coach-stat"><span>ATV attuale</span><b>${k.atv==null?"—":fmt(k.atv)}</b><span>${esc(coachDelta(k.atv,prev?.atv))}</span></div><div class="coach-stat"><span>UPT attuale</span><b>${coachKpiValue(k.upt)}</b><span>${esc(coachDelta(k.upt,prev?.upt))}</span></div><div class="coach-stat"><span>Scontrini periodo attuale</span><b>${coachKpiValue(k.receipts)}</b><span>Periodo comparabile: ${esc(active.snapshot?.previous_period||"mese precedente")}</span></div></div>`:""}
+    ${!isManager()?`<div style="margin-top:15px"><h3>Com'è andata nella pratica?</h3><div class="coach-muted">Il tuo riscontro aiuta il Coach a non riproporre tecniche che non ti sono utili.</div>
+      <label>Hai provato questa tecnica?</label><select class="select" id="coachTried"><option value="true" ${activeFeedback?.tecnica_provata===true?"selected":""}>Sì, l'ho provata</option><option value="false" ${activeFeedback?.tecnica_provata===false?"selected":""}>Non ancora</option></select>
+      <label>Com'è stata utile?</label><select class="select" id="coachOutcome"><option value="non_indicato">Seleziona un riscontro</option><option value="utile" ${activeFeedback?.esito==="utile"?"selected":""}>Mi è stata utile</option><option value="parzialmente_utile" ${activeFeedback?.esito==="parzialmente_utile"?"selected":""}>In parte</option><option value="non_utile" ${activeFeedback?.esito==="non_utile"?"selected":""}>Non ha funzionato per me</option><option value="non_ancora_provata" ${activeFeedback?.esito==="non_ancora_provata"?"selected":""}>Non l'ho ancora provata</option></select>
+      <label>Nota facoltativa</label><textarea class="input" id="coachReflection" rows="2" maxlength="1000" placeholder="Cosa hai notato?">${esc(activeFeedback?.riflessione||"")}</textarea>
+      <button class="btn" style="width:100%;margin-top:5px" onclick="coachSaveFeedback('${esc(active.id)}')">Salva il mio riscontro</button></div>`:""}
+  </div>`:`<div class="coach-empty">Nessun consiglio attivo salvato per ${esc(name)}. ${isManager()?"Genera una prima valutazione quando i KPI sono disponibili.":"Quando il Coach sarà configurato, qui troverai un consiglio pratico per il tuo lavoro."}</div>`;
+  const history=entries.filter(e=>!active||String(e.id)!==String(active.id));
+  const historyHtml=history.length?history.map(e=>{
+    const f=feedback.find(x=>String(x.entry_id)===String(e.id));
+    return `<div class="coach-history-item"><div class="row" style="align-items:flex-start"><div style="min-width:0"><b>${esc(e.titolo)}</b><div class="small">${esc(coachAreaLabel(e.area))} · ${esc(coachFmtDate(e.created_at))}</div></div><span class="pill gray">${esc(coachStatusLabel(e.stato))}</span></div><div style="font-size:13px;line-height:1.5;margin-top:7px">${esc(e.consiglio)}</div>${f?`<div class="small" style="margin-top:7px">Riscontro: ${esc(({utile:"utile",parzialmente_utile:"in parte",non_utile:"non utile",non_ancora_provata:"non provata",non_indicato:"non indicato"}[f.esito]||f.esito))}${f.riflessione?" · "+esc(f.riflessione):""}</div>`:""}</div>`;
+  }).join(""):`<div class="coach-muted">Le strategie precedenti compariranno qui, così il Coach potrà imparare dai tentativi già fatti.</div>`;
+  const notesHtml=notes.length?notes.map(n=>`<div class="coach-note"><small>${esc(n.priorita.replaceAll("_"," "))} · ${esc(coachFmtDate(n.created_at))}</small>${esc(n.nota)}<div style="text-align:right;margin-top:8px"><button class="btn gray" onclick="coachDeleteNote('${esc(n.id)}')">Elimina nota</button></div></div>`).join(""):`<div class="coach-muted">Nessuna nota privata ancora inserita.</div>`;
+  return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Replay Coach</h2><p>Un percorso pratico di crescita: dati, piccoli esperimenti sul floor e feedback. Nessun giudizio sulla persona e nessuna promessa basata su dati insufficienti.</p></section>
+    ${c.loadError?`<div class="notice danger" style="margin-bottom:12px"><b>Configurazione da completare</b><div class="small" style="margin-top:5px">Lo storico del Coach non è raggiungibile. Esegui prima la migrazione SQL e distribuisci la funzione server. Dettaglio: ${esc(c.loadError).slice(0,350)}</div></div>`:""}
+    <div class="coach-layout"><div>
+      <section class="coach-card"><div class="row"><div><h3>${isManager()?"Scheda di sviluppo":"Il tuo prossimo passo"}</h3><div class="coach-muted">${isManager()?"Seleziona una risorsa per consultare la cronologia e aggiornare il consiglio.":"Consigli pratici costruiti sui KPI e sulle strategie già provate."}</div></div></div>
+      ${options}
+      ${isManager()&&pid?`<button class="btn" style="width:100%;margin-top:8px" onclick="coachRun()">✦ ${active?"Rivaluta con i nuovi dati":"Genera il primo consiglio"}</button>`:""}
+      ${advice}
+      </section>
+      <section class="coach-card"><h3>Storico delle strategie</h3><div class="coach-muted">Il Coach conserva le strategie precedenti e il riscontro dato dal collaboratore.</div>${historyHtml}</section>
+    </div><div>
+      ${isManager()?`<section class="coach-card"><h3>Note riservate Manager</h3><div class="coach-muted">Visibili solo al ruolo Manager, separate dai consigli mostrati al collaboratore. Annota un obiettivo di coaching osservabile e professionale.</div><label>Area</label><select class="select" id="coachNoteArea"><option value="vendita_complementare">Vendita complementare</option><option value="atv">ATV</option><option value="accoglienza">Accoglienza</option><option value="prodotto">Conoscenza prodotto</option><option value="autonomia">Autonomia</option><option value="osservazione">Osservazione</option></select><label>Nota privata</label><textarea class="input" id="coachNoteText" rows="3" maxlength="1500" placeholder="Es. osservare 3 interazioni e dare un feedback specifico a fine turno"></textarea><button class="btn" style="width:100%" onclick="coachSaveNote()">Salva nota privata</button><div style="margin-top:14px">${notesHtml}</div></section>`:""}
+      <section class="coach-card"><h3>Come funziona</h3><div class="coach-muted">1. Il Coach legge i KPI già inseriti nel gestionale.<br><br>2. Propone un piccolo esercizio, spiegando perché.<br><br>3. Il collaboratore registra il proprio riscontro.<br><br>4. Il Coach usa storico e feedback per evitare di ripetere strategie inefficaci.<br><br>I KPI possono dipendere anche dal traffico e dal mix di clienti: un cambiamento non dimostra da solo che una tecnica abbia causato il risultato.</div></section>
+    </div></div>`;
+}
+async function coachSelectPerson(pid){
+  const c=coachState();c.personId=String(pid||"");c.loadError="";
+  await coachLoad();render();
+}
+async function coachRun(){
+  if(!isManager())return alert("Solo il Manager può avviare una valutazione del team.");
+  const pid=coachPersonId();if(!pid)return alert("Seleziona prima una risorsa.");
+  const btns=[...document.querySelectorAll('button[onclick="coachRun()"]')];btns.forEach(b=>{b.disabled=true;b.textContent="Il Coach sta analizzando i dati…"});
+  try{
+    const r=await fetch(SUPABASE_URL+"/functions/v1/replay-coach",{
+      method:"POST",headers:{...authHeaders(),"Content-Type":"application/json"},
+      body:JSON.stringify({person_id:Number(pid)})
+    });
+    const raw=await r.text();let data={};try{data=JSON.parse(raw)}catch{}
+    if(!r.ok)throw new Error(data.error||raw||("Errore "+r.status));
+    const c=coachState();c.personId=String(pid);c.loadError="";await coachLoad();render();
+  }catch(e){alert("Non è stato possibile aggiornare il Replay Coach.\n\n"+(e.message||e)+"\n\nVerifica che la migrazione SQL sia stata eseguita e che la Edge Function replay-coach sia stata distribuita.");}
+  finally{btns.forEach(b=>{b.disabled=false;b.textContent="✦ Rivaluta con i nuovi dati"})}
+}
+async function coachSaveFeedback(entryId){
+  if(isManager())return;
+  const pid=myPersonId();if(!pid)return alert("Account non collegato a una risorsa.");
+  const tried=document.getElementById("coachTried")?.value==="true";
+  const outcome=document.getElementById("coachOutcome")?.value||"non_indicato";
+  const reflection=(document.getElementById("coachReflection")?.value||"").trim();
+  try{
+    await sb("replay_coach_feedback?on_conflict=entry_id,dipendente_id",{
+      method:"POST",prefer:"resolution=merge-duplicates,return=representation",
+      body:JSON.stringify({entry_id:entryId,dipendente_id:Number(pid),tecnica_provata:tried,esito:outcome,riflessione:reflection,updated_at:new Date().toISOString()})
+    });
+    const c=coachState();c.loadError="";await coachLoad();render();alert("Riscontro salvato. Il Coach potrà tenerne conto nella prossima valutazione.");
+  }catch(e){alert("Non riesco a salvare il riscontro. Verifica che la migrazione Replay Coach sia stata eseguita.\n\n"+(e.message||e))}
+}
+async function coachSaveNote(){
+  if(!isManager())return alert("Le note riservate sono disponibili solo al Manager.");
+  const pid=coachPersonId(),note=(document.getElementById("coachNoteText")?.value||"").trim(),area=document.getElementById("coachNoteArea")?.value||"osservazione";
+  if(!pid)return alert("Seleziona una risorsa.");
+  if(!note)return alert("Scrivi una nota prima di salvarla.");
+  try{
+    await sb("replay_coach_manager_notes",{method:"POST",body:JSON.stringify({dipendente_id:Number(pid),priorita:area,nota,created_by:AUTH?.user?.id})});
+    const c=coachState();await coachLoad();render();
+  }catch(e){alert("Non riesco a salvare la nota privata. Verifica la migrazione SQL e le autorizzazioni del ruolo Manager.\n\n"+(e.message||e))}
+}
+async function coachDeleteNote(id){
+  if(!isManager())return;
+  if(!confirm("Eliminare questa nota privata?"))return;
+  try{await sb("replay_coach_manager_notes?id=eq."+encodeURIComponent(id),{method:"DELETE",prefer:"return=minimal"});await coachLoad();render()}
+  catch(e){alert("Non riesco a eliminare la nota.\n\n"+(e.message||e))}
+}
+async function openCoach(){
+  if(!allowedTab("coach"))return alert("Replay Coach non disponibile per questo profilo.");
+  const c=coachState();if(isManager()&&!c.personId)c.personId=String(S.people.find(p=>p.active)?.id||"");
+  c.loadError="";S.tab="coach";render();
+  await coachLoad();render();
+}
+
 function render(){
   purgeInactivePeople();
   if(!allowedTab(S.tab))S.tab="home";
   let t=S.tab;
-  document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():t==="storeKpi"?storeKpi():t==="malattie"?malattie():kpi();
+  document.getElementById("main").innerHTML=t==="home"?home():t==="planning"?planning():t==="people"?people():t==="tasks"?tasks():t==="requests"?requests():t==="storeKpi"?storeKpi():t==="malattie"?malattie():t==="coach"?coachPage():kpi();
   nav();
 }
 
@@ -1654,6 +1828,7 @@ async function bootApp(){
   await loadHistory();
   await loadShifts();
   await loadMalattie();
+  if(S.tab==="coach"){await coachLoad();render();}
   startKpiNotificationMonitor();
 }
 async function bootAuth(){
