@@ -1691,47 +1691,79 @@ async function coachLoad(){
     c.loadError=e.message||String(e);
   }finally{c.loading=false}
 }
+function coachMonthlyRows(pid, months){
+  const now=dateLocal(), [yy,mm]=now.slice(0,7).split("-").map(Number);
+  const result=[];
+  for(let back=months-1;back>=0;back--){
+    const d=new Date(yy,mm-1-back,1), period=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    let rows=kpiRowsForPerson(pid,period)||[];
+    rows=rows.filter(r=>String(r.date||"").slice(0,10)<=now);
+    const k=calcKpi(rows);
+    result.push({period,rows,days:rows.length,...k});
+  }
+  return result;
+}
+function coachSvgChart(data,key,title,format){
+  const valid=data.filter(x=>x.days>0 && Number.isFinite(Number(x[key])));
+  if(!valid.length)return `<div class="coach-empty">Non ci sono dati registrati sufficienti per il grafico ${esc(title)}.</div>`;
+  const W=Math.max(360,valid.length*72),H=190,L=38,R=18,T=20,B=36,ph=H-T-B,pw=W-L-R;
+  const vals=valid.map(x=>Number(x[key])), max=Math.max(...vals)*1.15||1, min=Math.min(0,...vals), range=max-min||1;
+  const pts=valid.map((v,i)=>({v,x:valid.length===1?W/2:L+i*pw/(valid.length-1),y:T+(max-Number(v[key]))/range*ph}));
+  const grid=[0,.5,1].map(t=>`<line class="chart-grid" x1="${L}" y1="${T+t*ph}" x2="${W-R}" y2="${T+t*ph}"/>`).join("");
+  const path=pts.map((p,i)=>(i?"L":"M")+p.x.toFixed(1)+" "+p.y.toFixed(1)).join(" ");
+  const marks=pts.map((p,i)=>`<g><circle class="${i===pts.length-1?"chart-dot-last":"chart-dot"}" cx="${p.x}" cy="${p.y}" r="4"/><text class="chart-date" x="${p.x}" y="${H-12}">${p.v.period.slice(5)}/${p.v.period.slice(2,4)}</text></g>`).join("");
+  return `<div class="coach-card"><h3>${esc(title)}</h3><div class="coach-muted">Valori mensili · i mesi senza KPI sono esclusi, non conteggiati come zero.</div><div class="chart"><svg role="img" aria-label="${esc(title)}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="min-width:${W}px">${grid}<path class="chart-line" d="${path}"/>${marks}</svg></div><div class="small">Ultimo mese disponibile: <b>${format(valid[valid.length-1][key])}</b></div></div>`;
+}
+function coachAnalysisHtml(pid,months){
+  const data=coachMonthlyRows(pid,months), valid=data.filter(x=>x.days>0);
+  const sum=key=>valid.reduce((a,x)=>a+(Number(x[key])||0),0);
+  const sales=sum("sales"), receipts=sum("receipts"), pieces=sum("pieces");
+  const table= data.slice().reverse().map(x=>`<tr><td>${esc(periodLabel(x.period))}</td><td>${x.days?fmt(x.sales):"—"}</td><td>${x.days?fmt(x.atv):"—"}</td><td>${x.days?Number(x.upt).toFixed(2):"—"}</td><td>${x.days?x.receipts:"—"}</td><td>${x.days?x.pieces:"—"}</td><td>${x.days?x.days:"—"}</td></tr>`).join("");
+  return `<div class="coach-stat-row">
+    <div class="coach-stat"><span>Fatturato registrato</span><b>${fmt(sales)}</b></div>
+    <div class="coach-stat"><span>ATV aggregato</span><b>${receipts?fmt(sales/receipts):"—"}</b></div>
+    <div class="coach-stat"><span>UPT aggregato</span><b>${receipts?(pieces/receipts).toFixed(2):"—"}</b></div>
+    <div class="coach-stat"><span>Scontrini · pezzi</span><b>${receipts} · ${pieces}</b></div>
+  </div>
+  ${coachSvgChart(data,"sales","Fatturato mensile",v=>fmt(v))}
+  ${coachSvgChart(data,"atv","ATV mensile",v=>fmt(v))}
+  ${coachSvgChart(data,"upt","UPT mensile",v=>Number(v).toFixed(2))}
+  <div class="coach-card"><h3>Dettaglio mensile</h3><div class="table-scroll"><table class="premium-table" style="min-width:700px"><thead><tr><th>Mese</th><th>Fatturato</th><th>ATV</th><th>UPT</th><th>Scontrini</th><th>Pezzi</th><th>Giornate KPI</th></tr></thead><tbody>${table}</tbody></table></div></div>`;
+}
+function coachSaveDevelopmentPlan(){
+  if(!isManager())return alert("Solo il Manager può aggiornare il piano.");
+  const pid=coachPersonId(); if(!pid)return alert("Seleziona una risorsa.");
+  const plan={goal:(document.getElementById("coachPlanGoal")?.value||"").trim(),actions:(document.getElementById("coachPlanActions")?.value||"").trim(),due:document.getElementById("coachPlanDue")?.value||"",review:(document.getElementById("coachPlanReview")?.value||"").trim(),updatedAt:new Date().toISOString()};
+  if(!plan.goal)return alert("Inserisci un obiettivo misurabile.");
+  S.coach=S.coach||{}; S.coach.plans=S.coach.plans||{}; S.coach.plans[pid]=plan; save();
+  alert("Piano salvato su questo dispositivo.");
+}
 function coachPage(){
   const c=coachState(), pid=coachPersonId(), p=S.people.find(x=>String(x.id)===String(pid)), name=p?.name||(myPerson()?.name)||"Team";
-  const entries=c.entries||[], feedback=c.feedback||[], notes=c.notes||[];
-  const active=entries.find(e=>e.stato==="active"||e.stato==="needs_data");
-  const activeFeedback=active?feedback.find(f=>String(f.entry_id)===String(active.id)):null;
+  const notes=c.notes||[];
   const options=isManager()?`<label>Collaboratore</label><select class="select" id="coachPersonSelect" onchange="coachSelectPerson(this.value)"><option value="">Seleziona una risorsa</option>${S.people.filter(x=>x.active).map(x=>`<option value="${esc(x.id)}" ${String(x.id)===String(pid)?"selected":""}>${esc(x.name)}</option>`).join("")}</select>`:"";
-  const k=active?.snapshot?.current, prev=active?.snapshot?.previous;
-  const advice=active?`<div class="coach-advice">
-    <div class="row" style="align-items:flex-start"><span class="coach-tag">${esc(coachAreaLabel(active.area))}</span><span class="pill ${active.stato==="needs_data"?"yellow":"gray"}">${esc(coachStatusLabel(active.stato))}</span></div>
-    <h4>${esc(active.titolo)}</h4>
-    <p>${esc(active.consiglio)}</p>
-    ${active.motivo?`<div class="notice" style="margin-top:10px"><b>Perché questo passo</b><div style="font-size:13px;line-height:1.5;margin-top:4px">${esc(active.motivo)}</div></div>`:""}
-    ${active.obiettivo?`<p><b>Obiettivo:</b> ${esc(active.obiettivo)}</p>`:""}
-    <div class="small" style="margin-top:10px">Ultimo aggiornamento: ${esc(coachFmtDate(active.evaluated_at||active.created_at))}</div>
-    ${k?`<div class="coach-stat-row"><div class="coach-stat"><span>Fatturato periodo attuale</span><b>${fmt(k.sales)}</b><span>${esc(coachDelta(k.sales,prev?.sales))}</span></div><div class="coach-stat"><span>ATV attuale</span><b>${k.atv==null?"—":fmt(k.atv)}</b><span>${esc(coachDelta(k.atv,prev?.atv))}</span></div><div class="coach-stat"><span>UPT attuale</span><b>${coachKpiValue(k.upt)}</b><span>${esc(coachDelta(k.upt,prev?.upt))}</span></div><div class="coach-stat"><span>Scontrini periodo attuale</span><b>${coachKpiValue(k.receipts)}</b><span>Periodo comparabile: ${esc(active.snapshot?.previous_period||"mese precedente")}</span></div></div>`:""}
-    ${!isManager()?`<div style="margin-top:15px"><h3>Com'è andata nella pratica?</h3><div class="coach-muted">Il tuo riscontro aiuta il Coach a non riproporre tecniche che non ti sono utili.</div>
-      <label>Hai provato questa tecnica?</label><select class="select" id="coachTried"><option value="true" ${activeFeedback?.tecnica_provata===true?"selected":""}>Sì, l'ho provata</option><option value="false" ${activeFeedback?.tecnica_provata===false?"selected":""}>Non ancora</option></select>
-      <label>Com'è stata utile?</label><select class="select" id="coachOutcome"><option value="non_indicato">Seleziona un riscontro</option><option value="utile" ${activeFeedback?.esito==="utile"?"selected":""}>Mi è stata utile</option><option value="parzialmente_utile" ${activeFeedback?.esito==="parzialmente_utile"?"selected":""}>In parte</option><option value="non_utile" ${activeFeedback?.esito==="non_utile"?"selected":""}>Non ha funzionato per me</option><option value="non_ancora_provata" ${activeFeedback?.esito==="non_ancora_provata"?"selected":""}>Non l'ho ancora provata</option></select>
-      <label>Nota facoltativa</label><textarea class="input" id="coachReflection" rows="2" maxlength="1000" placeholder="Cosa hai notato?">${esc(activeFeedback?.riflessione||"")}</textarea>
-      <button class="btn" style="width:100%;margin-top:5px" onclick="coachSaveFeedback('${esc(active.id)}')">Salva il mio riscontro</button></div>`:""}
-  </div>`:`<div class="coach-empty">Nessun consiglio attivo salvato per ${esc(name)}. ${isManager()?"Genera una prima valutazione quando i KPI sono disponibili.":"Quando il Coach sarà configurato, qui troverai un consiglio pratico per il tuo lavoro."}</div>`;
-  const history=entries.filter(e=>!active||String(e.id)!==String(active.id));
-  const historyHtml=history.length?history.map(e=>{
-    const f=feedback.find(x=>String(x.entry_id)===String(e.id));
-    return `<div class="coach-history-item"><div class="row" style="align-items:flex-start"><div style="min-width:0"><b>${esc(e.titolo)}</b><div class="small">${esc(coachAreaLabel(e.area))} · ${esc(coachFmtDate(e.created_at))}</div></div><span class="pill gray">${esc(coachStatusLabel(e.stato))}</span></div><div style="font-size:13px;line-height:1.5;margin-top:7px">${esc(e.consiglio)}</div>${f?`<div class="small" style="margin-top:7px">Riscontro: ${esc(({utile:"utile",parzialmente_utile:"in parte",non_utile:"non utile",non_ancora_provata:"non provata",non_indicato:"non indicato"}[f.esito]||f.esito))}${f.riflessione?" · "+esc(f.riflessione):""}</div>`:""}</div>`;
-  }).join(""):`<div class="coach-muted">Le strategie precedenti compariranno qui, così il Coach potrà imparare dai tentativi già fatti.</div>`;
-  const notesHtml=notes.length?notes.map(n=>`<div class="coach-note"><small>${esc(n.priorita.replaceAll("_"," "))} · ${esc(coachFmtDate(n.created_at))}</small>${esc(n.nota)}<div style="text-align:right;margin-top:8px"><button class="btn gray" onclick="coachDeleteNote('${esc(n.id)}')">Elimina nota</button></div></div>`).join(""):`<div class="coach-muted">Nessuna nota privata ancora inserita.</div>`;
-  return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Replay Coach</h2><p>Un percorso pratico di crescita: dati, piccoli esperimenti sul floor e feedback. Nessun giudizio sulla persona e nessuna promessa basata su dati insufficienti.</p></section>
-    ${c.loadError?`<div class="notice danger" style="margin-bottom:12px"><b>Configurazione da completare</b><div class="small" style="margin-top:5px">Lo storico del Coach non è raggiungibile. Esegui prima la migrazione SQL e distribuisci la funzione server. Dettaglio: ${esc(c.loadError).slice(0,350)}</div></div>`:""}
-    <div class="coach-layout"><div>
-      <section class="coach-card"><div class="row"><div><h3>${isManager()?"Scheda di sviluppo":"Il tuo prossimo passo"}</h3><div class="coach-muted">${isManager()?"Seleziona una risorsa per consultare la cronologia e aggiornare il consiglio.":"Consigli pratici costruiti sui KPI e sulle strategie già provate."}</div></div></div>
-      ${options}
-      ${isManager()&&pid?`<button class="btn" style="width:100%;margin-top:8px" onclick="coachRun()">✦ ${active?"Rivaluta con i nuovi dati":"Genera il primo consiglio"}</button>`:""}
-      ${advice}
-      </section>
-      <section class="coach-card"><h3>Storico delle strategie</h3><div class="coach-muted">Il Coach conserva le strategie precedenti e il riscontro dato dal collaboratore.</div>${historyHtml}</section>
-    </div><div>
-      ${isManager()?`<section class="coach-card"><h3>Note riservate Manager</h3><div class="coach-muted">Visibili solo al ruolo Manager, separate dai consigli mostrati al collaboratore. Annota un obiettivo di coaching osservabile e professionale.</div><label>Area</label><select class="select" id="coachNoteArea"><option value="vendita_complementare">Vendita complementare</option><option value="atv">ATV</option><option value="accoglienza">Accoglienza</option><option value="prodotto">Conoscenza prodotto</option><option value="autonomia">Autonomia</option><option value="osservazione">Osservazione</option></select><label>Nota privata</label><textarea class="input" id="coachNoteText" rows="3" maxlength="1500" placeholder="Es. osservare 3 interazioni e dare un feedback specifico a fine turno"></textarea><button class="btn" style="width:100%" onclick="coachSaveNote()">Salva nota privata</button><div style="margin-top:14px">${notesHtml}</div></section>`:""}
-      <section class="coach-card"><h3>Come funziona</h3><div class="coach-muted">1. Il Coach legge i KPI già inseriti nel gestionale.<br><br>2. Propone un piccolo esercizio, spiegando perché.<br><br>3. Il collaboratore registra il proprio riscontro.<br><br>4. Il Coach usa storico e feedback per evitare di ripetere strategie inefficaci.<br><br>I KPI possono dipendere anche dal traffico e dal mix di clienti: un cambiamento non dimostra da solo che una tecnica abbia causato il risultato.</div></section>
-    </div></div>`;
+  const months=Number(c.analysisMonths||6), plan=(c.plans||{})[pid]||{};
+  const notesHtml=notes.length?notes.map(n=>`<div class="coach-note"><small>${esc(String(n.priorita||"osservazione").replaceAll("_"," "))} · ${esc(coachFmtDate(n.created_at))}</small>${esc(n.nota)}<div style="text-align:right;margin-top:8px"><button class="btn gray" onclick="coachDeleteNote('${esc(n.id)}')">Elimina nota</button></div></div>`).join(""):`<div class="coach-muted">Nessuna nota privata ancora inserita.</div>`;
+  if(!isManager())return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Replay Coach</h2><p>Area di sviluppo gestita dallo Store Manager.</p></section><div class="coach-empty">Questa sezione è riservata all'analisi manageriale.</div>`;
+  return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Replay Coach</h2><p>Analisi dell'andamento reale della risorsa e piano di sviluppo individuale. I calcoli avvengono nel gestionale, senza chiamate a servizi AI a pagamento.</p></section>
+    ${c.loadError?`<div class="notice" style="margin-bottom:12px">Lo storico remoto delle note/strategie non è raggiungibile al momento. L'analisi KPI usa i dati già caricati nel gestionale.</div>`:""}
+    <section class="coach-card"><h3>1. Seleziona la risorsa</h3>${options}<label>Periodo di analisi</label><select class="select" onchange="coachSetAnalysisMonths(this.value)"><option value="3" ${months===3?"selected":""}>Ultimi 3 mesi</option><option value="6" ${months===6?"selected":""}>Ultimi 6 mesi</option><option value="12" ${months===12?"selected":""}>Ultimi 12 mesi</option></select>
+    <div class="coach-muted">Risorsa selezionata: <b>${esc(name)}</b>. I mesi senza dati vengono indicati come non disponibili, non come risultati pari a zero.</div></section>
+    ${pid?coachAnalysisHtml(pid,months):`<div class="coach-empty">Seleziona una risorsa per visualizzare l'analisi.</div>`}
+    <section class="coach-card"><h3>2. Piano di sviluppo individuale</h3><div class="coach-muted">Compilazione manuale del Manager: obiettivo concreto, azioni osservabili, scadenza e verifica del risultato. Il piano viene salvato su questo dispositivo.</div>
+      <label>Obiettivo misurabile</label><textarea class="input" id="coachPlanGoal" rows="2" maxlength="1200" placeholder="Es. portare l'UPT da 1,45 a 1,60 entro la data di verifica">${esc(plan.goal||"")}</textarea>
+      <label>Azioni concordate / comportamento da osservare</label><textarea class="input" id="coachPlanActions" rows="3" maxlength="1800" placeholder="Es. proporre un prodotto complementare in almeno 5 interazioni osservate per turno">${esc(plan.actions||"")}</textarea>
+      <label>Data di verifica</label><input class="input" id="coachPlanDue" type="date" value="${esc(plan.due||"")}">
+      <label>Esito della verifica / prossimo passo</label><textarea class="input" id="coachPlanReview" rows="2" maxlength="1200" placeholder="Compila durante il follow-up">${esc(plan.review||"")}</textarea>
+      <button class="btn" style="width:100%" onclick="coachSaveDevelopmentPlan()">Salva piano di sviluppo</button>
+      ${plan.updatedAt?`<div class="small" style="margin-top:8px">Ultimo salvataggio: ${esc(coachFmtDate(plan.updatedAt))}</div>`:""}
+    </section>
+    <section class="coach-card"><h3>3. Note riservate Manager</h3><div class="coach-muted">Le note già esistenti restano separate dal piano di sviluppo e visibili solo al Manager.</div><label>Area</label><select class="select" id="coachNoteArea"><option value="vendita_complementare">Vendita complementare</option><option value="atv">ATV</option><option value="accoglienza">Accoglienza</option><option value="prodotto">Conoscenza prodotto</option><option value="autonomia">Autonomia</option><option value="osservazione">Osservazione</option></select><label>Nota privata</label><textarea class="input" id="coachNoteText" rows="3" maxlength="1500" placeholder="Osservazioni professionali, esempi concreti e follow-up"></textarea><button class="btn" style="width:100%" onclick="coachSaveNote()">Salva nota privata</button><div style="margin-top:14px">${notesHtml}</div></section>`;
 }
+function coachSetAnalysisMonths(value){
+  const c=coachState(); c.analysisMonths=[3,6,12].includes(Number(value))?Number(value):6; save(); render();
+}
+
 async function coachSelectPerson(pid){
   const c=coachState();c.personId=String(pid||"");c.loadError="";
   await coachLoad();render();
