@@ -1673,23 +1673,30 @@ function coachDelta(current,previous){
 }
 async function coachLoad(){
   const c=coachState(), pid=coachPersonId();
-  if(!pid){c.entries=[];c.feedback=[];c.notes=[];return;}
+  if(!pid){c.entries=[];c.feedback=[];c.notes=[];c.developmentPlan=null;return;}
   c.loading=true;
+  c.plans=c.plans||{};
   try{
-    const [entries,feedback]=await Promise.all([
-      sb("replay_coach_entries?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=created_at.desc&limit=20"),
-      sb("replay_coach_feedback?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=updated_at.desc&limit=30")
-    ]);
-    c.entries=entries||[];c.feedback=feedback||[];
-    if(isManager()){
-      try{c.notes=await sb("replay_coach_manager_notes?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=created_at.desc&limit=30")||[]}
-      catch(e){c.notes=[];console.warn("Note riservate Coach non disponibili",e)}
-    }else c.notes=[];
+    // I piani sono condivisi tramite Supabase: il Manager può leggere/scrivere,
+    // il collaboratore autenticato può leggere esclusivamente il proprio piano.
+    const rows=await sb("replay_coach_development_plans?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&limit=1");
+    const row=Array.isArray(rows)?rows[0]:null;
+    c.developmentPlan=row?{goal:row.goal||"",actions:row.actions||"",due:row.due_date||"",review:row.review||"",updatedAt:row.updated_at||""}:null;
+    c.plans[pid]=c.developmentPlan||{};
   }catch(e){
-    c.entries=[];c.feedback=[];c.notes=[];
-    console.warn("Replay Coach non ancora configurato",e);
-    c.loadError=e.message||String(e);
-  }finally{c.loading=false}
+    c.developmentPlan=null;
+    c.planLoadError=e.message||String(e);
+    console.warn("Piano di sviluppo non raggiungibile: verificare la migrazione SQL e le policy RLS.",e);
+  }
+  // Lo storico del Coach è facoltativo: un problema nelle vecchie tabelle
+  // non deve impedire la visualizzazione del piano individuale.
+  try{c.entries=await sb("replay_coach_entries?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=created_at.desc&limit=20")||[]}catch(e){c.entries=[]}
+  try{c.feedback=await sb("replay_coach_feedback?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=updated_at.desc&limit=30")||[]}catch(e){c.feedback=[]}
+  if(isManager()){
+    try{c.notes=await sb("replay_coach_manager_notes?select=*&dipendente_id=eq."+encodeURIComponent(pid)+"&order=created_at.desc&limit=30")||[]}
+    catch(e){c.notes=[];console.warn("Note riservate Coach non disponibili",e)}
+  }else c.notes=[];
+  c.loading=false;
 }
 function coachMonthlyRows(pid, months){
   const now=dateLocal(), [yy,mm]=now.slice(0,7).split("-").map(Number);
@@ -1730,27 +1737,33 @@ function coachAnalysisHtml(pid,months){
   ${coachSvgChart(data,"upt","UPT mensile",v=>Number(v).toFixed(2))}
   <div class="coach-card"><h3>Dettaglio mensile</h3><div class="table-scroll"><table class="premium-table" style="min-width:700px"><thead><tr><th>Mese</th><th>Fatturato</th><th>ATV</th><th>UPT</th><th>Scontrini</th><th>Pezzi</th><th>Giornate KPI</th></tr></thead><tbody>${table}</tbody></table></div></div>`;
 }
-function coachSaveDevelopmentPlan(){
+async function coachSaveDevelopmentPlan(){
   if(!isManager())return alert("Solo il Manager può aggiornare il piano.");
   const pid=coachPersonId(); if(!pid)return alert("Seleziona una risorsa.");
-  const plan={goal:(document.getElementById("coachPlanGoal")?.value||"").trim(),actions:(document.getElementById("coachPlanActions")?.value||"").trim(),due:document.getElementById("coachPlanDue")?.value||"",review:(document.getElementById("coachPlanReview")?.value||"").trim(),updatedAt:new Date().toISOString()};
+  const plan={goal:(document.getElementById("coachPlanGoal")?.value||"").trim(),actions:(document.getElementById("coachPlanActions")?.value||"").trim(),due:document.getElementById("coachPlanDue")?.value||null,review:(document.getElementById("coachPlanReview")?.value||"").trim(),updatedAt:new Date().toISOString()};
   if(!plan.goal)return alert("Inserisci un obiettivo misurabile.");
-  S.coach=S.coach||{}; S.coach.plans=S.coach.plans||{}; S.coach.plans[pid]=plan; save();
-  alert("Piano salvato su questo dispositivo.");
+  try{
+    await sb("replay_coach_development_plans?on_conflict=dipendente_id",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",body:JSON.stringify({dipendente_id:Number(pid),goal:plan.goal,actions:plan.actions,due_date:plan.due,review:plan.review,updated_at:plan.updatedAt,updated_by:AUTH?.user?.id||null})});
+    const c=coachState();c.plans=c.plans||{};c.plans[pid]=plan;c.developmentPlan=plan;delete c.planLoadError;
+    alert("Piano di sviluppo salvato online. Il collaboratore lo vedrà dal proprio account.");
+    await coachLoad();render();
+  }catch(e){alert("Non riesco a salvare il piano online. Verifica di aver eseguito la migrazione SQL allegata e le policy di accesso.\n\n"+(e.message||e));}
 }
 function coachPage(){
   const c=coachState(), pid=coachPersonId(), p=S.people.find(x=>String(x.id)===String(pid)), name=p?.name||(myPerson()?.name)||"Team";
   const notes=c.notes||[];
   const options=isManager()?`<label>Collaboratore</label><select class="select" id="coachPersonSelect" onchange="coachSelectPerson(this.value)"><option value="">Seleziona una risorsa</option>${S.people.filter(x=>x.active).map(x=>`<option value="${esc(x.id)}" ${String(x.id)===String(pid)?"selected":""}>${esc(x.name)}</option>`).join("")}</select>`:"";
-  const months=Number(c.analysisMonths||6), plan=(c.plans||{})[pid]||{};
+  const months=Number(c.analysisMonths||6), plan=(c.plans||{})[pid]||c.developmentPlan||{};
   const notesHtml=notes.length?notes.map(n=>`<div class="coach-note"><small>${esc(String(n.priorita||"osservazione").replaceAll("_"," "))} · ${esc(coachFmtDate(n.created_at))}</small>${esc(n.nota)}<div style="text-align:right;margin-top:8px"><button class="btn gray" onclick="coachDeleteNote('${esc(n.id)}')">Elimina nota</button></div></div>`).join(""):`<div class="coach-muted">Nessuna nota privata ancora inserita.</div>`;
-  if(!isManager())return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Replay Coach</h2><p>Area di sviluppo gestita dallo Store Manager.</p></section><div class="coach-empty">Questa sezione è riservata all'analisi manageriale.</div>`;
+  if(!isManager())return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Il mio piano di sviluppo</h2><p>Qui trovi gli obiettivi, le azioni concordate e le scadenze inserite dal tuo Store Manager. La scheda è in sola lettura: non puoi modificare il piano né vedere le note riservate.</p></section>
+    ${c.planLoadError?`<div class="notice danger"><b>Piano non disponibile</b><div class="small">Il piano condiviso non è ancora raggiungibile. Lo Store Manager deve completare la configurazione del piano online.</div></div>`:""}
+    ${plan&&plan.goal?`<section class="coach-card"><div class="row" style="align-items:center;justify-content:space-between"><h3>Obiettivo individuale</h3><span class="pill ${plan.due&&plan.due<dateLocal()?"yellow":"gray"}">${plan.due&&plan.due<dateLocal()?"Scadenza superata":plan.due?"Con scadenza":"Da programmare"}</span></div><div style="font-size:16px;font-weight:700;margin:10px 0">${esc(plan.goal)}</div><h4>Azioni concordate</h4><div style="white-space:pre-wrap;line-height:1.6">${esc(plan.actions||"Non specificate")}</div><div class="notice" style="margin-top:14px"><b>Scadenza / data di verifica</b><div style="margin-top:4px">${plan.due?esc(coachFmtDate(plan.due)):"Non indicata"}</div></div><h4 style="margin-top:14px">Verifica e prossimo passo</h4><div style="white-space:pre-wrap;line-height:1.6">${esc(plan.review||"La verifica sarà aggiornata dal Manager al momento del confronto.")}</div><div class="small" style="margin-top:12px">Ultimo aggiornamento: ${esc(plan.updatedAt?coachFmtDate(plan.updatedAt):"Non disponibile")}</div></section>`:`<section class="coach-card"><h3>Il tuo piano di sviluppo</h3><div class="coach-empty">Il tuo Store Manager non ha ancora pubblicato un piano individuale. Quando sarà salvato, qui vedrai obiettivo, azioni, scadenza e verifica.</div></section>`}`;
   return `<section class="coach-hero"><div class="coach-brand">REPLAY · PEOPLE DEVELOPMENT</div><h2>Replay Coach</h2><p>Analisi dell'andamento reale della risorsa e piano di sviluppo individuale. I calcoli avvengono nel gestionale, senza chiamate a servizi AI a pagamento.</p></section>
     ${c.loadError?`<div class="notice" style="margin-bottom:12px">Lo storico remoto delle note/strategie non è raggiungibile al momento. L'analisi KPI usa i dati già caricati nel gestionale.</div>`:""}
     <section class="coach-card"><h3>1. Seleziona la risorsa</h3>${options}<label>Periodo di analisi</label><select class="select" onchange="coachSetAnalysisMonths(this.value)"><option value="3" ${months===3?"selected":""}>Ultimi 3 mesi</option><option value="6" ${months===6?"selected":""}>Ultimi 6 mesi</option><option value="12" ${months===12?"selected":""}>Ultimi 12 mesi</option></select>
     <div class="coach-muted">Risorsa selezionata: <b>${esc(name)}</b>. I mesi senza dati vengono indicati come non disponibili, non come risultati pari a zero.</div></section>
     ${pid?coachAnalysisHtml(pid,months):`<div class="coach-empty">Seleziona una risorsa per visualizzare l'analisi.</div>`}
-    <section class="coach-card"><h3>2. Piano di sviluppo individuale</h3><div class="coach-muted">Compilazione manuale del Manager: obiettivo concreto, azioni osservabili, scadenza e verifica del risultato. Il piano viene salvato su questo dispositivo.</div>
+    <section class="coach-card"><h3>2. Piano di sviluppo individuale</h3><div class="coach-muted">Compilazione manuale del Manager: obiettivo concreto, azioni osservabili, scadenza e verifica del risultato. Il piano viene salvato online e reso visibile in sola lettura al collaboratore selezionato.</div>
       <label>Obiettivo misurabile</label><textarea class="input" id="coachPlanGoal" rows="2" maxlength="1200" placeholder="Es. portare l'UPT da 1,45 a 1,60 entro la data di verifica">${esc(plan.goal||"")}</textarea>
       <label>Azioni concordate / comportamento da osservare</label><textarea class="input" id="coachPlanActions" rows="3" maxlength="1800" placeholder="Es. proporre un prodotto complementare in almeno 5 interazioni osservate per turno">${esc(plan.actions||"")}</textarea>
       <label>Data di verifica</label><input class="input" id="coachPlanDue" type="date" value="${esc(plan.due||"")}">
