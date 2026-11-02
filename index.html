@@ -1931,7 +1931,7 @@ async function coachSaveNote(){
   if(!pid)return alert("Seleziona una risorsa.");
   if(!note)return alert("Scrivi una nota prima di salvarla.");
   try{
-    await sb("replay_coach_manager_notes",{method:"POST",body:JSON.stringify({dipendente_id:Number(pid),priorita:area,nota,created_by:AUTH?.user?.id})});
+    await sb("replay_coach_manager_notes",{method:"POST",body:JSON.stringify({dipendente_id:Number(pid),priorita:area,nota:note,created_by:AUTH?.user?.id})});
     const c=coachState();await coachLoad();render();
   }catch(e){alert("Non riesco a salvare la nota privata. Verifica la migrazione SQL e le autorizzazioni del ruolo Manager.\n\n"+(e.message||e))}
 }
