@@ -1029,7 +1029,51 @@ function saveTaskEdit(id){let t=S.tasks.find(x=>x.id===id);if(!t)return;t.name=d
 function toggleTask(id){let t=S.tasks.find(x=>x.id===id);if(t){t.done=!t.done;save();render()}}
 function deleteTask(id){let t=S.tasks.find(x=>x.id===id);if(t&&confirm(`Eliminare "${t.name}"?`)){S.tasks=S.tasks.filter(x=>x.id!==id);save();render()}}
 function autoTasks(){let a=S.people.filter(p=>p.active).map(p=>p.name);if(!a.length)return;S.tasks.forEach((t,i)=>t.person=a[i%a.length]);save();render()}
-function requests(){let p=S.requests.filter(r=>r.status==="In attesa").length;return `<div class="row"><div class="section">Richieste giorni liberi</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div><section class="card"><div class="notice"><b>${p} ${p===1?"richiesta":"richieste"} in sospeso</b><div class="small">Le richieste vengono salvate online in Supabase.</div></div></section><section class="card">${S.requests.length?S.requests.map(r=>{let person=S.people.find(p=>p.id==r.personId);return `<div style="padding:13px 0;border-bottom:1px solid #edf0f3"><div class="row"><div><b>${esc(person?.name||"Risorsa")}</b><div class="small">${r.start}${r.end&&r.end!==r.start?" → "+r.end:""} · ${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":"red"}">${esc(r.status)}</span></div>${r.note?`<div class="small" style="margin:8px 0">Motivazione: ${esc(r.note)}</div>`:""}${r.status==="In attesa"?`<div class="actions" style="margin-top:8px"><button class="btn green" onclick="updateRequest(${r.id},'Approvata')">Approva</button><button class="btn red" onclick="updateRequest(${r.id},'Rifiutata')">Rifiuta</button></div>`:""}</div>`}).join(""):`<div class="empty">Nessuna richiesta.</div>`}</section>`}
+function requestPersonView(id){
+  S.requestPersonView=id==null?null:String(id);
+  save();
+  render();
+}
+function requests(){
+  const pending=S.requests.filter(r=>r.status==="In attesa").length;
+  const header=`<div class="row"><div class="section">Richieste giorni liberi</div><button class="btn" onclick="requestForm()">+ Richiesta</button></div>
+    <section class="card"><div class="notice"><b>${pending} ${pending===1?"richiesta":"richieste"} in sospeso</b><div class="small">Le richieste vengono salvate online in Supabase.</div></div></section>`;
+
+  // Vista collaboratore: resta invariata, con le sole richieste personali.
+  if(!isManager()){
+    const mine=S.requests.filter(r=>String(r.personId)===String(myPersonId()));
+    return `${header}<section class="card">${mine.length?mine.map(r=>`<div style="padding:13px 0;border-bottom:1px solid #edf0f3"><div class="row"><div><b>${esc(r.start)}${r.end&&r.end!==r.start?" → "+esc(r.end):""}</b><div class="small">${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":"red"}">${esc(r.status)}</span></div>${r.note?`<div class="small" style="margin:8px 0">Motivazione: ${esc(r.note)}</div>`:""}</div>`).join(""):`<div class="empty">Non hai ancora inviato richieste.</div>`}</section>`;
+  }
+
+  // Vista Manager: prima una scheda per ogni risorsa, senza elenco generale.
+  const activePeople=(S.people||[]).filter(person=>person.active);
+  const selectedId=S.requestPersonView==null?null:String(S.requestPersonView);
+  const selected=activePeople.find(person=>String(person.id)===selectedId);
+
+  if(!selected){
+    S.requestPersonView=null;
+    const cards=activePeople.map(person=>{
+      const personRequests=S.requests.filter(r=>String(r.personId)===String(person.id));
+      const waiting=personRequests.filter(r=>r.status==="In attesa").length;
+      const latest=personRequests[0];
+      return `<button type="button" onclick="requestPersonView('${String(person.id).replace(/'/g,"&#39;")}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;margin:0 0 10px;border:1px solid #e8edf2;border-radius:17px;background:#fff;text-align:left;cursor:pointer;color:#172033;box-shadow:0 4px 14px #17203308">
+        <span style="display:flex;align-items:center;gap:12px;min-width:0"><span class="avatar">${esc((person.name||"?").trim().charAt(0).toUpperCase())}</span><span style="min-width:0"><b style="display:block;font-size:15px">${esc(person.name||"Risorsa")}</b><span class="small">${personRequests.length} ${personRequests.length===1?"richiesta":"richieste"}${latest?` · ultima: ${esc(latest.start||"")}`:" · nessuna richiesta"}</span></span></span>
+        <span style="display:flex;align-items:center;gap:9px;flex-shrink:0">${waiting?`<span class="pill red">${waiting} ${waiting===1?"in attesa":"in attesa"}</span>`:`<span class="pill gray">Nessuna in attesa</span>`}<span style="font-size:22px;color:#87909d">›</span></span>
+      </button>`;
+    }).join("");
+    return `${header}<section class="card"><div style="font-weight:850;font-size:16px;margin-bottom:5px">Seleziona una risorsa</div><div class="small" style="margin-bottom:15px">Apri la scheda di una persona per visualizzare tutte le sue richieste, senza mescolarle a quelle degli altri.</div>${cards||`<div class="empty">Nessuna risorsa attiva.</div>`}</section>`;
+  }
+
+  // Dettaglio: mostra tutte le richieste della risorsa selezionata, di qualsiasi stato.
+  const personRequests=S.requests.filter(r=>String(r.personId)===String(selected.id));
+  const waiting=personRequests.filter(r=>r.status==="In attesa").length;
+  const rows=personRequests.length?personRequests.map(r=>`<div style="padding:15px 0;border-bottom:1px solid #edf0f3">
+    <div class="row" style="align-items:flex-start"><div><b>${esc(r.start||"")}${r.end&&r.end!==r.start?" → "+esc(r.end):""}</b><div class="small" style="margin-top:4px">${esc(r.type||"Giorno libero")}</div></div><span class="pill ${r.status==="Approvata"?"":r.status==="Rifiutata"?"gray":"red"}">${esc(r.status||"In attesa")}</span></div>
+    ${r.note?`<div class="small" style="margin:9px 0 0">Motivazione: ${esc(r.note)}</div>`:""}
+    ${r.status==="In attesa"?`<div class="actions" style="margin-top:11px"><button class="btn green" onclick="updateRequest(${r.id},'Approvata')">Approva</button><button class="btn red" onclick="updateRequest(${r.id},'Rifiutata')">Rifiuta</button></div>`:""}
+  </div>`).join(""):`<div class="empty">Questa risorsa non ha ancora inviato richieste.</div>`;
+  return `${header}<div class="row" style="margin:4px 0 12px"><button class="btn gray" onclick="requestPersonView(null)">← Tutte le risorse</button><span class="pill ${waiting?"red":"gray"}">${waiting} in attesa</span></div><section class="card"><div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid #edf0f3"><div class="avatar">${esc((selected.name||"?").trim().charAt(0).toUpperCase())}</div><div><b style="font-size:18px">${esc(selected.name)}</b><div class="small">${personRequests.length} ${personRequests.length===1?"richiesta complessiva":"richieste complessive"}</div></div></div>${rows}</section>`;
+}
 async function loadHistory(){try{let rows=await sb('KpiStorico?select=*&order=anno.asc,settimana.asc');S.kpi.history={};rows.forEach(r=>{S.kpi.history[String(r.anno)+'_'+String(r.settimana)]={id:r.id,year:+r.anno,week:+r.settimana,sales:+r.fatturato||0,receipts:+r.scontrini||0,pieces:+r.pezzi_venduti||0}});save();render()}catch(e){console.warn('Storico KPI non caricato',e)}}
 function histKey(y,w){return String(y)+'_'+String(w)}
 function historyRow(y,w){return S.kpi.history?.[histKey(y,w)]||null}
